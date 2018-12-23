@@ -87,6 +87,54 @@
    
    		[UIImage imageWithContentsOfFile:@"/Library/Caches/xxx.png"]
 
+
+## 三、Logos语法
+
+
+- %hook、%end: 成对使用，hook一个类
+
+- %log: 打印方法的调用详情，包括方法调用者、方法名、方法参数但不打印返回值
+
+- %new: 添加一个新的方法
+
+- %c(className): 生成一个`Class`这里输入引用文本对象，类似OC中的`NSStringFromClass()`、`objc_getClass()`
+
+- %orig: 执行原函数，
+
+- %ctor: 在加载动态库的时候调用
+
+- %dtor: 在退出程序时调用
+
+- logify.pl: 􏲌􏲁􏰊􏰀􏱭􏳺􏱷􏱸􏳻􏳼􏳽􏳾􏲴􏲅􏲆􏲳􏳿􏰗􏰘􏲞􏲟􏰧可将一个头文件快速转换成已经包含打印信息的xm文件
+
+        logify.pl xx.h > xx.xm
+
+## 四、Tweak安装过程
+
+- 执行`nic.pl`命令，创建Tweak，编写Tweak代码
+
+- $ make: 编译Tweak代码为动态库(*.dylib)
+
+- $ make package: 将`dylib`打包成`deb`文件
+
+- $ make install: 将`deb`文件传送到手机，通过`Cydia`安装`deb`
+
+- `deb`将会安装在手机的`/Library/MobileSubstrate/DynamicLibraries/`文件夹中
+
+    - *.dylib: 编译后的Tweak代码
+
+    - *.plist: 存放着需要hook的APP的`bundleId `
+
+- 当打开app时
+
+    - `Cydia Substrate`会让App去架子啊对应的`dylib`
+
+    - 修改App内存中的代码逻辑，去执行`dylib`中的函数代码
+
+- 所以`theos`的Tweak并不会对原来的可执行文件进行修改，仅仅是修改了内存中的代码逻辑。
+
+
+
 ##  坑
 
 #### 0x01 make错误 
