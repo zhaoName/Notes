@@ -6,6 +6,8 @@
 
 进到手机`/usr/bin/`目录下可以看到很多命令，如常用的`ldid`、`killall`、`find`,那这些命令是到底是咋制作的呢。今天就来了解一下　
 
+<br>
+
 ## 一、命令行工具本质
 
 - 将手机中的`killall`命令复制到电脑上，用`file`命令查看
@@ -19,6 +21,7 @@ killall: Mach-O executable arm
 
 从上可以看出命令行的本质是一个`Mach-O`可执行文件，类似于App的可执行文件。这样我们就可以用Xcode编写用于iOS的命令行工具
 
+<br>
 
 ## 二、命令行功能键制作
 
@@ -90,9 +93,73 @@ iPhone:~ root# TestCommandLine -l -d
  -l
  -d
 ```
+那我们就可以判断当`argc=1`的时候，实现类似`--help`的功能
+
+<br>
+
+## 三、Makefile
+
+每次都用`command+B`编译然后去去ipa包中找可执行文件有点麻烦，我们可以用`Makefile`来装个逼(有点类似Tweak安装)
+
+- 创建Makefile
+
+```
+# Config
+ARCH = arm64
+IOS_VERSION = 8.0
+EXECUTABLE_NAME = TestCommandLine
+
+# 生成命令行的路径
+RELEASE_DIR = Release
+# 工程目录
+PROJECT_DIR = TestCommandLine
+# 命令行名字
+EXECUTABLE_FILE = $(RELEASE_DIR)/$(EXECUTABLE_NAME)
 
 
+# 头文件路径
+HEADER_DIR1 = $(PROJECT_DIR)
+HEADER_DIR2 = $(PROJECT_DIR)/AppInfo
 
+
+# Source Files 
+SOURCE_FILES = $(PROJECT_DIR)/*.m
+SOURCE_FILES += $(HEADER_DIR2)/*.m
+
+
+# 签名所用权限文件Entitlements
+ENTITLEMENTS_FILE = $(RELEASE_DIR)/TestCL.entitlements
+
+
+# 签名
+codesign: compile
+	@codesign -fs- --entitlements $(ENTITLEMENTS_FILE) $(EXECUTABLE_FILE)
+
+# 编译
+compile: 
+	@xcrun -sdk iphoneos \
+		clang -arch $(ARCH) \
+		-mios-version-min=$(IOS_VERSION) \
+		-fobjc-arc \
+		-framework Foundation \
+		-framework UIKit \
+		-framework MobileCoreServices \
+		-Os \
+		-I $(HEADER_DIR1) \
+		-I $(HEADER_DIR2) \
+		$(SOURCE_FILES) \
+		-o $(EXECUTABLE_FILE)
+```
+
+- 在Xcode的`your project > target > Build Phases`中添加`Run Script`
+
+    ![输入图片说明](https://images.gitee.com/uploads/images/2018/1226/220015_55f6c90e_1355277.png "Snip20181226_2.png")
+
+- `Command+B`编译Xcode或用Terminal进入到当前目录执行`make`,就会在`TestCommandLine/Release/`下生成命令行
+
+    ![输入图片说明](https://images.gitee.com/uploads/images/2018/1226/220331_3fe11ca0_1355277.png "Snip20181226_3.png")
+
+<br>
 
 ## 坑
 
@@ -110,7 +177,5 @@ Killed: 9
  **解决方法**: 选择证书和`bundleId `时，要选择在苹果开发者后台手动生成的`bundleId `,不要`Xcode`自动管理生成的通用`bundleId `
 
 
-
-
-
+写于2018-12-24 完成与2018-12-26
 
