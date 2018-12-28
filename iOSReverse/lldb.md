@@ -73,15 +73,17 @@ set -- Sets a breakpoint or set of breakpoints in the executable.
 ...
 ```
 
+### expression
+
 - expression：执行一个表达式
 
     - 常用于调试时不用重新运行程序，动态添加代码
 
-    - 命令选项结束符- -，表示所有命令选择均设置完成，若没有命令选项- -可以省略
+    - 命令选项结束符`--`，表示所有命令选择均设置完成，若没有命令选项`--`可以省略
 
     - `expression`和指令`print`、`p`、`call`的效果一样
 
-    - `expression -O`和指令`po`的效果一样
+    - `expression -O --`和指令`po`的效果一样
 
 ```
 (lldb) expression self.view.backgroundColor = [UIColor redColor]
@@ -89,6 +91,8 @@ set -- Sets a breakpoint or set of breakpoints in the executable.
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2018/1227/212759_b8c974c4_1355277.png "Snip20181227_4.png")
 
+
+### thread
 
 - 打印当前调用堆栈信息,类似于`bt`
 
@@ -132,17 +136,19 @@ set -- Sets a breakpoint or set of breakpoints in the executable.
 (lldb) thread step-out 或 􏰁finish
 ```
 
-- 单步运行一句汇编指令，遇到函数不进入
+- 单步运行一条汇编指令，遇到函数不进入
 
 ```
 (lldb) thread step-over-inst-over 或 􏰁nexti 或 􏰁ni
 ```
 
-- 单步运行一句代码，遇到函数进入
+- 单步运行一条汇编指令，遇到函数进入
 
 ```
 (lldb) thread step-inst 或 􏰁stepi 或 􏰁si
 ```
+
+### breakpoint
 
 - 给C函数设置断点
 
@@ -172,6 +178,137 @@ set -- Sets a breakpoint or set of breakpoints in the executable.
 (lldb) breakpoint set -s 动态库名 -n 方法名
 ```
 
+- 禁用断点
 
+```
+(lldb) breakpoint disable 断点编号
+```
 
+- 启用断点
+
+```
+(lldb) breakpoint enable 断点编号
+```
+
+- 删除断点
+
+```
+(lldb) breakpoint delete 断点编号
+```
+
+- 给断点预先设置要执行的指令，等断点出发时，就会顺序执行
+
+```
+(lldb) breakpoint set -n "-[ViewController click]"
+Breakpoint 2: where = lldb`-[ViewController click] + 23 at ViewController.m:44, address = 0x000000010603e6d7
+
+(lldb) breakpoint command add 2
+Enter your debugger command(s).  Type 'DONE' to end.
+> po self
+> expression -O -- self.view
+> DONE
+(lldb) c
+Process 43642 resuming
+
+ po self
+<ViewController: 0x7fbf3b50bc90>
+
+ expression -O -- self.view
+<UIView: 0x7fbf3b40a030; frame = (0 0; 375 812); autoresize = W+H; layer = <CALayer: 0x60000042cce0>>
+```
+
+- 查看某个断点设置的命令
+
+```
+(lldb) breakpoint command list 断点编号
+
+Breakpoint 2:
+    Breakpoint commands:
+      po self
+      expression -O -- self.view
+```
+
+- 删除某个断点设置的指令
+
+```
+(lldb) breakpoint command delete 断点编号
+```
+
+### watchpoint
+
+- 在内存数据发生改变时触发（也称内存断点）
+
+```
+(lldb) watchpoint set variable 变量或地址
+
+# 示例
+(lldb) watchpoint set variable self->_age
+Watchpoint created: Watchpoint 1: addr = 0x7fa003e10fb0 size = 4 state = enabled type = w
+    watchpoint spec = 'self->_age'
+    new value: 0
+(lldb) c
+Process 44580 resuming
+
+Watchpoint 1 hit:
+old value: 0
+new value: 20
+```
+
+- 内存断点有类似`breakpoint`的指令
+
+```
+# 列出设置的内存断点
+(lldb) watchpoint list 
+
+# 禁用内存断点
+(lldb) watchpoint disable 断点标号
+
+# 启用内存断点
+(lldb) watchpoint enable 断点编号
+
+# 删除内存断点
+(lldb) watchpoint delete 断点编号
+
+# 给内存断点添加要执行的指令
+(lldb) watchpoint command add 断点编号
+
+# 列出某个内存断点要执行的指令
+(lldb) watchpoint command list 断点编号
+
+# 删除某个内存断点要执行的指令
+(lldb) watchpoint command delete 断点编号
+```
+
+### image lookup
+
+- 查找某个符号或函数实现的位置
+
+```
+(lldb) image lookup -n click
+
+...
+Address: lldb[0x0000000100001560] (lldb.__TEXT.__text + 336)
+Summary: lldb`-[ViewController click] at ViewController.m:45
+...
+```
+
+- 查找某个类型的信息
+
+```
+(lldb) image lookup -t Person
+
+1 match found in ~/Library/Developer/Xcode/DerivedData/lldb-gtyjypcpzfehgihfxlpnicmgpvcz/Build/Products/Debug-iphonesimulator/lldb.app/lldb:
+id = {0x30000002b}, name = "Person", byte-size = 8, decl = Person.h:11, compiler_type = "@interface Person : NSObject
+@end"
+```
+
+- 根据内存地址查找在模块中的位置，常用于确定崩溃信息位置
+
+```
+(lldb) image lookup -a 内存地址
+```
+
+<br>
+
+ **更新于2018-12-27** 
 <br>
