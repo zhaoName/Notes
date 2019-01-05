@@ -185,7 +185,15 @@
     Target 0: (ting) stopped.
     ```
     执行` process connect`命令后，被附加的App会自动断住，App无法响应任何事件，按`c`恢复。
-    
+
+<br>
+
+- 用debugserver启动App
+
+    ```
+    $ debugserver -x auto *:1234 App的可执行路径
+    ```    
+
 ## 坑
 
 ### 0x01 debugserver
