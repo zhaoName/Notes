@@ -38,7 +38,13 @@ killall: Mach-O executable arm
 
 - 编写好的代码选择真机，然后`command+B`编译获取可执行文件
 
-- 将可执行文件复制到手机`/usr/bin/`目录下
+- 将可执行文件复制到手机`/usr/bin/`目录下（`scp` 或 ifunbox）
+
+    ```
+    $ scp -P 2222 ~/Desktop/TestCommandLine root@localhost:/usr/bin/
+
+    TestCommandLine                     100%  161KB  12.7MB/s   00:00
+    ```
 
 - `ssh`登录到手机并赋予其可执行权限
 
@@ -95,9 +101,45 @@ iPhone:~ root# TestCommandLine -l -d
 ```
 那我们就可以判断当`argc=1`的时候，实现类似`--help`的功能
 
+
 <br>
 
-## 三、Makefile
+## 三、权限
+
+**更新于2019-01-13**
+
+使用Xcode编译出来的命令行工具，和APP一样只能访问自己的沙河路径，权限太少。这样编写出来的命令行工具用处就不大，那咋办呢。。。
+
+我们都知道iPhone中有个APP叫`SpringBoard` -- 也就是iPhone的桌面管理App,所有的App都是放在`SpringBoard`上的。那可以猜测`SpringBoard`的权限应该会有很高，我们拿到`SpringBoard`的权限重签给我们自己编写的命令行工具不就可以了吗！！！
+
+- 查看`Command + B`编译的命令行原始权限
+
+    ```
+    # 会在当前目录生成t.entitlements文件
+    $ ldid -e TestCommandLine > t.entitlements
+    ```
+
+    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0113/144225_873471d8_1355277.png "Snip20190113_9.png")
+
+
+- 在手机`/System/Library/CoreServices/`目录下找到`SpringBoard.app`文件夹，将其可执行文件复制到电脑，查看其权限，部分截图如下
+
+    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0113/144911_579561ba_1355277.png "Snip20190113_10.png")
+
+
+- 将`SpringBoard`的权限重签给编译好的命令行
+
+
+    ```
+    $ ldid -Ss.entitlements TestCommandLine 
+    ```
+
+这样对命令行重签名之后，其权限就很高了，可以访问任意App。
+
+
+<br>
+
+## 四、Makefile
 
 每次都用`command+B`编译然后去去ipa包中找可执行文件有点麻烦，我们可以用`Makefile`来装个逼(有点类似Tweak安装)
 
@@ -179,3 +221,20 @@ Killed: 9
 
 写于2018-12-24 完成与2018-12-26
 
+<br>
+
+**更新于2019-01-13**
+
+在iOS11执行命令行工具报错
+
+```
+iPhone:~ root# TestCommandLine 
+
+Killed: 9
+```
+**解决方法**:给命令行加入新权限`platform-application`
+
+```
+<key>platform-application</key>
+<true/>
+```
