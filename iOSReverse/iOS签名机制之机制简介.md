@@ -72,5 +72,9 @@
 ![输入图片说明](https://images.gitee.com/uploads/images/2019/0117/174709_76bf6cf1_1355277.png "Snip20190117_7.png")
 
 <br>
+
+参考: [iOS App签名的原理](http://blog.cnbang.net/tech/3386/)
+
+<br>
 写于2019-01-17
 <br>
