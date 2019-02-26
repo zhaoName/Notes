@@ -7,6 +7,7 @@
 
 - 在`ChannelList.txt`中设置渠道名 可多个 如下：
 
+    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0226/180642_548b4111_1355277.png "Screen Shot 2019-02-26 at 5.21.57 PM.png")
 
 <br>
 
@@ -25,7 +26,6 @@
 
 	```
 	codesign -fs 证书信息 --entitlements "entitlements.plist" "Payload/${appName}"
-	
 	```
 	
 - 证书信息可用如下方法获取,选择对应证书信息
@@ -41,12 +41,14 @@
 #### 0x03 脚本使用
 
 
-脚本运行前：
+- 脚本运行前：
+
+    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0226/180728_8365634e_1355277.png "Screen Shot 2019-02-26 at 5.20.32 PM.png")
 
 
+- 脚本运行后:
 
-脚本运行后:
-
+    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0226/180808_cb95d19f_1355277.png "Screen Shot 2019-02-26 at 5.23.01 PM.png")
 
 
 
