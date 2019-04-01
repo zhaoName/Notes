@@ -1,6 +1,9 @@
 
 # 逆向中获取Block的参数和返回值
 
+<br>
+
+ **本文测试所用设备: iPhone6, 10.2越狱** 
 
 <br>
 
@@ -75,7 +78,7 @@ Forwarding local port 1234 to remote port 1234
 ......
 ```
 
-- `shh`连接到设备并开启`debugserver`
+- `ssh`连接到设备并开启`debugserver`
 
 ```
 $ ssh root@localhost -p 2222
@@ -188,17 +191,78 @@ getParam:
 <__NSGlobalBlock__: 0x1000f00c8>
 ```
 
-可以看到第二个参数就是我们要找的 Block，但只打印出他的地址。接下来，就靠我们自己来找出它的函数体地址和函数签名了。
+可以看到第二个参数就是我们要找的`Block`，但只打印出`Block`指针的地址。接下来，就靠我们自己来找出它的函数体地址和函数签名了。
 
 
 ### 0x04 找出 Block 的函数体地址
 
+从`Block`的内存结构可以看出，我们要找到`invoke`这个函数的指针地址，它指向这个`Block`的函数实现。在`arm64`架构中，指针占用8个字节，`int`类型占用4个字节。所以`invoke`函数的指针地址在第16个字节后，占用8个字节
 
+```
+(lldb) memory read --size 8 --format x 0x1000f00c8
+0x1000f00c8: 0x00000001b8a01698 0x0000000050000000
+0x1000f00d8: 0x00000001000ebb7c 0x00000001000f00a8
+0x1000f00e8: 0x00000001b8a08778 0x00000000000007c8
+0x1000f00f8: 0x00000001000ef08d 0x0000000000000002
+```
 
+可以看到在第16个字节后，占用8个字节的地址为`0x00000001000ebb7c`。然后你可以对这个地址反汇编:`disassemble --start-address 0x00000001000dd770`， 或者给这个内存地址下断点`br s -a 0x00000001000dd770`，以便进入`Block`函数体内。但是，大多数情况下，我们并不需要进到 Block 函数体内。在写 tweak 的时候，我们更需要的是知道这个 Block 回调给了我们哪些参数。
 
 ### 0x05 Block 的方法签名
 
+
+`Block`的方法签名需要通过`descriptor`结构体中的`signature`成员，然后通过它得到一个`NSMethodSignature`对象。由`Block`的内存结构可知，`descriptor`在`invoke`后面的8个字节即`0x00000001000f00a8`。
+
+
+文档中指出不是每一个`Block`都有其方法签名，我们需要通过 flags 与 block 中定义的枚举掩码进行与判断。还是在刚刚的 llvm 文档中，我们可以看到掩码的定义如下：
+
 ```
+enum {
+    BLOCK_HAS_COPY_DISPOSE =  (1 << 25),
+    BLOCK_HAS_CTOR =          (1 << 26), // helpers have C++ code
+    BLOCK_IS_GLOBAL =         (1 << 28),
+    BLOCK_HAS_STRET =         (1 << 29), // IFF BLOCK_HAS_SIGNATURE
+    BLOCK_HAS_SIGNATURE =     (1 << 30),
+};
+```
+
+再次使用`memory`命令打印出`flags`的值：
+
+```
+(lldb) memory read --size 4 --format x 0x1000f00c8
+0x16fd8a958: 0xb8a01698 0x00000001 0x00000000 0x00000005 
+0x16fd8a968: 0x000ebb7c 0x00000001 0x000f00a8 0x00000001
+
+(lldb) expr -- ((0x00000000 & (1 << 30)) != 0)
+(bool) $4 = true
+
+(lldb) expr -- ((0x000000005 & (1 << 30)) != 0)
+(bool) $5 = false
+```
+由于`expr -- ((0x00000000 & (1 << 30)) != 0)`我们可以确定这个`Block`是有签名的。
+
+
+为了找出`signature`的地址，我们还需要确认这个`Block`是否拥有`copy_helper`和`disponse_helper`这两个可选的函数指针。由于`expr -- ((0x000000005 & (1 << 30)) == 0)`，因此我们可以确认这个 Block 没有刚刚提到的两个函数指针。
+
+所以`signature`的地址在`descriptor`下偏移两个`unsiged long`即16个字节后的地址后，占用8个字节。查看`descriptor`的内存
+
+```
+(lldb) memory read --size 8 --format x 0x00000001000f00a8
+0x1000f00a8: 0x0000000000000000 0x0000000000000020
+0x1000f00b8: 0x00000001000ef142 0x0000000000000000
+0x1000f00c8: 0x00000001b8a01698 0x0000000050000000
+0x1000f00d8: 0x00000001000ebb7c 0x00000001000f00a8
+
+(lldb) p (char *)0x00000001000ef142
+(char *) $7 = 0x00000001000ef142 "v28@?0i8@"NSDictionary"12@"Person"20"
+```
+
+
+`"v28@?0i8@"NSDictionary"12@"Person"20"`就是我们要找的函数签名，是个`NSMethodSignature`类型。
+
+
+```
+# 双引号注意转义
 (lldb) po [NSMethodSignature signatureWithObjCTypes:"v28@?0i8@\"NSDictionary\"12@\"Person\"20"]
 <NSMethodSignature: 0x17007e5c0>
     number of arguments = 4
@@ -237,3 +301,42 @@ getParam:
         memory {offset = 0, size = 8}
             class 'Person'
 ```
+
+对我们最有用的`type encoding`字段，这些符号对应的解释可以参考[Type Encoding官方文档](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html)
+
+从`Type Encoding`官方文档可以看出，这个`Block`没有返回值，第一个参数是`block`(即本身的引用)，第二个参数是`int`类型，第三个参数是`NSDictionary`类型，第四个参数是自定义的`Person`类型。
+
+所以最终得到的完整函数和自己写出函数一样
+
+```
+- (void)getParam:(void(^)(int age, NSDictionary *dict, Person *per))block
+```
+
+### 0x06 通过hook得到block的参数具体内容
+
+在实际破解中,我们需要手动实现一个一样结构的`block`来调用，以达到查看具体参数内容的目的
+
+```
+%hook ViewController
+
+- (void)getParam:(CDUnknownBlockType)arg1
+{
+    void(^hookBlock)(int a, NSDictionary *dict, Person *p) = ^(int a, NSDictionary *dict, Person *p) {
+        NSLog(@"hook======block:%d, %@, %@", a, dict, p.name);
+    };
+    
+    %orig(hookBlock);
+}
+
+%end
+```
+
+
+## 二、Frida
+
+
+<br>
+<br>
+
+
+
