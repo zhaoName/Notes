@@ -3,7 +3,7 @@
 
 <br>
 
-`KVO`全称:`Key-Value Observing`,也称键值监听,用来监听某个对象的属性值的改变。
+`KVO`全称:`Key-Value Observing`,也称键值监听,用来监听对象的某个属性值的改变。
 
 - 通过属性的`setter`方法设置新值
 
@@ -185,12 +185,47 @@ $ nm Foundation | grep ValueAndNotify
 000000018190d498 t __NSSetUnsignedShortValueAndNotify
 ```
 
-### 0x04 KVO本质实现流程
+### 0x04 NSKVONotifying_KVOPerson的对象方法
+
+从流程图中到`NSKVONotifying_KVOPerson`中有四个对象方法，下面来证明下
+
+```
+// 打印某个类对象中的全部对象方法
+- (void)printfInstanceMethod:(Class)cls
+{
+    unsigned count = 0;
+    NSMutableString *string = [NSMutableString string];
+    
+    Method *list = class_copyMethodList(cls, &count);
+    for (int i=0; i<count; i++) {
+        Method method = list[i];
+        [string appendString:NSStringFromSelector(method_getName(method))];
+        [string appendString:@", "];
+    }
+    free(list);
+    NSLog(@"Class:%@ instanceMethod:%@", cls, string);
+}
+
+[self printfInstanceMethod:object_getClass(self.person1)];
+[self printfInstanceMethod:object_getClass(self.person2)];
+
+// 打印信息
+2019-04-17 22:19:32.622743+0800 KVO[40409:1295635] Class:NSKVONotifying_KVOPerson instanceMethod:setAge:, class, dealloc, _isKVOA
+2019-04-17 22:19:32.622877+0800 KVO[40409:1295635] Class:KVOPerson instanceMethod:setAge:, age
+```
+
+### 0x05 KVO本质实现流程
 
 由于`_NSSetIntValueAndNotify()`是`Foundation`框架下的函数，所以我们不能看到其内部实现。在这只是写`NSKVONotifying_KVOPerson`的伪代码
 
 ```
 // NSKVONotifying_KVOPerson.m
+
+- (Class)class
+{
+    // 调用[self.person1 class]返回的还是KVOPerson
+    return self.superClass;
+}
 
 // 重写父类KVOPerson的方法
 - (void)setAge:(NSInteger)age
@@ -213,11 +248,29 @@ void _NSSetLongLongValueAndNotify()
 }
 ```
 
-## 四、
+## 四、面试题
+
+### 0x01 KVO本质
+
+- 用`runtime`动态生成一个子类，并让示例对象的`isa`指正指向这个子类
+
+- 在子类中重写`setxxx:`方法，并在其内部调用`Foundation`框架下的`_NSSetXXXValueAndNotify()`函数
+
+- 在`_NSSetXXXValueAndNotify()`内部
+	
+	-  调用`willChangeValueForKey:`
+	
+	- 调用父类的`setxxx:`方法，设置新值
+
+	- 调用`didChangeValueForKey:`方法
+
+	- 在`didChangeValueForKey:`方法中触发监听器的`observeValueForKeyPath:ofObject:change:context:`方法
 
 
+### 0x02 如何手动触发KVO
 
+- 手动调用`willChangeValueForKey:`和`didChangeValueForKey:`方法就可手动触发`KVO`
 
 <br>
-
+写于2019-04-15 完成于2019-04-17
 <br>
