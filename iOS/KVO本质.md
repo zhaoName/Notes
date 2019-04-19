@@ -9,7 +9,7 @@
 
 - 通过`setValue:forKey:`或`setValue:forKeyPath:`设置新值
 
-上面两种方法都可触发`KVO`，实现属性值的监听。本文测试工程中只用第一种方法触发`KVO`。
+上面两种方法都可触发`KVO`，实现属性值的监听。本文测试工程中只用第一种方法触发`KVO`。关于`KVC`触发`KVO`可参考[这里](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/KVC.md)
 
 
 ## 一、准备工作
