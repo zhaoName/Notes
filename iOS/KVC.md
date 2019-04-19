@@ -98,7 +98,7 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 `valueForKey:`原理
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/101613_6e09a744_1355277.png "Snip20190418_17.png")
+![输入图片说明](https://images.gitee.com/uploads/images/2019/0419/094650_6503cb26_1355277.png "Snip20190419_19.png")
 
 
 - 优先按照`getKey` `key` `isKey` `_key`顺序查找方法，设置新值
@@ -108,6 +108,22 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 - 若`accessInstanceVariablesDirectly`的返回值为`YES`,则按顺序查找`_key` `_isKey` `key` `isKey`成员变量，找到直接取值
 
 - 若四个成员变量都没找到则调用`valueForUndefinedKey:`方法抛出异常
+
+## 四、面试题
+
+### 0x01 通过KVC设置的属性值能触发KVO吗？
+
+从`KVC`设值原理可以看到就算没有属性的`setKey:`方法，`KVC`也可能设值成功。那还能触发`KVO`吗？ 这里给予肯定答案：只要`KVC`的流程能走通(无论是调方法成功还是查找到四个成员变量中任意一个)且添加`KVO`监听，就能触发。
+
+`KVC`触发`KVO`流程
+
+- 调用`willChangeValueForKey:`
+
+- 调`setKey: / _setKey`方法或查找到四个成员变量中任意一个，设置新的属性值
+
+- 调用`didChangeValueForKey:`方法
+
+- 在`didChangeValueForKey:`方法中触发监听器的`observeValueForKeyPath:ofObject:change:context:`方法
 
 <br>
 写于2019-04-17
