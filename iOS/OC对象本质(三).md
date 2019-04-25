@@ -7,7 +7,12 @@
 
 `OC`中的`Class`类型在底层定义为`typedef struct objc_class *Class`，而结构体`struct objc_class`可以在`runtime`源码中找到。
 
-`objc4`源码中`struct objc_class`的定义太复杂，我们可以自定义一个类似的简化结构体
+`objc4`源码中`struct objc_class`的定义太复杂，我们可以需要的信息大概是这些
+
+![输入图片说明](https://gitee.com/uploads/images/2019/0425/180815_3b90d2df_1355277.png "Snip20190425_6.png")
+
+
+定义一个类似`struct objc_class`的结构体
 
 ```
 // ZZClassInfo.h
@@ -210,4 +215,17 @@ int main(int argc, const char * argv[]) {
 }
 ```
 
-可以看到
+- `class`对象中的`class_rw_t`信息
+
+![输入图片说明](https://gitee.com/uploads/images/2019/0425/180241_9823a128_1355277.png "Snip20190425_4.png")
+
+- `meta-class`对象中的`class_rw_t`信息
+
+![输入图片说明](https://gitee.com/uploads/images/2019/0425/180311_d42c693b_1355277.png "Snip20190425_5.png")
+
+
+**这样也就证明了`OC`中的属性信息、实例方法信息、协议信息、成员变量信息存储在`class`对象中；类方法存储在`meta-class`对象中。**
+
+<br>
+写于2019-04-25
+<br>
