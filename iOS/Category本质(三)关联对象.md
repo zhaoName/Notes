@@ -68,11 +68,13 @@ static const char *NameKey = "NameKey";
 
 ### 0x03 objc_AssociationPolicy
 
-`objc_AssociationPolicy`指的是使用什么策略关联对象。相当于声明属性的`strong`之类的修饰符。
+`objc_AssociationPolicy`指的是使用什么策略关联对象。相当于声明属性时使用`strong`之类的修饰符。
 
-
+![输入图片说明](https://gitee.com/uploads/images/2019/0428/095326_c30fb90c_1355277.png "Snip20190428_9.png")
 
 ## 二、原理
+
+### 0x01 原理解释
 
 在`objc4-750`的`objc-runtime.mm`找到`objc_setAssociatedObject()`的实现.
 
@@ -121,6 +123,7 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
                 // object对应的ObjectAssociationMap不存在，则创建新的ObjectAssociationMap并绑定上对应的object
                 ObjectAssociationMap *refs = new ObjectAssociationMap;
                 associations[disguised_object] = refs;
+                
                 // 新的ObjectAssociationMap中存放key和对应的ObjcAssociation(policy, new_value)
                 (*refs)[key] = ObjcAssociation(policy, new_value);
                 object->setHasAssociatedObjects();
@@ -145,6 +148,11 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 }
 ```
 
+用一幅图来解释![]()
+
+![输入图片说明](https://gitee.com/uploads/images/2019/0428/095343_2168d977_1355277.png "Snip20190428_8.png")
+
+
 - `AssociationsHashMap`和`ObjectAssociationMap`可以看做`OC`中的字典。
 
 - `AssociationsHashMap`中的键是传进来的`object`, 值是`ObjectAssociationMap`
@@ -152,7 +160,13 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 - `ObjectAssociationMap`中的键是传进来的`key`，值是`ObjcAssociation`。而ObjcAssociation中放的是传进来的`policy`和`value`。
 
 
-**总结**
+### 0x02 关联对象没有`weak`效果
+
+关联对象没有`weak`效果，也就是说当关联对象的`value`所指向的内存被释放，不能将其置为`nil`，再去获取`value`的值就会造成坏内存访问(野指针)。
+
+![输入图片说明](https://gitee.com/uploads/images/2019/0428/104847_c59036c5_1355277.png "Snip20190428_11.png")
+
+## 总结
 
 - 关联对象并不是存储在被关联对象本身的内存中，而是存在一个全局统一的`AssociationsManager`中
 
