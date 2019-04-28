@@ -58,8 +58,15 @@ void *memmove(void *dest, const void *source, size_t count)
 } 
 ```
 
+**下面只讨论"右复制",（"左复制"肯定不会出现数据覆盖的情况）**
 
+![输入图片说明](https://gitee.com/uploads/images/2019/0428/115753_d2649005_1355277.png "Snip20190428_15.png")
 
+- `memcpy()`是从前往后一个一个复制内存数据，所以当出现区域重叠时，会导致本身数据更改，没有达到想要的效果
+
+![输入图片说明](https://gitee.com/uploads/images/2019/0428/115807_0170a4e9_1355277.png "Snip20190428_16.png")
+
+- `memmove()`是从后往前一个一个复制内存数据，当出现区域重叠时，优先复制重叠区域的数据，不会出现数据覆盖的情况。
 
 ### 0x02 抛出问题
 
@@ -223,7 +230,7 @@ static struct /*_prop_list_t*/ {
 };
 ```
 
-由上可知分类在编译的时候会转成`struct _category_t`的结构体，里面包含着新增的实例方法信息、类方法信息、协议方法信息、属性信息。**这时候并没有将分类中的信息合并到对应的类中**。
+由上可知分类在编译的时候会转成`struct _category_t`类型的结构体，里面包含着新增的实例方法信息、类方法信息、协议方法信息、属性信息。**这时候并没有将分类中的信息合并到对应的类中**。
 
 ## 三、runtime中的Categoty
 
@@ -463,6 +470,8 @@ void attachLists(List* const * addedLists, uint32_t addedCount)
 
 
 文件编译顺序在下图位置中调整
+
+![输入图片说明](https://gitee.com/uploads/images/2019/0428/135023_e1dd80cd_1355277.png "Snip20190428_17.png")
 
 
 <br>
