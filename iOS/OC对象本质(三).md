@@ -226,6 +226,13 @@ int main(int argc, const char * argv[]) {
 
 **这样也就证明了`OC`中的属性信息、实例方法信息、协议信息、成员变量信息存储在`class`对象中；类方法存储在`meta-class`对象中。**
 
+
+**相关内容**
+
+- [OC对象本质(一)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(一).md)
+
+- [OC对象本质(二)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(二).md)
+
 <br>
 写于2019-04-25
 <br>
