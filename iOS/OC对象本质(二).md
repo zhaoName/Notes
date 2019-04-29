@@ -317,6 +317,13 @@ NSLog(@"%p", [ZZPerson class]);
 ![输入图片说明](https://gitee.com/uploads/images/2019/0424/155049_16c5777f_1355277.png "Snip20190424_2.png")
 
 
+**相关内容**
+
+- [OC对象本质(一)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(一).md)
+
+- [OC对象本质(三)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(三).md)
+
+
 <br>
 
 写于2019-04-22
