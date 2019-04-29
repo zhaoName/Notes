@@ -456,6 +456,12 @@ void callInitialize(Class cls)
 - 若分类实现了`+initialize`，就覆盖类本身的`+initialize`调用
 
 
+**相关内容**
+
+- [Categary本质(一)底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Categary本质(一)底层实现.md)
+
+- [Category本质(三)关联对象](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category本质(三)关联对象.md)
+
 <br>
 
 写于2019-04-27
