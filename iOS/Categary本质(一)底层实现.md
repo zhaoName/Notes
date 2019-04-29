@@ -474,6 +474,12 @@ void attachLists(List* const * addedLists, uint32_t addedCount)
 ![输入图片说明](https://gitee.com/uploads/images/2019/0428/135023_e1dd80cd_1355277.png "Snip20190428_17.png")
 
 
+**相关内容**
+
+- [Categoty本质(二)load,initialize方法](https://gitee.com/zhaoName0x01/Notes/edit/master/iOS/Categoty本质(二)load,initialize方法.md)
+
+- [Category本质(三)关联对象](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category本质(三)关联对象.md)
+
 <br>
 
 写于2019-04-27
