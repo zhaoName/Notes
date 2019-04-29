@@ -174,6 +174,12 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 - 关联对象的底层设计决定关联对象没有弱引用`weak`的效果(类似字典的value不能为nil)。
 
+**相关内容**
+
+- [Categary本质(一)底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Categary本质(一)底层实现.md)
+
+- [Categoty本质(二)load,initialize方法](https://gitee.com/zhaoName0x01/Notes/edit/master/iOS/Categoty本质(二)load,initialize方法.md)
+
 <br>
 
 写于2019-04-25
