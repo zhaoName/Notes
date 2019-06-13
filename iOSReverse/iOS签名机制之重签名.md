@@ -2,76 +2,63 @@
 
 - 查看app是否加密
 
-    ```
-    $ otool -l Mach-O文件名 | grep crypt
+		$ otool -l Mach-O文件名 | grep crypt
 		
-    # cryptid 为1表示加密 为0表示已砸壳
-    cryptoff 16384
-    cryptsize 35323904
-    cryptid 1
-    ```
-
+		# cryptid 为1表示加密 为0表示已砸壳
+		cryptoff 16384
+    	cryptsize 35323904
+      	cryptid 1
+  
 - 查看当前电脑下证书信息
 
-    ```
-    $ security find-identity -v -p codesigning -v
-    ```
+		$ security find-identity -v -p codesigning -v
 		
 - 查看配置文件embedded.mobileprovision信息
 
-    ```
-    $ security cms -D -i embedded.mobileprovision
-    ```
-
+		$ security cms -D -i embedded.mobileprovision
+		
 - 赋予Mach-O文件可执行权限
 
-    ```
-    $ chmod +x Mach-O文件名
-    ```
-
+		$ chmod +x Mach-O文件名
+		
 - Mach-O文件瘦身
-    
-    ```
-    $ lipo Mach-O文件名 -thin 想要保留的架构 -output 瘦身后的Mach-O文件名
-    ```
 
+		$ lipo Mach-O文件名 -thin 想要保留的架构 -output 瘦身后的Mach-O文件名
+		
 - 对extension重签名
 
-    ```
-    $ codesign -fs "证书信息" xxxExtension.appex/xxxExtension
-    ```
-
+		$ codesign -fs "证书信息" xxxExtension.appex/xxxExtension
+		
 - 对app重签名
-    
-    ```
-    $ codesign -fs "证书信息"或证书ID --entitlements entitlements.plist xxx.app
-    ```	
 
-## 一、重签名流程
+		$ codesign -fs "证书信息"或证书ID --entitlements entitlements.plist xxx.app
+		
+
+## 一、 重签名流程
 
 1. 准备一个`embedded.mobileprovision`文件(必须是付费账号下生成的),放在要重签名的xxx.app包内
 	
-    - 可以通过Xcode自动生成，在编译后的App包内找到
+	- 可以通过Xcode自动生成，在编译后的App包内找到
+
+		![输入图片说明](https://images.gitee.com/uploads/images/2019/0118/111805_debde842_1355277.png "Snip20190117_10.png")
 	
-        ![输入图片说明](https://images.gitee.com/uploads/images/2019/0118/111805_debde842_1355277.png "Snip20190117_10.png")
-
-    - 到[苹果开发者后台](https://developer.apple.com/account/ios/profile/)生成,下载
-
-    - 无论选哪种方式，最好`embedded.mobileprovision`中的`bundleId`为通配符`*`，否则要和App包内`Info.plist`中的`bundleId`一致。
+	- 到[苹果开发者后台](https://developer.apple.com/account/ios/profile/)生成,下载
+	
+	- 无论选哪种方式，最好`embedded.mobileprovision`中的`bundleId`为通配符`*`，否则要和App包内`Info.plist`中的`bundleId`一致。
 
 2. 从`embedded.mobileprovision`提取出`entitlements.plist`权限文件
 	
-    ```
-    # 转化为plist
-    $ security cms -D -i embedded.mobileprovision > temp.plist
+	```
+	# 转化为plist
+	$ security cms -D -i embedded.mobileprovision > temp.plist
 	
-    # 只保留Entitlements
-    $ /usr/libexec/PlistBuddy -x -c 'Print :Entitlements' temp.plist > entitlements.plist
-    ```
-    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0118/112034_459d44e4_1355277.png "Snip20190117_12.png")  
-
-    一般都是对别人的App重签名，假如是微信，那`application-identifier`值应改为`your account teamId.com.tencent.xin`。
-    
+	# 只保留Entitlements
+	$ /usr/libexec/PlistBuddy -x -c 'Print :Entitlements' temp.plist > entitlements.plist
+	```
+	
+	![entitlements](https://images.gitee.com/uploads/images/2019/0118/112034_459d44e4_1355277.png "Snip20190117_12.png")
+	
+	一般都是对别人的App重签名，假如是微信，那`application-identifier`值应改为`your account teamId.com.tencent.xin`。
 
 3. 查看当前电脑所有可用证书
 
@@ -88,6 +75,8 @@
 	```
 	# 注意所选证书ID 要和embedded.mobileprovision内的保持一致
 	$ codesign -fs 证书ID或"证书信息" xxx.dylib
+	
+	xxx.dylib: replacing existing signature
 	```
 	
 5. 对Entension重签名
@@ -108,10 +97,10 @@
 	
 	
 	
-## 二、动态库注入
+## 二、 动态库注入
 
 　　当我们用`Theos`开发好一些好玩的插件(如微信抢红包)，会将其分享给我们的小伙伴。这时你可能兴冲冲的跑到手机`/Library/MobileSubstrate/DynamicLibraries/`下找到自己编写的`xxx.dylib`, 复制到App包内。然后用上述方法对其重签名 安装到手机会发现，然并卵 编写好的插件效果一个都没有。
-　　
+
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/173718_e0463823_1355277.png "Snip20190120_2.png")
 
@@ -133,8 +122,7 @@
 
 - 通过 MachOView 查看
 
-
-    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/173810_748f5e06_1355277.png "Snip20190120_3.png")
+	![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/173810_748f5e06_1355277.png "Snip20190120_3.png")
 
 　　通过上面两种方式都能看到Mach-O文件并没有加载我们所写的`Tweak_Test.dylib`动态库，所以也就不会出现动态库中的弹框。
 　　
@@ -190,31 +178,31 @@
 
 ### 0x03 插件依赖非系统动态库
 
-我们自己用`Theos`编写的`.dylib`文件都会依赖非系统的动态库`CydiaSubstrate`。
+　　我们自己用`Theos`编写的`.dylib`文件都会依赖非系统的动态库`CydiaSubstrate`。
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/173948_b567b738_1355277.png "Snip20190120_5.png")
 
-从上图可以看出`Tweak_Test.dylib`依赖于`CydiaSubstrate`，那如果我们将注入了`Tweak_Test.dylib`的App装入到非越狱机上就会闪退。因为非越狱机上是没有`/Library/Frameworks/CydiaSubstrate.framework`这个目录，更没有`CydiaSubstrate`这个动态库的。
+　　从上图可以看出`Tweak_Test.dylib`依赖于`CydiaSubstrate`，那如果我们将注入了`Tweak_Test.dylib`的App装入到非越狱机上就会闪退。因为非越狱机上是没有`/Library/Frameworks/CydiaSubstrate.framework`这个目录，更没有`CydiaSubstrate`这个动态库的。
 
 
 - 到越狱机的`/Library/Frameworks/CydiaSubstrate.framework/`目录下找到`CydiaSubstrate `，将其复制到电脑上的APP包内
 
 - 用`install_name_tool`命令修改Mach-O文件中的动态库加载地址
 
-    ```
-    # @loader_path 表示动态库所在目录
-    $ install_name_tool -change /Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate @loader_path/CydiaSubstrate Tweak_Test.dylib 
-    ```
-
-    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/174036_0af30b3d_1355277.png "Snip20190120_6.png")
+	```
+	# @loader_path 表示动态库所在目录
+	$ install_name_tool -change /Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate @loader_path/CydiaSubstrate Tweak_Test.dylib 
+	```
 	
-<br>
+	![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/174036_0af30b3d_1355277.png "Snip20190120_6.png")
+	
+<br>	
 最后再对动态库和App重签名，安装到手机就能看到自己编写的插件
 
-
 ![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/174109_6bf184ae_1355277.png "Snip20190120_7.png")
-	
-	
+
+
+
 <br>
 完成于2019-01-20
 <br>

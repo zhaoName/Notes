@@ -92,9 +92,7 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/094325_2e4cf8cf_1355277.png "Snip20190417_7.png")
 
-
 ## 三、KVC取值原理
-
 
 `valueForKey:`原理
 
@@ -125,6 +123,8 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 - 在`didChangeValueForKey:`方法中触发监听器的`observeValueForKeyPath:ofObject:change:context:`方法
 
+
 <br>
 写于2019-04-17
 <br>
+

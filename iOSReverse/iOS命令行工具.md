@@ -38,13 +38,7 @@ killall: Mach-O executable arm
 
 - 编写好的代码选择真机，然后`command+B`编译获取可执行文件
 
-- 将可执行文件复制到手机`/usr/bin/`目录下（`scp` 或 ifunbox）
-
-    ```
-    $ scp -P 2222 ~/Desktop/TestCommandLine root@localhost:/usr/bin/
-
-    TestCommandLine                     100%  161KB  12.7MB/s   00:00
-    ```
+- 将可执行文件复制到手机`/usr/bin/`目录下
 
 - `ssh`登录到手机并赋予其可执行权限
 
@@ -136,62 +130,61 @@ iPhone:~ root# TestCommandLine -l -d
 
 这样对命令行重签名之后，其权限就很高了，可以访问任意App。
 
-
 <br>
 
-## 四、Makefile
+## 三、Makefile
 
 每次都用`command+B`编译然后去去ipa包中找可执行文件有点麻烦，我们可以用`Makefile`来装个逼(有点类似Tweak安装)
 
 - 创建Makefile
 
-```
-# Config
-ARCH = arm64
-IOS_VERSION = 8.0
-EXECUTABLE_NAME = TestCommandLine
+	```
+	# Config
+	ARCH = arm64
+	IOS_VERSION = 8.0
+	EXECUTABLE_NAME = TestCommandLine
 
-# 生成命令行的路径
-RELEASE_DIR = Release
-# 工程目录
-PROJECT_DIR = TestCommandLine
-# 命令行名字
-EXECUTABLE_FILE = $(RELEASE_DIR)/$(EXECUTABLE_NAME)
-
-
-# 头文件路径
-HEADER_DIR1 = $(PROJECT_DIR)
-HEADER_DIR2 = $(PROJECT_DIR)/AppInfo
+	# 生成命令行的路径
+	RELEASE_DIR = Release
+	# 工程目录
+	PROJECT_DIR = TestCommandLine
+	# 命令行名字
+	EXECUTABLE_FILE = $(RELEASE_DIR)/$(EXECUTABLE_NAME)
 
 
-# Source Files 
-SOURCE_FILES = $(PROJECT_DIR)/*.m
-SOURCE_FILES += $(HEADER_DIR2)/*.m
+	# 头文件路径
+	HEADER_DIR1 = $(PROJECT_DIR)
+	HEADER_DIR2 = $(PROJECT_DIR)/AppInfo
 
 
-# 签名所用权限文件Entitlements
-ENTITLEMENTS_FILE = $(RELEASE_DIR)/TestCL.entitlements
+	# Source Files 
+	SOURCE_FILES = $(PROJECT_DIR)/*.m
+	SOURCE_FILES += $(HEADER_DIR2)/*.m
 
 
-# 签名
-codesign: compile
-	@codesign -fs- --entitlements $(ENTITLEMENTS_FILE) $(EXECUTABLE_FILE)
+	# 签名所用权限文件Entitlements
+	ENTITLEMENTS_FILE = $(RELEASE_DIR)/TestCL.entitlements
 
-# 编译
-compile: 
-	@xcrun -sdk iphoneos \
-		clang -arch $(ARCH) \
-		-mios-version-min=$(IOS_VERSION) \
-		-fobjc-arc \
-		-framework Foundation \
-		-framework UIKit \
-		-framework MobileCoreServices \
-		-Os \
-		-I $(HEADER_DIR1) \
-		-I $(HEADER_DIR2) \
-		$(SOURCE_FILES) \
-		-o $(EXECUTABLE_FILE)
-```
+
+	# 签名
+	codesign: compile
+		@codesign -fs- --entitlements $(ENTITLEMENTS_FILE) $(EXECUTABLE_FILE)
+
+	# 编译
+	compile: 
+		@xcrun -sdk iphoneos \
+			clang -arch $(ARCH) \
+			-mios-version-min=$(IOS_VERSION) \
+			-fobjc-arc \
+			-framework Foundation \
+			-framework UIKit \
+			-framework MobileCoreServices \
+			-Os \
+			-I $(HEADER_DIR1) \
+			-I $(HEADER_DIR2) \
+			$(SOURCE_FILES) \
+			-o $(EXECUTABLE_FILE)
+	```
 
 - 在Xcode的`your project > target > Build Phases`中添加`Run Script`
 

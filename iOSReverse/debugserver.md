@@ -1,12 +1,8 @@
-
-# debugserver
-
 **动态调试**是指将程序运行起来，通过下断点、打印等方式，查看参数、返回值、函数调用流程等。
 
 ## 一、Xcode动态调试原理
 
 　　`Xcode`内置调试器`lldb`将输入的指令通过`debugserver`传输给App，App执行指令后将反馈信息再通过`debugserver`传送给`lldb`。
-
 　　
 ![](https://user-gold-cdn.xitu.io/2018/12/23/167da061cf611ade?w=777&h=255&f=png&s=35416)
 
@@ -27,7 +23,6 @@
 
     - 一般情况下，只能调试通过`Xcode`安装的App
     
----
 
 ## 二、动态调试任意App
 
@@ -52,7 +47,7 @@
     
     Non-fat file: debugserver_64 is architecture: arm64
     ```
-
+    
 ### 0x02 给debugserver新增权限
 
 - 获取`debugserver`初始权限
@@ -92,7 +87,7 @@
 
 - 将上面获取的原始权限保存到`debugserver.entitlements`中，并添加两个调试相关权限
 
-    ![](https://user-gold-cdn.xitu.io/2018/12/23/167da43164974a5b?w=503&h=336&f=png&s=71338)
+	![](https://user-gold-cdn.xitu.io/2018/12/23/167da43164974a5b?w=503&h=336&f=png&s=71338)
 
 ### 0x03 对debugserver重签名
 
@@ -131,7 +126,7 @@
     iPhone:~ root# chmod +x /usr/bin/debugserver
     ``` 
 
----
+
 
 ## 三、附加到某个App
 
@@ -185,15 +180,13 @@
     Target 0: (ting) stopped.
     ```
     执行` process connect`命令后，被附加的App会自动断住，App无法响应任何事件，按`c`恢复。
-
-<br>
-
+    
 - 用debugserver启动App
 
-    ```
-    $ debugserver -x auto *:1234 App的可执行路径
-    ```    
-
+	```
+	$ debugserver -x auto *:1234 App的可执行路径
+	```
+    
 ## 坑
 
 ### 0x01 debugserver
@@ -216,5 +209,5 @@
     Segmentation fault: 11
     ```
 
----
+
 写于2018-12-23

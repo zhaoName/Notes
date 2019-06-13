@@ -1,5 +1,5 @@
 # dsc_extractor
-**环境配置:iPhone10.2  yalu102越狱**
+**环境配置:iPhone6  / iOS10.2 / yalu102越狱**
 
 本文只介绍如何用`dsc_extractor`将二进制文件从`dyld_share_cache_arm64`中取出来。
 
@@ -16,21 +16,21 @@
 
 使用homebrew安装wget
 
-	$brew install wget
+	$ brew install wget
 	
 ### 二、下载dyld-421.2
 
 wget安装完成执行以下命令
 
-	$cd ~
+	$ cd ~
 	
-	$mkdir dsc_extractor
+	$ mkdir dsc_extractor
 	
-	$cd dsc_extractor
+	$ cd dsc_extractor
 	
-	$wget http://opensource.apple.com/tarballs/dyld/dyld-421.2.tar.gz
+	$ wget http://opensource.apple.com/tarballs/dyld/dyld-421.2.tar.gz
 	
-	$tar xvf dyld-421.2.tar.gz
+	$ tar xvf dyld-421.2.tar.gz
 
 如下图说明成功
 
@@ -39,7 +39,7 @@ wget安装完成执行以下命令
 
 ### 三、dsc_extractor.patch
 
-	$cd dyld-421.2/launch-cache/
+	$ cd dyld-421.2/launch-cache/
 	
 	touch dsc_extractor.patch
 
@@ -85,12 +85,13 @@ wget安装完成执行以下命令
 
 然后执行如下命令：
 
-	$patch < dsc_extractor.patch
+	$ patch < dsc_extractor.patch
 
 **注意如下报错**
 	
 ```
 launch-cache zhao$ patch < dsc_extractor.patch
+
 patching file dsc_extractor.cpp
 Reversed (or previously applied) patch detected!  Assume -R? [n] yes
 Hunk #2 FAILED at 456.
@@ -104,17 +105,18 @@ Hunk #4 FAILED at 484.
 
 执行如下命令将会生成一个`dsc_extractor`可执行文件个
 
-	$clang++ -o dsc_extractor dsc_extractor.cpp dsc_iterator.cpp
+	$ clang++ -o dsc_extractor dsc_extractor.cpp dsc_iterator.cpp
 
 ### 五、提取
 
 在当前目录下执行
 
-	$dsc_extractor  动态库共享缓存文件的路径  输出路径
+	$ dsc_extractor  动态库共享缓存文件的路径  输出路径
 
 示例
 
-	$dsc_extractor ~/Desktop/dyld_shared_cache_arm64 ~/Desktop/systemLib
+	$ dsc_extractor ~/Desktop/dyld_shared_cache_arm64 ~/Desktop/systemLib
+	
 	0/1203
 	1/1203
 	2/1203
@@ -138,6 +140,7 @@ Hunk #4 FAILED at 484.
 
 ```
 ~ zhao$ brew install wget
+
 Updating Homebrew...
 ^C==> Installing dependencies for wget: gettext, libunistring, libidn2, openssl@1.1
 Error: Calling keg_only :shadowed_by_osx is disabled!
@@ -168,6 +171,6 @@ https://09jianfeng.github.io/2015/04/05/dyld_decache%20%E5%AF%BC%E5%87%BA%E7%B3%
 
 - 导出
 
-		$dsc_extractor  动态库共享缓存文件的路径  输出路径
+		$ dsc_extractor  动态库共享缓存文件的路径  输出路径
 		
 **更新于2018-12-16**

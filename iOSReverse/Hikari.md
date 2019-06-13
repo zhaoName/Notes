@@ -23,6 +23,7 @@
 - 关闭`bitcode`, `工程 -> Build Settings -> Enable Bitcode`的值改为`NO`
 
 - 将所有要参与编译的taget(包括pod进来的三方库)的`Index-While-Building`改为`NO`
+
 	- 工程在`Target -> Build Settings -> Enable Index-While-Building`
 	
 	- 三方库在`Pods -> AFNetworking -> Build Settings -> Enable Index-While-Building`
@@ -105,7 +106,6 @@ void hikari_bcf(void){};
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2019/0416/192816_ad625b0a_1355277.png "Screen Shot 2019-04-16 at 5.54.59 PM.png")
 
-
 ## 三、AppStore
 
 
@@ -115,7 +115,7 @@ void hikari_bcf(void){};
 
 - 使用`Hikari`编译器`archive`后，找到生成的`.xcarchive`文件，右键`show Package Contents`,里面的`info.plsit`中有`DefaultToolchainOverrideInfo`,删掉它，再上传
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0416/192730_34ca6741_1355277.png "Snip20190416_1.png")
+![](https://images.gitee.com/uploads/images/2019/0416/192730_34ca6741_1355277.png "Snip20190416_1.png")
 
 <br>
 

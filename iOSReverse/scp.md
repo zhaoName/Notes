@@ -30,7 +30,8 @@ scp [可选参数] file_source file_target
 ```
 #### 0x02安装
 对iOS10的用户来说，使用yalu越狱后就没有scp这个工具了。这时我们可以取巧。
- + 安装`OpenSSH`，然后到手机目录`/usr/bin/scp`，将`scp`复制到电脑备用。
+
++ 安装`OpenSSH`，然后到手机目录`/usr/bin/scp`，将`scp`复制到电脑备用。
 + 将`OpenSSH`卸载(iOS10 yalu越狱的设备不需要安装)。
 + 将电脑上的`scp`复制到手机的`/usr/bin/`目录下
 + `ssh`登录到手机执行以下命令 赋予其权限

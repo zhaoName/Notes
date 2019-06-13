@@ -126,7 +126,7 @@ NSLog(@"添加KVO之后person1的父类%@", [object_getClass(self.person1) super
 
 - 添加`KVO`之后
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0417/104359_5c427002_1355277.png "Screen Shot 2019-04-17 at 10.39.41 AM.png")
+![](https://images.gitee.com/uploads/images/2019/0417/104359_5c427002_1355277.png "Screen Shot 2019-04-17 at 10.39.41 AM.png")
 
 ### 0x03 验证
 
@@ -223,8 +223,8 @@ $ nm Foundation | grep ValueAndNotify
 
 - (Class)class
 {
-    // 调用[self.person1 class]返回的还是KVOPerson
-    return self.superClass;
+	// 调用[self.person1 class]返回的还是KVOPerson
+	return self.superClass;
 }
 
 // 重写父类KVOPerson的方法

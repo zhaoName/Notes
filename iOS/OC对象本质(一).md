@@ -350,6 +350,7 @@ void *malloc_zone_calloc(malloc_zone_t *zone, size_t num_items, size_t size)
 **总结：**`OC`中内存对齐是以16的倍数分配内存，对于一个实例对象来说，先按结构体的内存对齐分配内存(必须有的内存大小)，然后再按`OC`中内存对齐(系统实际分配的)。
 
 
+
 **相关内容**
 
 - [OC对象本质(二)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(二).md)

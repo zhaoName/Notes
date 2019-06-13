@@ -172,7 +172,8 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 - 若设置关联对象某个`value`为`nil`，则相当于移除`AssociationsHashMap`中一对`key`和`ObjectAssociationMap`
 
-- 关联对象的底层设计决定关联对象没有弱引用`weak`的效果(类似字典的value不能为nil)。
+- 关联对象的底层设计决定关联对象没有弱引用`weak`的效果。
+
 
 **相关内容**
 
