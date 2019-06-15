@@ -509,7 +509,7 @@ static void _I_ZNPerson_test(ZNPerson * self, SEL _cmd)
 
 <br>
 
-## 三、`Block`类型
+## 三、`Block`的类型
 
 
 前面说到`Block`的实质是一个`OC`对象，那`Blcok`就可以通过调用`class`方法或`isa`指针查看其类型。下面介绍下`Block`的三种类型。
@@ -570,10 +570,129 @@ NSLog(@"类型：%@ === %@ === %@", [ZNBlock class], [[ZNBlock class] superclass
 
 ### 0x04 三种类型的`Block`存储域
 
-从三种类型的`Block`的类名中也可以推断出其存储域。`__NSGlobalBlock__`和全局变量一样放在数据断，`__NSStackBlock__`放在栈段，`__NSMallocBlock__`放在堆段。
+从三种类型的`Block`的类名中也可以推断出其存储域。`__NSGlobalBlock__`和全局变量一样放在数据段，`__NSStackBlock__`放在栈段，`__NSMallocBlock__`放在堆段。
 
 
 ![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/185853_1d8e204f_1355277.png "Snip20190615_6.png")
+
+
+### 0x05 每种`Block`类型`copy`后结果
+
+上面已知`__NSStackBlock__`类型`Block``copy`后会变成`__NSMallocBlock__ `类型的`Block`,那其他两种情况呢？
+
+- `__NSGlobalBlock__`
+
+```
+void (^ZNBlock)(void) = ^{
+    NSLog(@"Hello, World!===");
+};
+NSLog(@"类型：%@ === %@", [ZNBlock class], [ZNBlock copy]);
+
+// 打印结果 
+2019-06-15 23:57:56.001434+0800 BlockNature[79338:6993891] 类型：__NSGlobalBlock__ === <__NSGlobalBlock__: 0x1000010a8>
+```
+
+可以看出`__NSGlobalBlock__`类型的`Block``copy `后还是`__NSGlobalBlock__`类型
+
+- `__NSMallocBlock__ `
+
+```
+int age = 10;
+void (^ZNBlock)(void) = [^{
+    NSLog(@"Hello, World!===%d", age);
+} copy];
+NSLog(@"类型：%@ === %@", [ZNBlock class], [ZNBlock copy]);
+
+// 打印结果
+2019-06-16 00:00:59.100039+0800 BlockNature[79384:7013195] 类型：__NSMallocBlock__ === <__NSMallocBlock__: 0x100564000>
+```
+
+`__NSMallocBlock__ `类型`Block``copy`后还是`__NSMallocBlock__ `类型，但其引用计数会加1.
+
+**总结：**
+
+![输入图片说明](https://images.gitee.com/uploads/images/2019/0616/000530_8bd41c29_1355277.png "Snip20190616_9.png")
+
+
+## 四、`ARC `环境下`Block `的`copy `操作
+
+
+上面查看`Block`的类型都是在`MRC`环境下查看的。这是因为在`ARC`环境下编译器会帮我们自动管理内存，就会有很多看不见的操作发生，不利于我们理解本质问题。
+
+但实际编程中都是在`ARC`环境下进行的，且多种情况下编译器会根据情况**自动将栈上的block复制到堆上**。
+
+### 0x01`block `作为函数返回值时
+
+```
+typedef void(^ZNBlock)(void);
+
+ZNBlock returnBlock ()
+{
+    int age = 10;
+    ZNBlock block = ^{
+        NSLog(@"Hello, World!===%d", age);
+    };
+    NSLog(@"类型：%@", block);
+    return block;
+}
+```
+
+- MRC 打印结果
+
+```
+2019-06-16 00:07:54.450740+0800 BlockNature[79451:7055940] 类型：<__NSStackBlock__: 0x7ffeefbff528>
+```
+
+- ARC 打印结果
+
+```
+2019-06-16 00:09:58.738542+0800 BlockNature[79470:7068636] 类型：<__NSMallocBlock__: 0x10182e910>
+```
+
+### 0x02 将`Block`赋值给`__strong`指针时
+
+```
+typedef void(^ZNBlock)(void);
+
+int age = 10;
+ZNBlock block = ^{
+    NSLog(@"Hello, World!===%d", age);
+};
+    
+NSLog(@"类型：%@", block)
+```
+
+- MRC 打印结果
+
+```
+2019-06-16 00:17:55.299014+0800 BlockNature[79562:7117302] 类型：<__NSStackBlock__: 0x7ffeefbff548>
+```
+
+- ARC 打印结果
+
+```
+2019-06-16 00:17:37.311790+0800 BlockNature[79552:7115435] 类型：<__NSMallocBlock__: 0x100538ad0>
+```
+
+### 0x03 `Block `作为Cocoa API中方法名含有`usingBlock `的方法参数时
+
+```
+// 数组遍历
+[@[] enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            
+}];
+```
+
+### 0x04 `Block `作为`GCD API`的方法参数时
+
+```
+// GCD 异步延时
+dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+	
+});
+```
+
+**这四种情况在`ARC`环境下都会将`Block`从栈上自动赋值到堆上**
 
 <br>
 
