@@ -1,4 +1,4 @@
-# Block(一)本质
+# Block本质(一)
 
 <br>
 
@@ -156,7 +156,7 @@ struct __main_block_impl_0 {
     struct __block_impl impl;
     struct __main_block_desc_0* Desc;
     int c;
-    // C++中的构造函数(类似OC中的init方法) 返回结构体对象
+    // C++ 中的构造函数(类似 OC 中的 init 方法) 返回结构体对象
     __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int _c, int flags=0) : c(_c) {
         impl.isa = &_NSConcreteStackBlock;
         impl.Flags = flags;
@@ -165,7 +165,7 @@ struct __main_block_impl_0 {
     }
 };
 
-// 封装了block执行逻辑的函数
+// 封装了 block 执行逻辑的函数
 static void __main_block_func_0(struct __main_block_impl_0 *__cself, int a, int b)
 {
     int c = __cself->c; // bound by copy
@@ -182,9 +182,9 @@ int main(int argc, const char * argv[]) {
     /* @autoreleasepool */ 
     { __AtAutoreleasePool __autoreleasepool;
         int c = 3;
-        // 定义block
+        // 定义 block
         void(*ZNBlock)(int a, int b) = ((void (*)(int, int))&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, c));
-        // 调用block 即执行block内部代码
+        // 调用 block 即执行 block 内部代码
         ((void (*)(__block_impl *, int, int))((__block_impl *)ZNBlock)->FuncPtr)((__block_impl *)ZNBlock, 1, 2);
     }
     return 0;
@@ -275,7 +275,7 @@ isa = &_NSConcreteStackBlock
 
 <br>
 
-## 二、捕获变量
+## 二、捕获基本数据类型变量
 
 ### 0x01 局部变量
 
@@ -309,7 +309,7 @@ struct __main_block_impl_0 {
 
 static void __main_block_func_0(struct __main_block_impl_0 *__cself)
 {
-	// 实际 block 中打印的变量c 是block内部的变量c 不是局部变量c
+	// 实际 block 中打印的变量 c 是 block 内部的变量 c 不是局部变量 c
     int c = __cself->c; // bound by copy
     NSLog((NSString *)&__NSConstantStringImpl__var_folders_cl_ztrmqfr12jd289xtmjfhsr340000gn_T_main_104428_mi_0, c);
 }
@@ -619,7 +619,7 @@ NSLog(@"类型：%@ === %@", [ZNBlock class], [ZNBlock copy]);
 
 上面查看`Block`的类型都是在`MRC`环境下查看的。这是因为在`ARC`环境下编译器会帮我们自动管理内存，就会有很多看不见的操作发生，不利于我们理解本质问题。
 
-但实际编程中都是在`ARC`环境下进行的，且多种情况下编译器会根据情况**自动将栈上的block复制到堆上**。
+但实际编程中都是在`ARC`环境下进行的，且多种情况下编译器会根据情况**自动将栈上的`block`复制到堆上**。
 
 ### 0x01`block `作为函数返回值时
 
@@ -692,7 +692,7 @@ dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), 
 });
 ```
 
-**这四种情况在`ARC`环境下都会将`Block`从栈上自动赋值到堆上**
+**这四种情况在`ARC`环境下都会将`Block`从栈上自动复制到堆上**
 
 <br>
 
