@@ -271,7 +271,7 @@ isa = &_NSConcreteStackBlock
 
 将`Block`作为`OC`对象处理时，该类的信息存储在`_NSConcreteStackBlock `中。
 
-所有**`Block`的实质是一个`OC`对象。**
+**所以`Block`的实质是一个`OC`对象。**
 
 <br>
 
@@ -439,14 +439,14 @@ struct __main_block_impl_0 {
 
 static void __main_block_func_0(struct __main_block_impl_0 *__cself)
 {
-	// 打印全局变量也是直接访问全局变量的值
+    // 打印全局变量也是直接访问全局变量的值
     NSLog((NSString *)&__NSConstantStringImpl__var_folders_cl_ztrmqfr12jd289xtmjfhsr340000gn_T_main_6ecf16_mi_0, zn_age);
 }
 
 int main(int argc, const char * argv[]) {
     /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
 
-		// 调用构造函数 并没有将全局变量传进去
+	// 调用构造函数 并没有将全局变量传进去
         void(*ZNBlock)(void) = ((void (*)())&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA));
         zn_age = 20;
         ((void (*)(__block_impl *))((__block_impl *)ZNBlock)->FuncPtr)((__block_impl *)ZNBlock);
