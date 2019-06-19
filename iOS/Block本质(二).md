@@ -26,18 +26,18 @@ int main(int argc, const char * argv[]) {
     @autoreleasepool {
     
         ZNBlock block;
-		{
-		    ZNPerson *per = [[ZNPerson alloc] init];
-		    per.name = @"zhaoName";
-		    
-		    block = ^{
-		         NSLog(@"per.age：%@", per.name);
-		    };
-		    // MRC 下加下句代码
-		    //[per release];
-		}
-		block();
-		NSLog(@"========");
+	{
+	    ZNPerson *per = [[ZNPerson alloc] init];
+	    per.name = @"zhaoName";
+
+	    block = ^{
+		 NSLog(@"per.age：%@", per.name);
+	    };
+	    // MRC 下加下句代码
+	    //[per release];
+	}
+	block();
+	NSLog(@"========");
     }
     return 0;
 }
@@ -456,10 +456,10 @@ block();
 ```
 __block int age = 12;
 ZNBlock block_first = ^{
-	age = 13;
+     age = 13;
 };
 ZNBlock block_sec = ^{
-	age = 14;
+     age = 14;
 };
 
 ```
@@ -467,7 +467,7 @@ ZNBlock block_sec = ^{
 转换代码
 
 ```
- ZNBlock block_first = &__main_block_impl_0(__main_block_func_0, &__main_block_desc_0_DATA, (__Block_byref_age_0 *)&age, 570425344));
+ZNBlock block_first = &__main_block_impl_0(__main_block_func_0, &__main_block_desc_0_DATA, (__Block_byref_age_0 *)&age, 570425344));
 
 ZNBlock block_sec = &__main_block_impl_1(__main_block_func_1, &__main_block_desc_1_DATA, (__Block_byref_age_0 *)&age, 570425344));
 ```
@@ -625,14 +625,14 @@ static struct __main_block_desc_0 {
 int main(int argc, const char * argv[]) {
     /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
 
-        __Block_byref_per_0 per = {
-            (void*)0,(__Block_byref_per_0 *)&per,
-            33554432,
-            sizeof(__Block_byref_per_0),
-            __Block_byref_id_object_copy_131,
-            __Block_byref_id_object_dispose_131,
-            [[ZNPerson alloc] init]};
-        }
+	__Block_byref_per_0 per = {
+	    (void*)0,(__Block_byref_per_0 *)&per,
+	    33554432,
+	    sizeof(__Block_byref_per_0),
+	    __Block_byref_id_object_copy_131,
+	    __Block_byref_id_object_dispose_131,
+	    [[ZNPerson alloc] init]};
+	}
     ...
 }
 ```
@@ -761,7 +761,7 @@ int main(int argc, const char * argv[]) {
 ```
 - (void)test
 {
-	__unsafe_unretained ZNPerson *weakSelf = self;
+    __unsafe_unretained ZNPerson *weakSelf = self;
     self.block = ^{
         NSLog(@"name is %@", weakSelf.name);
     };
