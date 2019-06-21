@@ -44,6 +44,8 @@
 ## iOSReverse
 
 
+- [Hook 可变参数](https://github.com/zhaoName/Notes/blob/master/iOSReverse/Hook%E5%8F%AF%E5%8F%98%E5%8F%82%E6%95%B0.md)
+
 - [Hikari](https://github.com/zhaoName/Notes/blob/master/iOSReverse/Hikari.md)
 
 - [逆向中获取Block的参数和返回值](https://github.com/zhaoName/Notes/blob/master/iOSReverse/%E9%80%86%E5%90%91%E4%B8%AD%E8%8E%B7%E5%8F%96Block%E7%9A%84%E5%8F%82%E6%95%B0%E5%92%8C%E8%BF%94%E5%9B%9E%E5%80%BC.md)
