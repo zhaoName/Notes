@@ -150,14 +150,19 @@ struct Person2 {
 
 	-  对于`struct`或`union`的各个成员。第一个成员位于偏移为0的位置，以后每一个数据成员的偏移量必须是`min(#pragma pack()指定的数，这个数据成员的自身长度)`的倍数。
 
-	- 在`struct`或`union`数据成员完成各自对齐之后，其本身也要进行对齐。规则是取`min(#pragma pack指定的数值, `struct`(或`union`)中最大数据成员长度)`的整数倍
+	- 在`struct`或`union`数据成员完成各自对齐之后，其本身也要进行对齐。规则是取`min(#pragma pack指定的数值, struct(或union)中最大数据成员长度)`的整数倍
+
+	
+- `OC`中`#pragma pack`的值默认是8
+
+![](https://images.gitee.com/uploads/images/2019/0623/142934_fc9c735e_1355277.png "Object_image_add1.png")
 
 
 下面解释为啥同样的结构体，成员变放置的位置不同会导致其占用内存不一样。
 
 - p1
 
-对于结构体`p1`来说，第一个成员`a`是`char`类型占用一个字节，偏移量是0；第二个成员是`double`类型占8个字节, min(#pragma pack()指定的数, 8)可知第二个成员偏移量是8，所以在`char`之后编译器会留出7个字节的空间，不会放数据；第三个成员是`int`类型占用4个字节，偏移量为4，起始偏移地址是16刚好是4的倍数，无需放入多余字节；第四个成员是`short`占用2个字节，起始偏移地址是20刚好是2的倍数。至此**规则一**对齐完成，`p1`的内存大概为这样的
+对于结构体`p1`来说，第一个成员`a`是`char`类型占用一个字节，偏移量是0；第二个成员是`double`类型占8个字节, `min(#pragma pack()指定的数, 8)`可知第二个成员偏移量是8，所以在`char`之后编译器会留出7个字节的空间，不会放数据；第三个成员是`int`类型占用4个字节，偏移量为4，起始偏移地址是16刚好是4的倍数，无需放入多余字节；第四个成员是`short`占用2个字节，起始偏移地址是20刚好是2的倍数。至此**规则一**对齐完成，`p1`的内存大概为这样的
 
 ```
 // o表示真实数据 x表示编译器放入的多余字节
@@ -356,6 +361,13 @@ void *malloc_zone_calloc(malloc_zone_t *zone, size_t num_items, size_t size)
 - [OC对象本质(二)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(二).md)
 
 - [OC对象本质(三)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(三).md)
+
+
+<br>
+
+参考：
+
+- [内存对齐](https://www.cnblogs.com/yxwkf/p/5080849.html)
 
 <br>
 
