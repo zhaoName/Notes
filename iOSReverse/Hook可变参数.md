@@ -125,6 +125,8 @@ int main() {
 ## 二、`hook `可变参数
 
 
+### 0x01 runtime方法交换
+
 开始的想法是`hook``stringWithFormat:`和`initWithFormat:`这两个方法。但在`logos`语法中会报错
 
 ![](https://images.gitee.com/uploads/images/2019/0621/231053_1b9bf89c_1355277.png "hookArgs_image01.png")
@@ -205,8 +207,73 @@ CHConstructor {
 2019-06-21 23:05:21.868971+0800 HookArgList[298:8685] sign:HookArguments:<NSObject: 0x1c00106a0>
 ```
 
-但是这样写有个不好的地方就是不能全局`hook`，必须要找到对应的方法。
+但是这样写有个不好的地方就是不能全局`hook NSString`的方法，必须要找到对应的方法。
 
+
+### 0x02 `method_exchangeImplementations`
+
+
+`logos`语法不支持直接`hook`带可变参数的`OC`方法，我们可以取巧使用`runtime`的黑魔法。新建一个`NNString `的分类，在分类中实现方法交换
+
+
+```
+// NSString+hook.m
++ (void)load
+{
+    Method orignalClassMethod = class_getClassMethod([NSString class], @selector(stringWithFormat:));
+    Method currentClassMethod = class_getClassMethod([NSString class], @selector(zn_stringWithFormat:));
+    method_exchangeImplementations(orignalClassMethod, currentClassMethod);
+    
+    Method origanlInstanceMethod = class_getInstanceMethod([NSString class], @selector(initWithFormat:));
+    Method currentInstanceMethod = class_getInstanceMethod([NSString class], @selector(zn_initWithFormat:));
+    method_exchangeImplementations(origanlInstanceMethod, currentInstanceMethod);
+}
+
+
++ (NSString *)zn_stringWithFormat:(NSString *)format, ...
+{
+    va_list va;
+    va_start(va, format);
+    
+    char buf[1024];
+    memset(buf, 0, 1024);
+    
+    vsprintf(buf, [format cStringUsingEncoding:4], va);
+    va_end(va);
+    
+    NSString *result = [[NSString alloc] initWithFormat:format arguments:va];
+    NSLog(@"stringWithFormat========format：%@====vsprintf：%s====result：%@", format, buf, result);
+    return result;
+}
+
+- (NSString *)zn_initWithFormat:(NSString *)format, ...
+{
+    va_list va;
+    va_start(va, format);
+    
+    char *buf[1024];
+    memset(buf, 0, 1024);
+    
+    memcpy(buf, va, 20*8);
+    va_end(va);
+    
+    NSString *result = [[NSString alloc] zn_initWithFormat:format, buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8], buf[9], buf[10], buf[11], buf[12],buf[13], buf[14], buf[15], buf[16], buf[17],buf[18], buf[19]];
+    NSLog(@"stringWithFormat========format：%@====vsprintf：%s====result：%@", format, buf, result);
+    return result;
+}
+```
+
+然后直接运行程序也能拦截到`stringWithFormat:`和`initWithFormat:`
+
+
+```
+// 打印结果
+2019-06-24 16:06:08.432419 HookArgList[2924:559851] initWithFormat========format：%d %f %@====buf：====result：10 3.141593 instanceTestOC
+
+2019-06-24 16:06:08.432669 HookArgList[2924:559851] stringWithFormat========format：%d %f %@====vsprintf：20 5.200000 @====result：20 5.200000 classTestOC
+
+2019-06-24 16:06:08.432902 HookArgList[2924:559851] stringWithFormat========format：HookArguments:%@====vsprintf：HookArguments:@====result：HookArguments:<NSObject: 0x17400a9b0>
+```
 
 <br>
 
