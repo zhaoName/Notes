@@ -4,9 +4,11 @@
 `scp`是 `secure copy`的缩写, `scp`是`linux`系统下基于`ssh`登陆进行安全的远程文件拷贝命令。
 
 #### 0x00语法
+
 ```
 scp [可选参数] file_source file_target 
 ```
+
 #### 0x01参数
 
 ```
@@ -28,12 +30,17 @@ scp [可选参数] file_source file_target
 -P port：注意是大写的P, port是指定数据传输用到的端口号
 -S program： 指定加密传输时所使用的程序。此程序必须能够理解ssh(1)的选项
 ```
+
 #### 0x02安装
-对iOS10的用户来说，使用yalu越狱后就没有scp这个工具了。这时我们可以取巧。
+
+对 iOS10 的用户来说，使用`yalu`越狱后就没有`scp`这个工具了。这时我们可以取巧。
 
 + 安装`OpenSSH`，然后到手机目录`/usr/bin/scp`，将`scp`复制到电脑备用。
+
 + 将`OpenSSH`卸载(iOS10 yalu越狱的设备不需要安装)。
+
 + 将电脑上的`scp`复制到手机的`/usr/bin/`目录下
+
 + `ssh`登录到手机执行以下命令 赋予其权限
 	 
 ```
@@ -46,17 +53,19 @@ $ chmod 777 scp
 
 - wifi
 
-	```
-	$ scp 本地文件 root@ip:目标路径
-	```
+```
+$ scp 本地文件 root@ip:目标路径
+```
+
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215191416494.png)
 
 - USB
 
-	- iPhone默认是使用22端口进行SSH通信，采用的是TCP协议（可以查看/etc/ssh/sshd_config的Port字段）。
+	- iPhone 默认是使用22端口进行 SSH 通信，采用的是 TCP 协议（可以查看`/etc/ssh/sshd_config`的 Port 字段）。
 
 	- 要保证开启端口映射`iproxy 2222 22`
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215192457905.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+	
+![](https://img-blog.csdnimg.cn/20181215192457905.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
 
 
 

@@ -545,7 +545,7 @@ union isa_t {
 
 - `has_assoc `：是否有设置过关联对象，如果没有，释放时会更快
 
-- `has_cxx_dtor `：是否有C++的析构函数（.cxx_destruct），如果没有，释放时会更快
+- `has_cxx_dtor `：是否有C++的析构函数（`.cxx_destruct`），如果没有，释放时会更快
 
 - `shiftcls `：存储着`Class`、`Meta-Class`对象的内存地址信息
 
