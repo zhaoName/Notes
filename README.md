@@ -16,6 +16,8 @@
 
 - [runtime(三) - objc_msgSend](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%B8%89)%20-%20objc_msgSend.md)
 
+- [runtime(四) - super](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E5%9B%9B)%20-%20super.md)
+
 - [Block本质(一)](https://github.com/zhaoName/Notes/blob/master/iOS/Block%E6%9C%AC%E8%B4%A8(%E4%B8%80).md)
 
 - [Block本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/Block%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)
