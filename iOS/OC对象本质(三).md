@@ -7,7 +7,7 @@
 
 `OC`中的`Class`类型在底层定义为`typedef struct objc_class *Class`，而结构体`struct objc_class`可以在`runtime`源码中找到。
 
-`objc4`源码中`struct objc_class`的定义太复杂，我们可以需要的信息大概是这些
+`objc4`源码中`struct objc_class`的定义太复杂，我们需要的信息大概是这些
 
 ![输入图片说明](https://gitee.com/uploads/images/2019/0425/180815_3b90d2df_1355277.png "Snip20190425_6.png")
 
