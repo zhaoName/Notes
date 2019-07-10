@@ -178,7 +178,7 @@ for (int i=0; i<count; i++) {
 {
 	// 拦截所有 UIButton 的点击事件
     Method method1 = class_getInstanceMethod(self, @selector(sendAction:to:forEvent:));
-    Method method2 = class_getInstanceMethod(self, @selector(mj_sendAction:to:forEvent:));
+    Method method2 = class_getInstanceMethod(self, @selector(zn_sendAction:to:forEvent:));
     method_exchangeImplementations(method1, method2);
 }
 
@@ -187,7 +187,7 @@ for (int i=0; i<count; i++) {
     NSLog(@"%@-%@-%@", self, target, NSStringFromSelector(action));
     
     // 调用系统原来的实现
-    [self mj_sendAction:action to:target forEvent:event];
+    [self zn_sendAction:action to:target forEvent:event];
     
     if ([self isKindOfClass:[UIButton class]]) {
         // 拦截了所有按钮的事件
