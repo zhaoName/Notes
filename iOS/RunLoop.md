@@ -480,12 +480,171 @@ static int32_t __CFRunLoopRun(CFRunLoopRef rl, CFRunLoopModeRef rlm, CFTimeInter
 可以看到，实际上`RunLoop `就是这样一个函数，其内部是一个`do-while `循环。当你调用`CFRunLoopRun() `时，线程就会一直停留在这个循环里；直到超时或被手动停止，该函数才会返回。
 
 
+## 五、线程保活
 
+
+### 0x01 `[[NSRunLoop currentRunLoop] run]`
+
+我们来看下苹果文档上对`run`方法的解释
+
+> If no input sources or timers are attached to the run loop, this method exits immediately; otherwise, it runs the receiver in the NSDefaultRunLoopMode by repeatedly invoking runMode:beforeDate:. In other words, this method effectively begins an infinite loop that processes data from the run loop’s input sources and timers.
+
+> Manually removing all known input sources and timers from the run loop is not a guarantee that the run loop will exit. macOS can install and remove additional input sources as needed to process requests targeted at the receiver’s thread. Those sources could therefore prevent the run loop from exiting.
+
+> If you want the run loop to terminate, you shouldn't use this method. Instead, use one of the other run methods and also check other arbitrary conditions of your own, in a loop. A simple example would be:
+
+```
+BOOL shouldKeepRunning = YES; // global
+NSRunLoop *theRL = [NSRunLoop currentRunLoop];
+while (shouldKeepRunning && [theRL runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]]);
+```
+> where shouldKeepRunning is set to NO somewhere else in the program.
+
+- 若`RunLoop `中没有`observer/port/timer`，`run`方法会马上结束
+
+- `run`方法内部会重复调用`runMode:beforeDate:`
+
+- 若想手动控制`RunLoop`的开启和销毁，则不能调用`run`，而应该像示例`while`中调用`runMode:beforeDate:`
+
+
+### 0x02 具体实现
+
+```
+// ZNThread.m
+- (void)dealloc
+{
+    NSLog(@"%s", __func__);
+}
+
+// ViewController.m
+@property (nonatomic, strong) ZNThread *thread;/**< */
+@property (nonatomic, assign) BOOL shouldKeepRunning;/**< */
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.shouldKeepRunning = YES;
+    self.thread = [[ZNThread alloc] initWithTarget:self selector:@selector(startRunLoop) object:nil];
+    [self.thread start];
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    [self stopRunLoop];
+}
+
+- (void)startRunLoop
+{
+    NSLog(@"%s----%@", __func__, [NSThread currentThread]);
+    [[NSRunLoop currentRunLoop] addPort:[NSPort new] forMode:NSDefaultRunLoopMode];
+    while (self.shouldKeepRunning) {
+        [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]];
+    }
+    NSLog(@"RunLoop end-----");
+}
+
+/// 手动结束 RunLoop
+- (IBAction)stopRunLoop
+{
+    if (self.thread == nil) return;
+    
+    // 这里注意 waitUntilDone 一定要设置为YES
+    // 否则会出现控制器已销毁，再去销毁 RunLoop，这回导致坏内存访问
+    [self performSelector:@selector(stop) onThread:self.thread withObject:nil waitUntilDone:YES];
+    NSLog(@"end-----%@", [NSThread currentThread]);
+}
+
+- (void)stop
+{
+    _shouldKeepRunning = NO;
+    CFRunLoopStop(CFRunLoopGetCurrent());
+    // 为防止重复销毁 RunLoop
+    self.thread = nil;
+    NSLog(@"%s---%@", __func__, [NSThread currentThread]);
+}
+
+// 子线程中做事情
+- (void)threadKeepLive
+{
+    NSLog(@"%s---%@", __func__, [NSThread currentThread]);
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    [self performSelector:@selector(threadKeepLive) onThread:self.thread withObject:nil waitUntilDone:NO];
+}
+
+- (void)dealloc
+{
+    NSLog(@"%s", __func__);
+}
+```
+
+- 手动销毁`RunLoop`
+
+```
+2019-07-12 15:41:28.699297 RunLoopDemo[758:113100] -[ViewController startRunLoop]----<ZNThread: 0x170271ec0>{number = 3, name = (null)}
+
+2019-07-12 15:41:30.475383 RunLoopDemo[758:113100] -[ViewController threadKeepLive]---<ZNThread: 0x170271ec0>{number = 3, name = (null)}
+2019-07-12 15:41:30.640859 RunLoopDemo[758:113100] -[ViewController threadKeepLive]---<ZNThread: 0x170271ec0>{number = 3, name = (null)}
+2019-07-12 15:41:30.822796 RunLoopDemo[758:113100] -[ViewController threadKeepLive]---<ZNThread: 0x170271ec0>{number = 3, name = (null)}
+
+2019-07-12 15:41:36.400358 RunLoopDemo[758:113100] -[ViewController stop]---<ZNThread: 0x170271ec0>{number = 3, name = (null)}
+2019-07-12 15:41:36.400611 RunLoopDemo[758:113100] RunLoop end-----
+2019-07-12 15:41:36.401533 RunLoopDemo[758:113007] -[ZNThread dealloc]
+2019-07-12 15:41:36.402046 RunLoopDemo[758:113007] end-----<NSThread: 0x170079a80>{number = 1, name = main}
+
+2019-07-12 15:41:39.769626 RunLoopDemo[758:113007] -[ViewController dealloc]
+```
+
+- 销毁`ViewController`后，`RunLoop`也会自动销毁
+
+```
+2019-07-12 15:43:14.318075 RunLoopDemo[761:113546] -[ViewController startRunLoop]----<ZNThread: 0x17007fa40>{number = 3, name = (null)}
+
+2019-07-12 15:43:15.248557 RunLoopDemo[761:113546] -[ViewController threadKeepLive]---<ZNThread: 0x17007fa40>{number = 3, name = (null)}
+2019-07-12 15:43:15.444342 RunLoopDemo[761:113546] -[ViewController threadKeepLive]---<ZNThread: 0x17007fa40>{number = 3, name = (null)}
+2019-07-12 15:43:15.610601 RunLoopDemo[761:113546] -[ViewController threadKeepLive]---<ZNThread: 0x17007fa40>{number = 3, name = (null)}
+
+2019-07-12 15:43:17.623291 RunLoopDemo[761:113546] -[ViewController stop]---<ZNThread: 0x17007fa40>{number = 3, name = (null)}
+2019-07-12 15:43:17.623553 RunLoopDemo[761:113546] RunLoop end-----
+2019-07-12 15:43:17.626384 RunLoopDemo[761:113491] -[ZNThread dealloc]
+2019-07-12 15:43:17.626794 RunLoopDemo[761:113491] end-----<NSThread: 0x17406a500>{number = 1, name = main}
+
+2019-07-12 15:43:18.138968 RunLoopDemo[761:113491] -[ViewController dealloc]
+```
+
+## 六、苹果用 RunLoop 实现的功能
+
+### 0x01 `PerformSelecter `
+
+- 当调用`NSObject ` 的`performSelecter:afterDelay:`后，实际上其内部会创建一个`Timer `并添加到当前线程的`RunLoop `中。所以如果当前线程没有`RunLoop `，则这个方法会失效。
+
+> This method sets up a timer to perform the aSelector message on the current thread’s run loop. The timer is configured to run in the default mode (NSDefaultRunLoopMode). When the timer fires, the thread attempts to dequeue the message from the run loop and perform the selector. It succeeds if the run loop is running and in the default mode; otherwise, the timer waits until the run loop is in the default mode
+
+- 当调用`performSelector:onThread:`时，实际上其会创建一个`Timer `加到对应的线程去，同样的，如果对应线程没有`RunLoop `该方法也会失效。
+
+
+### 0x02 `GCD`
+
+
+`GCD `提供的某些接口也用到了`RunLoop `， 例如 `dispatch_async()`。当调用`dispatch_async(dispatch_get_main_queue(), block)`时，`libDispatch`会向主线程的`RunLoop `发送消息，`RunLoop `会被唤醒，并从消息中取得这个`block `，并在回调 `__CFRUNLOOP_IS_SERVICING_THE_MAIN_DISPATCH_QUEUE__()` 里执行这个 block。但这个逻辑仅限于`dispatch ` 到主线程，`dispatch `到其他线程仍然是由`libDispatch `处理的。
+
+### 0x03 `AutoreleasePool`
+
+`App `启动后，苹果在主线程`RunLoop ` 里注册了两个`Observer `，其回调都是 `_wrapRunLoopWithAutoreleasePoolHandler()`。
+
+第一个 `Observer` 监视的事件是 `Entry`(即将进入`Loop`)，其回调内会调用`_objc_autoreleasePoolPush()` 创建自动释放池。其 `order` 是-2147483647，优先级最高，保证创建释放池发生在其他所有回调之前。
+
+第二个 Observer 监视了两个事件： BeforeWaiting(准备进入休眠) 时调用`_objc_autoreleasePoolPop()`和`_objc_autoreleasePoolPush() `释放旧的池并创建新池；Exit(即将退出Loop) 时调用` _objc_autoreleasePoolPop()` 来释放自动释放池。这个`Observer ` 的`order ` 是 2147483647，优先级最低，保证其释放池子发生在其他所有回调之后。
+
+在主线程执行的代码，通常是写在诸如事件回调、`Timer `回调内的。这些回调会被`RunLoop ` 创建好的`AutoreleasePool ` 环绕着，所以不会出现内存泄漏，开发者也不必显示创建`Pool `了>
 
 
 <br>
 
-**参考：[深入理解RunLoop](https://blog.ibireme.com/2015/05/18/runloop/)**
+参考：[深入理解RunLoop](https://blog.ibireme.com/2015/05/18/runloop/)
 
 写于2019-07-10
 
