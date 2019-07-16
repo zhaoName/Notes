@@ -8,11 +8,13 @@
 	$ /usr/bin/ruby -e "$(curl -fsSL
 https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
+	
 - 利用`brew`安装签名工具`ldid`
 
 	```
 	$ brew install ldid
 	```
+	
 - 设置环境变量
 
 	```
