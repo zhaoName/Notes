@@ -4,91 +4,101 @@
 
 - 安装`brew`
 
-	```
-	$ /usr/bin/ruby -e "$(curl -fsSL
-https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
-	```
+```
 	
 - 利用`brew`安装签名工具`ldid`
 
-	```
-	$ brew install ldid
-	```
+```
+$ brew install ldid
+```
 	
 - 设置环境变量
 
-	```
-	export THEOS=/opt/theos
+```
+export THEOS=/opt/theos
 
-	// 在所有路径下都能使用nic.pl命令(当然也可不设置 直接用/opt/theos/bin/nic.pl)
-	export PATH=$THEOS/bin:$PATH
-	```
+// 在所有路径下都能使用nic.pl命令(当然也可不设置 直接用/opt/theos/bin/nic.pl)
+export PATH=$THEOS/bin:$PATH
+```
 
 - 使`.bash_profile`文件设置的环境变量生效
 
-	```
-	$ source ~/.bash_profile
-	```
+```
+$ source ~/.bash_profile
+```
 
 ## 二、下载Theos
 
-- 不要直接到GitHub上下载，使用`recursive`命令以保证拉取到所有子模块
+不要直接到GitHub上下载，使用`recursive`命令以保证拉取到所有子模块
 
-	```
-	$ git clone --recursive https://github.com/theos/theos.git $THEOS
-	```
+```
+$ git clone --recursive https://github.com/theos/theos.git $THEOS
+```
 
 ## 三、Tweak
 
--  `Tweak`默认会在执行`nic.pl`命令的目录下生成，那你先`cd`到你常用的目录，执行`nic.pl`选择11创建`Tweak`![在这里插入图片描述](https://img-blog.csdnimg.cn/20181220213307573.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
-	- [Choose a Template]：选择你创建`theos`的类型(必填项)
-	
-	- [Project Name]：工程的名字(必填项)
-	- [Package Name]：工程ID 类似于`bundleId`
-	- [Author/Maintainer Name]：作者 默认是mac的用户名
-	- [iphone/tweak] MobileSubstrate Bundle filter：你想要修改app的bundleId
-	- [iphone/tweak] List of applications to terminate upon installation：直接回车默认做法就行。
+### 0x01 创建`Tweak`
 
-- 编辑Makefile文件
-	
-	- 在前面加入环境变量，写清楚通过那个IP和端口访问手机
+`Tweak`默认会在执行`nic.pl`命令的目录下生成，那你先`cd`到你常用的目录，执行`nic.pl`选择 11 创建`Tweak`
 
-		```
-		export THEOS_DEVICE_IP=127.0.0.1
+![](https://img-blog.csdnimg.cn/20181220213307573.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
 
-		// 若是用wifi安装 则不用设置端口号
-		export THEOS_DEVICE_PORT=10010
-		```
+- [Choose a Template]：选择你创建`theos`的类型(必填项)
 	
-	- 若不想每次新建`Tweak`都添加IP和端口号，则可将其添加到`.bash_profile`中
+- [Project Name]：工程的名字(必填项)
+- [Package Name]：工程ID 类似于`bundleId`
+- [Author/Maintainer Name]：作者 默认是mac的用户名
+- [iphone/tweak] MobileSubstrate Bundle filter：你想要修改app的bundleId
+- [iphone/tweak] List of applications to terminate upon installation：直接回车默认做法就行。
+
+### 0x02 编辑Makefile文件
 	
-	 		$ vim ~/.bash_profile
-	 	
-	 		export THEOS=~/theos
-	 		export PATH=$THEOS/bin:$PATH
-	 		export THEOS_DEVICE_IP=127.0.0.1
-	 		export THEOS_DEVICE_PORT=10010
-	 	
-	 		$ source ~/.bash_profile
+- 在前面加入环境变量，写清楚通过那个IP和端口访问手机
+
+```
+export THEOS_DEVICE_IP=127.0.0.1
+
+// 若是用wifi安装 则不用设置端口号
+export THEOS_DEVICE_PORT=10010
+```
+	
+- 若不想每次新建`Tweak`都添加IP和端口号，则可将其添加到`.bash_profile`中
+
+```
+$ vim ~/.bash_profile
+ 	
+export THEOS=~/theos
+export PATH=$THEOS/bin:$PATH
+export THEOS_DEVICE_IP=127.0.0.1
+export THEOS_DEVICE_PORT=10010
+ 	
+$ source ~/.bash_profile
+```
 	 
-- 编译、打包、安装
+### 0x03 编译、打包、安装
 
-		$ make 
+```
+$ make 
 		
-		$ make package 
-		
-		$ make install
-		
-- 图片
-
-	在我们编写Tweak程序中可能会用到图片资源，这时要在工程中根目录下创建一个`layout`文件夹，工程安装到手机时`layout`文件夹相当于手机的根目录。
+$ make package 
 	
-   ![在这里插入图片描述](https://img-blog.csdnimg.cn/20181220223458871.png)
+$ make install
+```		
+		
+### 0x04 图片
+
+在我们编写Tweak程序中可能会用到图片资源，这时要在工程中根目录下创建一个`layout`文件夹，工程安装到手机时`layout`文件夹相当于手机的根目录。
+	
+![](https://img-blog.csdnimg.cn/20181220223458871.png)
    
-   安装之后就可以在手机的`/Library/Caches/`下找到工程中的图片,使用`UIImage`的方法获取图片
-   
-   		[UIImage imageWithContentsOfFile:@"/Library/Caches/xxx.png"]
+安装之后就可以在手机的`/Library/Caches/`下找到工程中的图片,使用`UIImage`的方法获取图片
+
+```   
+[UIImage imageWithContentsOfFile:@"/Library/Caches/xxx.png"]
+```
 
 ##  坑
 
