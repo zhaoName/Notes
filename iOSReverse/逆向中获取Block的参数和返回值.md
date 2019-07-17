@@ -109,7 +109,7 @@ Process 853 stopped
 
 # 0x00000000000e4000就是要找的基地址
 [  0] 0x00000000000e4000 /var/containers/Bundle/Application/FC7B787B-97A2-4BDD-A9BE-EDE2C00EBA7A/AntiBlock.app/AntiBlock(0x00000001000e4000)
-[  1] 0x0000000100140000 /Users/chuangqi/Library/Developer/Xcode/iOS DeviceSupport/10.1.1 (14B100)/Symbols/usr/lib/dyld
+[  1] 0x0000000100140000 ~/Developer/Xcode/iOS DeviceSupport/10.1.1 (14B100)/Symbols/usr/lib/dyld
 [  2] 0x0000000100100000 /Library/MobileSubstrate/MobileSubstrate.dylib(0x0000000100100000)
 ...
 ```
@@ -330,11 +330,128 @@ enum {
 ```
 
 
-## 二、Frida
+## 二、chisel
 
+[chisel](https://github.com/facebook/chisel) 是`Facebook`开源的`Python`脚本库，是对`lldb`的扩展，提供很多有用的命令。
+
+### 0x01 安装
+
+`Mac`上用如下命令安装，默认安装到`/usr/local/opt/chisel`。也可手动到`GitHub`上下载。
+
+```
+$ brew update
+
+$ brew install chisel
+```
+
+在根目录下打开`.lldbinit`文件，不存在用下面命令创建
+
+```
+$ touch .lldbinit 
+$ open .lldbinit
+```
+
+将下面代码添加`.lldbinit`
+
+```
+# ~/.lldbinit  通过 brew 安装 添加这句
+command script import /usr/local/opt/chisel/libexec/fblldb.py
+
+# 手动下载 添加这句
+command script import /path/to/fblldb.py
+```
+
+重启`Xcode`就可使用`chisel`命令。
+
+
+
+
+### 0x02 `pblock`
+
+进入动态调试模式，找到基地址
+
+```
+(lldb) im li -o -f
+[  0] 0x000000000001c000 /var/containers/Bundle/Application/6BD755BD-784F-4AAB-9F68-91713B4347BD/AntiBlock.app/AntiBlock(0x000000010001c000)
+[  1] 0x00000001000cc000 ~/Developer/Xcode/iOS DeviceSupport/10.2 (14C92)/Symbols/usr/lib/dyld
+[  2] 0x0000000100040000 /Library/MobileSubstrate/MobileSubstrate.dylib(0x0000000100040000)
+```
+
+用`IDA`找到`-[ViewController touchesBegan:withEvent:]`的偏移地址
+
+```
+...
+__text:0000000100007BA0                 LDUR            X2, [X29,#var_8]
+__text:0000000100007BA4                 LDR             X1, [X1] ; "getParam:"
+__text:0000000100007BA8                 STR             X0, [SP,#0x30+var_30]
+__text:0000000100007BAC                 MOV             X0, X2  ; void *
+__text:0000000100007BB0                 LDR             X2, [SP,#0x30+var_30]
+__text:0000000100007BB4                 BL              _objc_msgSend
+__text:0000000100007BB8                 ADD             X0, SP, #0x30+var_20
+__text:0000000100007BBC                 MOV             X1, #0
+...
+```
+
+在`_objc_msgSend`出下断点，并触发断点
+
+```
+(lldb) br s -a 0x000000000001c000+0x0000000100007BB4
+Breakpoint 1: where = AntiBlock`-[ViewController touchesBegan:withEvent:] + 100 at ViewController.m:120:5, address = 0x0000000100023bb4
+(lldb) c
+Process 2614 resuming
+Process 2614 stopped
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+    frame #0: 0x0000000100023bb4 AntiBlock`-[ViewController touchesBegan:withEvent:](self=0x000000013be07080, _cmd="touchesBegan:withEvent:", touches=1 element, event=0x00000001700fe600) at ViewController.m:120:5
+   117 	
+   118 	- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+   119 	{
+-> 120 	    [self getParam:^(int age, NSDictionary *dict, Person *per) {
+   121 	        
+   122 	        NSLog(@"block:%d, %@, %@", age, dict, per.name);
+   123 	    }];
+Target 0: (AntiBlock) stopped.
+```
+
+获取`Block`的地址，用`pblock`获取`Block`的函数地址和方法签名
+
+```
+(lldb) po (char *)$x2
+<__NSGlobalBlock__: 0x1000280c8>
+
+(lldb) pblock 0x1000280c8
+error: error: cannot initialize a parameter of type 'id<NSCopying> _Nonnull' with an rvalue of type 'NSString *'
+passing argument to parameter 'aKey' here
+error: cannot initialize a parameter of type 'id<NSCopying>  _Nonnull const __unsafe_unretained' with an rvalue of type 'NSString *'
+error: error: cannot initialize a parameter of type 'id<NSCopying> _Nonnull' with an rvalue of type 'NSString *'
+passing argument to parameter 'aKey' here
+error: cannot initialize a parameter of type 'id<NSCopying>  _Nonnull const __unsafe_unretained' with an rvalue of type 'NSString *'
+Traceback (most recent call last):
+  File "/usr/local/opt/chisel/libexec/fblldb.py", line 84, in runCommand
+    command.run(args, options)
+  File "/usr/local/Cellar/chisel/1.8.1/libexec/commands/FBClassDump.py", line 142, in run
+    signature = json['signature']
+TypeError: 'NoneType' object has no attribute '__getitem__'
+```
+
+若不出意外的话，会报如上错误。解决办法在[这里](https://github.com/facebook/chisel/pull/242/commits/f7f5a88b37426db8a71fb21adb29e55ae84e70c4)，这个是很久之前的`bug`,不知道为什么没有在新版(1.8.1)中修改。
+
+```
+(lldb) pblock 0x1000280c8
+Imp: 0x100023bdc    Signature: void ^(int, NSDictionary *, Person *);
+
+```
 
 <br>
+
+
+**参考：**
+
+- [逆向中获取 Block 的参数和返回值](http://iosre.com/t/block/6779)
+
+- [iOS 逆向指南：动态分析](https://xiaozhuanlan.com/topic/8469521370)
+
 <br>
 
+更新于2019-07-15
 
-
+<br>
