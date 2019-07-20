@@ -420,8 +420,250 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 ```
 
 
+## 七、`NSConditionLock`
 
 
+`NSConditionLock`是对`NSCondition`的进一步封装，可以设置具体的条件值。
+
+```
+- (id)init
+{
+	return [self initWithCondition:0];
+}
+
+- (id)initWithCondition:(NSInteger)value
+{
+    if (nil != (self = [super init])) {
+        if (nil == (_condition = [NSCondition new])) {
+            DESTROY(self);
+        }
+        else {
+            _condition_value = value;
+            [_condition setName:[NSString stringWithFormat: @"condition-for-lock-%p", self]];
+        }
+    }
+    return self;
+}
+
+- (void)lock
+{
+    [_condition lock];
+}
+
+- (void)lockWhenCondition:(NSInteger)value
+{
+    [_condition lock];
+    while (value != _condition_value) {
+        [_condition wait];
+    }
+}
+
+- (void)unlock
+{
+    [_condition unlock];
+}
+
+- (void)unlockWithCondition:(NSInteger)value
+{
+    _condition_value = value;
+    [_condition broadcast];
+    [_condition unlock];
+}
+```
+
+`NSConditionLock `能让线程按顺序执行。
+
+```
+- (void)ticket
+{
+    self.condLock = [[NSConditionLock alloc] init];
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        [self thread1];
+    });
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        [self thread2];
+    });
+    dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        [self thread3];
+    });
+}
+
+- (void)thread1
+{
+    NSLog(@"thread1---begin");
+    // 第一个执行加锁的线程可用 lock 或 lockWhenCondition: 都能成功加锁
+    //[self.condLock lock];
+    [self.condLock lockWhenCondition:0];
+    NSLog(@"%s----%@", __func__, [NSThread currentThread]);
+    [self.condLock unlockWithCondition:1];
+}
+
+- (void)thread2
+{
+    NSLog(@"thread2---begin");
+    [self.condLock lockWhenCondition:1];
+    NSLog(@"%s----%@", __func__, [NSThread currentThread]);
+    [self.condLock unlockWithCondition:2];
+}
+
+- (void)thread3
+{
+    NSLog(@"thread3---begin");
+    [self.condLock lockWhenCondition:2];
+    NSLog(@"%s----%@", __func__, [NSThread currentThread]);
+    [self.condLock unlock];
+}
+
+// 打印结果
+2019-07-20 00:16:30.070257+0800 GCD-Lock[15461:968981] thread2---begin
+2019-07-20 00:16:30.070257+0800 GCD-Lock[15461:968973] thread1---begin
+2019-07-20 00:16:30.070257+0800 GCD-Lock[15461:968971] thread3---begin
+2019-07-20 00:16:30.070687+0800 GCD-Lock[15461:968973] -[ViewController thread1]----<NSThread: 0x600001cf24c0>{number = 3, name = (null)}
+2019-07-20 00:16:30.071081+0800 GCD-Lock[15461:968981] -[ViewController thread2]----<NSThread: 0x600001cf2480>{number = 4, name = (null)}
+2019-07-20 00:16:30.072612+0800 GCD-Lock[15461:968971] -[ViewController thread3]----<NSThread: 0x600001cad500>{number = 5, name = (null)}
+```
+
+
+## 八、`dispatch_semaphore`
+
+
+`dispatch_semaphore` 信号量，可以设置初始值来控制线程的最大并发量。
+
+- 简单源码解析
+
+```
+// libdispatch   semaphore.c
+
+// 返回 0 表示成功，返回非 0 表示超时
+intptr_t dispatch_semaphore_wait(dispatch_semaphore_t dsema, dispatch_time_t timeout)
+{
+	// 将 dsema_value(初始化设置的值) 的值减 1
+	long value = os_atomic_dec2o(dsema, dsema_value, acquire);
+	// 若结果 >= 0，则直接返回
+	if (likely(value >= 0)) {
+		return 0;
+	}
+	return _dispatch_semaphore_wait_slow(dsema, timeout);
+}
+
+// 如果之前的值小于0 就会唤醒当前的 wait
+intptr_t dispatch_semaphore_signal(dispatch_semaphore_t dsema)
+{
+	// 	将 dsema_value(初始化设置的值) 的值加 1
+	long value = os_atomic_inc2o(dsema, dsema_value, release);
+	if (likely(value > 0)) {
+		return 0;
+	}
+	if (unlikely(value == LONG_MIN)) {
+		DISPATCH_CLIENT_CRASH(value, "Unbalanced call to dispatch_semaphore_signal()");
+	}
+	return _dispatch_semaphore_signal_slow(dsema);
+}
+```
+
+> When you create the semaphore, you specify the number of available resources. This value becomes the initial count variable for the semaphore. Each time you wait on the semaphore, the dispatch_semaphore_wait function decrements that count variable by 1. If the resulting value is negative, the function tells the kernel to block your thread. On the other end, the dispatch_semaphore_signal function increments the count variable by 1 to indicate that a resource has been freed up. If there are tasks blocked and waiting for a resource, one of them is subsequently unblocked and allowed to do its work
+
+
+- 用法
+
+```
+self.semaphore =  dispatch_semaphore_create(1);
+
+- (void)saleTicket
+{
+    // 若信号量的值 > 0，则代码继续往下执行
+    // 若信号量的值 <= 0，则当前线程就会阻塞状态(直到信号量值 > 0)
+    dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
+    NSInteger count = self.totalTicketCount;
+    count--;
+    sleep(.2);
+    self.totalTicketCount = count;
+    NSLog(@"还剩余%zd张票 %@", self.totalTicketCount, [NSThread currentThread]);
+    // 将信号量的值加 1，若之前的值为负数 则当前阻塞的线程会继续执行下去
+    dispatch_semaphore_signal(self.semaphore);
+}
+
+// 打印结果
+2019-07-20 14:55:47.677558+0800 GCD-Lock[18931:1525042] 还剩余14张票 <NSThread: 0x600001a61300>{number = 3, name = (null)}
+2019-07-20 14:55:47.677915+0800 GCD-Lock[18931:1525043] 还剩余13张票 <NSThread: 0x600001a5d740>{number = 4, name = (null)}
+2019-07-20 14:55:47.678287+0800 GCD-Lock[18931:1525044] 还剩余12张票 <NSThread: 0x600001a68000>{number = 5, name = (null)}
+...
+```
+
+## 九、`@synchronized`
+
+
+`@synchronized`是对`pthrea_mutex`递归锁的封装。
+
+ - 用法
+
+```
+- (void)saleTicket
+{
+    @synchronized (self) {
+        NSInteger count = self.totalTicketCount;
+        count--;
+        sleep(.2);
+        self.totalTicketCount = count;
+        NSLog(@"还剩余%zd张票 %@", self.totalTicketCount, [NSThread currentThread]);
+    }
+}
+```
+
+- 简单源码分析
+
+在`@synchronized`出下断点，Xcode 进入汇编模式。可以开到`@synchronized`的底层实现以`objc_sync_enter`开始，以`objc_sync_exit`结束。
+
+
+
+
+```
+// objc4-750  objc-sync.mm
+
+// Begin synchronizing on 'obj'. 
+// Allocates recursive mutex associated with 'obj' if needed.
+// Returns OBJC_SYNC_SUCCESS once lock is acquired.  
+int objc_sync_enter(id obj)
+{
+    int result = OBJC_SYNC_SUCCESS;
+
+    if (obj) {
+        SyncData* data = id2data(obj, ACQUIRE);
+        assert(data);
+        data->mutex.lock();
+    } else {
+        // @synchronized(nil) does nothing
+        if (DebugNilSync) {
+            _objc_inform("NIL SYNC DEBUG: @synchronized(nil); set a breakpoint on objc_sync_nil to debug");
+        }
+        objc_sync_nil();
+    }
+
+    return result;
+}
+
+// End synchronizing on 'obj'. 
+// Returns OBJC_SYNC_SUCCESS or OBJC_SYNC_NOT_OWNING_THREAD_ERROR
+int objc_sync_exit(id obj)
+{
+    int result = OBJC_SYNC_SUCCESS;
+    
+    if (obj) {
+        SyncData* data = id2data(obj, RELEASE); 
+        if (!data) {
+            result = OBJC_SYNC_NOT_OWNING_THREAD_ERROR;
+        } else {
+            bool okay = data->mutex.tryUnlock();
+            if (!okay) {
+                result = OBJC_SYNC_NOT_OWNING_THREAD_ERROR;
+            }
+        }
+    } else {
+        // @synchronized(nil) does nothing
+    }
+    return result;
+}
+```
 
 <br>
 
