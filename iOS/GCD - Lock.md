@@ -60,6 +60,8 @@
 
 > 线程同步：即当有一个线程在对内存进行操作时，其他线程都不可以对这个内存地址进行操作，直到该线程完成操作， 其他线程才能对该内存地址进行操作，而其他线程又处于等待状态，实现线程同步的方法有很多，加锁就是其中一种。
 
+![](https://images.gitee.com/uploads/images/2019/0721/164414_141ea963_1355277.png "GCD_images0201.png")
+
 下面来介绍 iOS 中常用的锁。
 
 ## 一、`OSSpinLock`
@@ -524,7 +526,7 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 ```
 
 
-## 八、`dispatch_semaphore`
+## 八、`dispatch_semaphore_t`
 
 
 `dispatch_semaphore` 信号量，可以设置初始值来控制线程的最大并发量。
@@ -614,7 +616,7 @@ self.semaphore =  dispatch_semaphore_create(1);
 
 在`@synchronized`出下断点，Xcode 进入汇编模式。可以开到`@synchronized`的底层实现以`objc_sync_enter`开始，以`objc_sync_exit`结束。
 
-
+![](https://images.gitee.com/uploads/images/2019/0721/164502_be166789_1355277.png "GCD_images0202.png")
 
 
 ```
@@ -665,13 +667,173 @@ int objc_sync_exit(id obj)
 }
 ```
 
+
+## 十、`atomic`
+
+`atomic`用于保证属性`setter`、`getter`的原子性操作，相当于在`getter`和`setter`内部加了线程同步的锁。
+
+```
+// objc4-750 objc-accessors.mm
+static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t offset, bool atomic, bool copy, bool mutableCopy)
+{
+	...
+	if (!atomic) {
+		oldValue = *slot;
+		*slot = newValue;
+	} else {
+		spinlock_t& slotlock = PropertyLocks[slot];
+		slotlock.lock();
+		oldValue = *slot;
+		*slot = newValue;        
+		slotlock.unlock();
+	}
+	objc_release(oldValue);
+}
+```
+
+但`atomic`不能保证使用属性过程中是线程安全的。如`ZNPerson`类中有个可变数组，`atomic`能保证`per.mArr`充当左值、右值是线程安全的，但不能保证可变数组删除元素、添加元素是线程安全的。
+
+且一个项目来说会声明很多属性，若每个属性都是`atomic`的，性能太低。所以一般不使用`atomic`，而是在需要保证线程安全时直接加锁。
+
+
+<br>
+
+<br>
+
+线程安全不只是在访问同一变量上，还可能会多线程读写同一文件。有一种读写安全方案 - 多读单写。
+
+- 同一时间，只能有1个线程进行写的操作
+
+- 同一时间，允许有多个线程进行读的操作
+
+- 同一时间，不允许既有写的操作，又有读的操作
+
+下面介绍两种常用的读写安全锁。
+
+## 十一、`pthread_rwlock_t`
+
+
+```
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // 初始化
+    pthread_rwlock_init(&_rwlock, NULL);
+    for (int i=0; i<5; i++) {
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            [self readFile];
+        });
+    }
+    for (int i=0; i<5; i++) {
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            [self writeFile];
+        });
+    }
+    // 销毁
+    pthread_rwlock_destroy(&_rwlock);
+}
+
+- (void)readFile
+{
+    // 读加锁
+    pthread_rwlock_rdlock(&_rwlock);
+    sleep(.5);
+    NSLog(@"%s===%@", __func__, [NSThread currentThread]);
+    pthread_rwlock_unlock(&_rwlock);
+}
+
+- (void)writeFile
+{
+    // 写加锁
+    pthread_rwlock_wrlock(&_rwlock);
+    sleep(1);
+    NSLog(@"%s===%@", __func__, [NSThread currentThread]);
+    pthread_rwlock_unlock(&_rwlock);
+}
+
+
+// 打印结果
+2019-07-21 16:34:16.356524+0800 GCD-Lock[26088:2988106] -[ViewController readFile]===<NSThread: 0x6000003258c0>{number = 6, name = (null)}
+2019-07-21 16:34:16.356612+0800 GCD-Lock[26088:2988084] -[ViewController readFile]===<NSThread: 0x600000320280>{number = 4, name = (null)}
+2019-07-21 16:34:16.356612+0800 GCD-Lock[26088:2988082] -[ViewController readFile]===<NSThread: 0x600000325800>{number = 5, name = (null)}
+2019-07-21 16:34:16.356613+0800 GCD-Lock[26088:2988083] -[ViewController readFile]===<NSThread: 0x600000325740>{number = 3, name = (null)}
+2019-07-21 16:34:16.356842+0800 GCD-Lock[26088:2988106] -[ViewController readFile]===<NSThread: 0x6000003258c0>{number = 6, name = (null)}
+
+2019-07-21 16:34:17.358049+0800 GCD-Lock[26088:2988084] -[ViewController writeFile]===<NSThread: 0x600000320280>{number = 4, name = (null)}
+2019-07-21 16:34:18.358945+0800 GCD-Lock[26088:2988083] -[ViewController writeFile]===<NSThread: 0x600000325740>{number = 3, name = (null)}
+2019-07-21 16:34:19.359319+0800 GCD-Lock[26088:2988082] -[ViewController writeFile]===<NSThread: 0x600000325800>{number = 5, name = (null)}
+2019-07-21 16:34:20.359749+0800 GCD-Lock[26088:2988106] -[ViewController writeFile]===<NSThread: 0x6000003258c0>{number = 6, name = (null)}
+2019-07-21 16:34:21.360385+0800 GCD-Lock[26088:2988107] -[ViewController writeFile]===<NSThread: 0x60000032c180>{number = 7, name = (null)}
+```
+
+从打印时间来看`readFile `在并发执行，而`writeFile `在同步执行。
+
+
+## 十二、`dispatch_barrier_sync`
+
+
+```
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    dispatch_queue_t barrierQueue = dispatch_queue_create("barrier_queue", DISPATCH_QUEUE_CONCURRENT);
+    for (int i=0; i<5; i++) {
+        dispatch_async(self.barrierQueue, ^{
+            [self readFile];
+        });
+        dispatch_async(self.barrierQueue, ^{
+            [self readFile];
+        });
+        dispatch_barrier_async(self.barrierQueue, ^{
+            [self writeFile];
+        });
+    }
+}
+- (void)readFile
+{
+    sleep(.5);
+    NSLog(@"%s===%@", __func__, [NSThread currentThread]);
+}
+
+- (void)writeFile
+{
+    sleep(1);
+    NSLog(@"%s===%@", __func__, [NSThread currentThread]);
+}
+
+// 打印结果
+2019-07-21 17:55:11.878985+0800 GCD-Lock[27723:3417582] -[ViewController readFile]===<NSThread: 0x60000298ca40>{number = 4, name = (null)}
+2019-07-21 17:55:11.878993+0800 GCD-Lock[27723:3417599] -[ViewController readFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+2019-07-21 17:55:12.880572+0800 GCD-Lock[27723:3417599] -[ViewController writeFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+2019-07-21 17:55:12.880987+0800 GCD-Lock[27723:3417599] -[ViewController readFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+2019-07-21 17:55:12.880987+0800 GCD-Lock[27723:3417582] -[ViewController readFile]===<NSThread: 0x60000298ca40>{number = 4, name = (null)}
+2019-07-21 17:55:13.881690+0800 GCD-Lock[27723:3417582] -[ViewController writeFile]===<NSThread: 0x60000298ca40>{number = 4, name = (null)}
+2019-07-21 17:55:13.881914+0800 GCD-Lock[27723:3417582] -[ViewController readFile]===<NSThread: 0x60000298ca40>{number = 4, name = (null)}
+2019-07-21 17:55:13.881936+0800 GCD-Lock[27723:3417599] -[ViewController readFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+2019-07-21 17:55:14.885921+0800 GCD-Lock[27723:3417599] -[ViewController writeFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+2019-07-21 17:55:14.886362+0800 GCD-Lock[27723:3417599] -[ViewController readFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+2019-07-21 17:55:14.886378+0800 GCD-Lock[27723:3417582] -[ViewController readFile]===<NSThread: 0x60000298ca40>{number = 4, name = (null)}
+2019-07-21 17:55:15.886850+0800 GCD-Lock[27723:3417582] -[ViewController writeFile]===<NSThread: 0x60000298ca40>{number = 4, name = (null)}
+2019-07-21 17:55:15.887068+0800 GCD-Lock[27723:3417582] -[ViewController readFile]===<NSThread: 0x60000298ca40>{number = 4, name = (null)}
+2019-07-21 17:55:15.887103+0800 GCD-Lock[27723:3417599] -[ViewController readFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+2019-07-21 17:55:16.892283+0800 GCD-Lock[27723:3417599] -[ViewController writeFile]===<NSThread: 0x6000029b2bc0>{number = 3, name = (null)}
+```
+
+使用`dispatch_barrier_sync `的注意点
+
+- `queue`必须是用`dispatch_queue_create `创建的并发队列，若是串行或全局并发队列，那`dispatch_barrier_sync `的效果等同于`dispatch_sync `
+
+- `dispatch_barrier_sync `不会阻塞主线程
+
+
 <br>
 
 **参考：**
 
 - [不再安全的 OSSpinLock](https://blog.ibireme.com/2016/01/16/spinlock_is_unsafe_in_ios/)
 
+- [Concurrency Programming Guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ConcurrencyProgrammingGuide/OperationQueues/OperationQueues.html#//apple_ref/doc/uid/TP40008091-CH102-SW24)
 
+- [关于 @synchronized，这儿比你想知道的还要多](http://yulingtianxia.com/blog/2015/11/01/More-than-you-want-to-know-about-synchronized/)
 
 <br>
 
