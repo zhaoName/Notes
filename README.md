@@ -10,7 +10,11 @@
 
 ## iOS
 
+- [内存管理 - Timer](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20Timer.md)
+
 - [GCD - 基础](https://github.com/zhaoName/Notes/blob/master/iOS/GCD%20-%20%E5%9F%BA%E7%A1%80.md)
+
+- [GCD - Lock](https://github.com/zhaoName/Notes/blob/master/iOS/GCD%20-%20Lock.md)
 
 - [RunLoop](https://github.com/zhaoName/Notes/blob/master/iOS/RunLoop.md)
 
