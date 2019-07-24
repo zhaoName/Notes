@@ -82,9 +82,9 @@ static inline bool _objc_isTaggedPointer(const void * _Nullable ptr)
 }
 ```
 
-- 在 64bit 为 Mac 下，最低有效位(LSB)为1，则是 Tagged Pointer
+- 在 64bit Mac 下，最低有效位(LSB)为1，则是 Tagged Pointer
 
-- 在 64bit 为 Mac 下，最高有效位(MSB)为1，则是 Tagged Pointer
+- 在 64bit 非 Mac 下，最高有效位(MSB)为1，则是 Tagged Pointer
 
 
 ## 三、面试题
