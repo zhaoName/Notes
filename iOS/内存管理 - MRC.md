@@ -53,18 +53,11 @@ int global_var2;
 **通过上面可知在 iOS 中所说的内存管理，管理的是堆区的内存。**
 
 
-## 二、MRC
+## 二、引用计数
 
-苹果文档中给出两个由内存管理不正确导致的问题：
+### 0x01 简介
 
-- 释放或覆盖仍要使用的数据。这可能会导致内存损坏、程序崩溃，甚至是用户数据损坏。
-
-- 不释放已不再使用的数据会导致内存泄露。内存泄露会导致程序使用的内存不断增加，从而导致系统性能下降或程序被强制被杀死。
-
-Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) 和 ARC(Automatic Reference Counting)，从 WWDC2011 后苹果就开始推行 ARC 来进行内存管理，其原理是通过编译器的静态分析在合适的位置插入`retain/release/autorelease`，从而解放程序员。但我们若想深入理解内存管理，还是要学习 MRC。在学习 MRC 之前先认识下引用计数。
-
-
-### 0x01 引用计数
+Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) 和 ARC(Automatic Reference Counting)，从 WWDC2011 后苹果就开始推行 ARC 来进行内存管理，其原理是通过编译器的静态分析在合适的位置插入`retain/release/autorelease`，从而解放程序员。
 
 无论是 MRC 还是 ARC 都是通过引用计数来判断一个对象是否需要从内存中释放。当我们通过`alloc/new/copy/mutableCopy`得到一个对象时，它的引用计数为1，当一个新对象指向这个对象时，引用计数加1。当我们不需要这个对象时，通过`release`将引用计数减1，若引用计数为0，则这个对象从内存中释放(不是从内存中清空，只是将这块内存标记为可用)。
 
@@ -72,9 +65,83 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 
 一个对象的引用计数可以调用`retainCount`获得。不能向已被释放的对象发送消息。
 
+
+### 0x02 源码解读
+
+由 [runtime(一) - isa](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%B8%80)%20-%20isa.md) 可知从 64bit 开始苹果使用位域技术对 isa 进行优化，优化后的引用计数由`has_sidetable_rc`决定存储在哪。若`has_sidetable_rc `值为0，则存储在`extra_rc`中，若`has_sidetable_rc `值为1，则存储在`SideTable`中的属性中。
+
+
+`retainCount`是`NSObject`中的方法，且`NSObject`中的方法在 runtime 中已开源。
+
+```
+// objc4-750 NSObject.mm
+
+struct SideTable {
+    // 实质是 os_unfair_lock
+    spinlock_t slock;
+    // 存放引用技术的 Map
+    RefcountMap refcnts;
+    weak_table_t weak_table;
+}
+
+- (NSUInteger)retainCount {
+    return ((id)self)->rootRetainCount();
+}
+
+inline uintptr_t objc_object::rootRetainCount()
+{
+    // 若是 Tagged Pointer 类型的指针 则直接返回
+    if (isTaggedPointer()) return (uintptr_t)this;
+    
+    // os_unfair_lock 加锁
+    sidetable_lock();
+    isa_t bits = LoadExclusive(&isa.bits);
+    ClearExclusive(&isa.bits);
+    // nonpointer 为1代表优化过，使用位域存储更多的信息
+    if (bits.nonpointer) {
+        //
+        uintptr_t rc = 1 + bits.extra_rc;
+        // 引用计数器是否过大无法存储在isa中，如果为1，那么引用计数会存储在一个叫SideTable的类的属性中
+        if (bits.has_sidetable_rc) {
+            // 获取 SideTable 中的引用计数
+            rc += sidetable_getExtraRC_nolock();
+        }
+        // os_unfair_lock 解锁
+        sidetable_unlock();
+        return rc;
+    }
+
+    sidetable_unlock();
+    // 若是指针 则直接从 sidetable 中取
+    return sidetable_retainCount();
+}
+
+size_t objc_object::sidetable_getExtraRC_nolock()
+{
+    assert(isa.nonpointer);
+    // 先找到SideTable，再找到 refcnts
+    SideTable& table = SideTables()[this];
+    RefcountMap::iterator it = table.refcnts.find(this);
+    if (it == table.refcnts.end()) return 0;
+    else return it->second >> SIDE_TABLE_RC_SHIFT;
+}
+```
+
+
+
+## 三、MRC
+
+苹果文档中给出两个由内存管理不正确导致的问题：
+
+- 释放或覆盖仍要使用的数据。这可能会导致内存损坏、程序崩溃，甚至是用户数据损坏。
+
+- 不释放已不再使用的数据会导致内存泄露。内存泄露会导致程序使用的内存不断增加，从而导致系统性能下降或程序被强制被杀死。
+
+
+
 现在 Xcode 版本都是默认在 ARC 环境，需要将`Porject->Build Setting->Objective-C Auotmatic Reference Counting`置为`NO`，切换到 MRC 环境。也可以在`Porject->Build Phases->Compile Sources`中的文件后面添加`-fno-objc-arc`，将单个文件切换到 MRC 环境。下面通过人和狗解释下 MRC。
 
-### 0x02 一个人
+### 0x01 一个人
 
 ```
 // ZNPerson.m
@@ -102,7 +169,7 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 对于单个对象，没有对象指向它，它也没指向别的对象。它的内存管理就很简单。但实际编程中基本遇不到这种情况。
 
 
-### 0x03 一个人一条狗
+### 0x02 一个人一条狗
 
 ```
 // ZNDog.m
@@ -192,7 +259,7 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 2019-07-25 17:43:46.309596+0800 MemoryManagement[93721:6494351] -[ZNPerson dealloc]
 ```
 
-### 0x04 一个人多条狗
+### 0x03 一个人多条狗
 
 这里的多条狗是指创建多条狗，而不是一个人同时持有多条狗。
 
@@ -238,7 +305,7 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 2019-07-25 18:07:39.207118+0800 MemoryManagement[94213:6509941] -[ZNPerson dealloc]
 ```
 
-### 0x05 多个人一条狗
+### 0x04 多个人一条狗
 
 ```
 - (void)viewDidLoad {
@@ -270,7 +337,7 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 代码优化到这，多个人同时持有一条狗是没有内存泄露的。
 
 
-### 0x06 一个人重复持有一条狗
+### 0x05 一个人重复持有一条狗
 
 ```
 - (void)viewDidLoad {
@@ -310,7 +377,7 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 2019-07-25 22:58:37.065826+0800 MemoryManagement[95584:6776281] -[ZNPerson dealloc]
 ```
 
-### 0x07 总结
+### 0x06 总结
 
 至此 MRC 环境下对象的内存管理已经成型，所有对象的`setter`方法都会写成这样(包括 ARC 环境下自动生成的代码)。
 

@@ -195,7 +195,9 @@ NSLog(@"%d %@", copyPer.age, copyPer.name);
 ```
 - (id)copyWithZone:(NSZone *)zone
 {
-    ZNPerson *p = [[ZNPerson allocWithZone:zone] init];
+    // [self class] 能防止子类未实现 NSCoping 协议调用copy 方法，出现崩溃(unrecognized selector sent to instance)
+    // 但使用 [self class] 只能实现父类的属性拷贝，子类的属性值不能拷贝，需要子类重新实现 copyWithZone: 方法
+    ZNPerson *p = [[[self class] allocWithZone:zone] init];
     p.age = self.age;
     p.name = self.name;
     return p;
