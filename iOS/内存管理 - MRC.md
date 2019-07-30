@@ -79,7 +79,7 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 struct SideTable {
     // 实质是 os_unfair_lock
     spinlock_t slock;
-    // 存放引用技术的 Map
+    // 存放引用计数的 Map
     RefcountMap refcnts;
     weak_table_t weak_table;
 }
