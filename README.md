@@ -10,6 +10,8 @@
 
 ## iOS
 
+- [内存管理 - weak](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20weak.md)
+
 - [内存管理 - Copy](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20Copy.md)
 
 - [内存管理 - MRC](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20MRC.md)
