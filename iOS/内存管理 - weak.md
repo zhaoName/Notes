@@ -3,7 +3,7 @@
 
 <br>
 
-`weak`弱应用，所修饰的对象的引用计数不会加1，在对象释放时会将对象置为`nil`，避免野指针访问，常用于解循环引用。本篇文章介绍`weak`的实现原理。
+`weak`弱引用，所修饰的对象的引用计数不会加1，在对象释放时会将对象置为`nil`，避免野指针访问，常用于解循环引用。本篇文章介绍`weak`的实现原理。
 
 ## 一、C++ 泛型
 
@@ -73,7 +73,7 @@ void Stack<T>::pop() {
 template <class T>
 T Stack<T>::top() {
     if (elems.empty()) {
-        NSLog(@"the stack is enpty");
+        NSLog(@"the stack is empty");
         return 0;
     }
     return elems.back();
@@ -99,7 +99,7 @@ T Stack<T>::top() {
 // 打印结果
 2019-08-05 10:31:56.953464+0800 MemoryManagement[80311:2134907] 7
 2019-08-05 10:31:56.953700+0800 MemoryManagement[80311:2134907] hello
-2019-08-05 10:31:56.953870+0800 MemoryManagement[80311:2134907] the stack is enpty
+2019-08-05 10:31:56.953870+0800 MemoryManagement[80311:2134907] the stack is empty
 ```
 
 
@@ -139,7 +139,7 @@ NSLog(@"%p %p %p", obj, weakObj, weakPtr);
 
 ![](https://images.gitee.com/uploads/images/2019/0805/181035_d087447f_1355277.png "MemoryManage_image0404.png")
 
-### 0x02 hash表结构
+### 0x02 `weak_table`表结构
 
 ![](https://images.gitee.com/uploads/images/2019/0802/223204_682d8902_1355277.png "MemoryManage_image0402.png")
 
@@ -171,14 +171,14 @@ typedef DisguisedPtr<objc_object *> weak_referrer_t;
 
 还有一点我们需要知道，OC 中的类实质是`objc_class`类型的结构体。而`objc_class `继承自`objc_object `。也就是说可以将`objc_object *`看成 OC 中的对象。
 
-在``weak_entry_t``结构中，`referent`是`weak`指向的 OC 对象，`referrers `是存放`objc_object**`类型的数组，也就是存放`weak`指针地址的数组。
+在``weak_entry_t``结构中，`referent`是`weak`指向的 OC 对象，若`out_of_line_ness == 2`，则`weak`指针的地址存放在 hash 结构的 `referrers `数组中；若`out_of_line_ness != 2`，则`weak`指针的地址存放在常规顺序存储数组`inline_referrers`中，且`inline_referrers`最多能存储四个元素。
 
 
 ![](https://images.gitee.com/uploads/images/2019/0805/173019_8b816b3c_1355277.png "MemoryManage_image0403.png")
 
 
 
-## 三、原理
+## 三、weak 底层实现
 
 
 ### 0x01 `objc_initWeak`
@@ -334,9 +334,10 @@ static id storeWeak(id *location, objc_object *newObj)
 }
 ```
 
-### 0x03 `weak_unregister_no_lock `
+`storeWeak`的作用是更新`weak_table`中对应的`entry->referrers`，新增`entry`并添加到`weak_table`中。
 
-`weak_unregister_no_lock `的作用是将
+
+### 0x03 `weak_unregister_no_lock `
 
 ```
 #define WEAK_INLINE_COUNT 4
@@ -362,6 +363,7 @@ void weak_unregister_no_lock(weak_table_t *weak_table, id referent_id, id *refer
             empty = false;
         }
         else {
+            // 非 out_of_line，则遍历 inline_referrers 数组
             for (size_t i = 0; i < WEAK_INLINE_COUNT; i++) {
                 if (entry->inline_referrers[i]) {
                     empty = false; 
@@ -369,7 +371,7 @@ void weak_unregister_no_lock(weak_table_t *weak_table, id referent_id, id *refer
                 }
             }
         }
-        // 若 entry 中的 referrers 数组为空，则删除 weak_table 表中对应的entry
+        // 若 entry 中的 referrers 数组为空，说明没有 weak 指针指向此对象，则删除 weak_table 表中对应的entry
         if (empty) {
             weak_entry_remove(weak_table, entry);
         }
@@ -377,7 +379,53 @@ void weak_unregister_no_lock(weak_table_t *weak_table, id referent_id, id *refer
     // 这里不会设置 *referrer = nil，因为 objc_storeWeak() 函数会需要该指针
 }
 
-
+// 从 entry->referrers 中删除对应的 old_referrer
+static void remove_referrer(weak_entry_t *entry, objc_object **old_referrer)
+{
+    // 若 entry->out_of_line != 2,则遍历查找old_referrer
+    if (!entry->out_of_line()) {
+        for (size_t i = 0; i < WEAK_INLINE_COUNT; i++) {
+            if (entry->inline_referrers[i] == old_referrer) {
+                entry->inline_referrers[i] = nil;
+                return;
+            }
+        }
+        _objc_inform("Attempted to unregister unknown __weak variable "
+                     "at %p. This is probably incorrect use of "
+                     "objc_storeWeak() and objc_loadWeak(). "
+                     "Break on objc_weak_error to debug.\n", 
+                     old_referrer);
+        objc_weak_error();
+        return;
+    }
+    
+    // 用 old_referrer(weak指针的地址) 算出初始 index
+    size_t begin = w_hash_pointer(old_referrer) & (entry->mask);
+    size_t index = begin;
+    size_t hash_displacement = 0;
+    // 从 entry 中取出 referrer，并和 old_referrer 比较
+    while (entry->referrers[index] != old_referrer) {
+        // 优先往下标大的地方找，最坏结果是类似 for 循环，遍历所有元素
+        // 再结合 max_hash_displacement 限定查找次数
+        index = (index+1) & entry->mask;
+        // 当 index == begin 说明已循环查找一遍，且查找次数仍然没达到 max_hash_displacement
+        // 那 weak_table 肯定有问题
+        if (index == begin) bad_weak_table(entry);
+        hash_displacement++;
+        if (hash_displacement > entry->max_hash_displacement) {
+            _objc_inform("Attempted to unregister unknown __weak variable "
+                         "at %p. This is probably incorrect use of "
+                         "objc_storeWeak() and objc_loadWeak(). "
+                         "Break on objc_weak_error to debug.\n", 
+                         old_referrer);
+            objc_weak_error();
+            return;
+        }
+    }
+    // 找到对应的 referrer, 则删除
+    entry->referrers[index] = nil;
+    entry->num_refs--;
+}
 
 // 删除 weak_table 中的 entry
 static void weak_entry_remove(weak_table_t *weak_table, weak_entry_t *entry)
@@ -391,6 +439,16 @@ static void weak_entry_remove(weak_table_t *weak_table, weak_entry_t *entry)
     weak_compact_maybe(weak_table);
 }
 ```
+
+`weak_unregister_no_lock `的作用是解除`weak_table`中旧对象与`weak`指针的绑定关系。为新对象与`weak`指针绑定做准备，有点类似这样：
+
+```
+NSObject *obj = [[NSObject alloc] init];
+NSObject *obj1 = [[NSObject alloc] init];
+__weak NSObject* weakObj = obj;
+weakObj = obj1;
+```
+
 
 ### 0x04 `weak_register_no_lock `
 
@@ -455,7 +513,190 @@ id weak_register_no_lock(weak_table_t *weak_table, id referent_id, id *referrer_
     // 这里不会设置 *referrer = nil，因为 objc_storeWeak() 函数会需要该指针
     return referent_id;
 }
+
+/** 
+ * Add new_entry to the object's table of weak references.
+ * Does not check whether the referent is already in the table.
+ */
+static void weak_entry_insert(weak_table_t *weak_table, weak_entry_t *new_entry)
+{
+    weak_entry_t *weak_entries = weak_table->weak_entries;
+    assert(weak_entries != nil);
+    // 用 new_entry->referent(object) 算出 index 的初始值
+    size_t begin = hash_pointer(new_entry->referent) & (weak_table->mask);
+    size_t index = begin;
+    size_t hash_displacement = 0;
+    // 若 weak_entries[index].referent == nil 则找到要存储的位置
+    while (weak_entries[index].referent != nil) {
+        // index优先往下标大的地方找，最坏结果是类似 for 循环，遍历所有元素
+        index = (index+1) & weak_table->mask;
+        // 这时 weak_table 的长度肯定未超过容量的3/4
+        // 若index == begin 说明已循环遍历一遍仍未找到要存储的位置，那weak_table 肯定有问题
+        if (index == begin) bad_weak_table(weak_entries);
+        // 记录此次查找 index 的次数
+        hash_displacement++;
+    }
+    // 找到 index 就存起来，
+    // 因为传进来的是 weak_entry_t* 类型的指针，要用*new_entry 取出 weak_entry_t 类型的值存到 weak_entries 数组中
+    weak_entries[index] = *new_entry;
+    // 表的
+    weak_table->num_entries++;
+    
+    // 记录每次查找下标 index 的最大值，为取值
+    if (hash_displacement > weak_table->max_hash_displacement) {
+        weak_table->max_hash_displacement = hash_displacement;
+    }
+}
 ```
+
+`weak_register_no_lock`的作用是将引用对象和`weak`指针的地址绑定起来，存储到`weak_table`中。
+
+
+### 0x05 总结
+
+![](https://images.gitee.com/uploads/images/2019/0806/182630_83ab4ab5_1355277.png "MemoryManage_image0406.png")
+
+
+## 四、弱引用释放底层实现
+
+
+对象的释放会自动调用`dealloc`方法，`dealloc`方法的实现可以在`runtime`中找到。调用轨迹大致如下
+
+- `dealloc`
+
+- `_objc_rootDealloc`
+
+- `rootDealloc`
+
+- `rootDealloc`
+
+- `object_dispose`
+
+- `objc_destructInstance`
+
+- `clearDeallocating`
+
+- `clearDeallocating_slow`
+
+- `weak_clear_no_lock`
+
+在`weak_clear_no_lock `函数中会将`weak`修饰的对象置为`nil`，并从`weak_table`中移除对应的`entry`。
+
+
+### 0x01 `objc_destructInstance `
+
+```
+// runtime-750  objc-runtime-new.mm
+
+void *objc_destructInstance(id obj) 
+{
+    if (obj) {
+        // Read all of the flags at once for performance.
+        bool cxx = obj->hasCxxDtor();
+        bool assoc = obj->hasAssociatedObjects();
+
+        // This order is important.
+        if (cxx) object_cxxDestruct(obj); // 释放成员变量
+        if (assoc) _object_remove_assocations(obj); // 移除关联对象
+        // 清空弱引用表 清空引用计数表
+        obj->clearDeallocating();
+    }
+
+    return obj;
+}
+```
+
+### 0x02 `clearDeallocating_slow`
+
+```
+// runtime-750  NSObject.mm
+
+NEVER_INLINE void objc_object::clearDeallocating_slow()
+{
+    assert(isa.nonpointer  &&  (isa.weakly_referenced || isa.has_sidetable_rc));
+
+    SideTable& table = SideTables()[this];
+    table.lock();
+    // 若对象被弱引用
+    if (isa.weakly_referenced) {
+        weak_clear_no_lock(&table.weak_table, (id)this);
+    }
+    // 若对象的引用计数存储在 SideTable 中，则清空引用计数表
+    if (isa.has_sidetable_rc) {
+        table.refcnts.erase(this);
+    }
+    table.unlock();
+}
+```
+
+
+### 0x03 `weak_clear_no_lock`
+
+
+```
+// runtime-750  objc-weak.mm
+
+void weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
+{
+    // object
+    objc_object *referent = (objc_object *)referent_id;
+    // 取出 referent(object) 对应的 entry
+    weak_entry_t *entry = weak_entry_for_referent(weak_table, referent);
+    if (entry == nil) {
+        /// XXX shouldn't happen, but does with mismatched CF/objc
+        //printf("XXX no entry for clear deallocating %p\n", referent);
+        return;
+    }
+
+    // zero out references
+    weak_referrer_t *referrers;
+    size_t count;
+    
+    if (entry->out_of_line()) {
+        // hash 结构的数组
+        referrers = entry->referrers;
+        count = TABLE_SIZE(entry);
+    } 
+    else {
+        // 正常顺序存储的数组
+        referrers = entry->inline_referrers;
+        count = WEAK_INLINE_COUNT;
+    }
+    
+    for (size_t i = 0; i < count; ++i) {
+        objc_object **referrer = referrers[i];
+        if (referrer) {
+            if (*referrer == referent) {
+                // 将对象置为 nil
+                *referrer = nil;
+            }
+            else if (*referrer) {
+                _objc_inform("__weak variable at %p holds %p instead of %p. "
+                             "This is probably incorrect use of "
+                             "objc_storeWeak() and objc_loadWeak(). "
+                             "Break on objc_weak_error to debug.\n", 
+                             referrer, (void*)*referrer, (void*)referent);
+                objc_weak_error();
+            }
+        }
+    }
+    // 从 weak_table 中移除对应的 entry
+    weak_entry_remove(weak_table, entry);
+}
+
+static void weak_entry_remove(weak_table_t *weak_table, weak_entry_t *entry)
+{
+    // remove entry
+    if (entry->out_of_line()) free(entry->referrers);
+    bzero(entry, sizeof(*entry));
+    
+    weak_table->num_entries--;
+    // 删除元素导致 weak_table 的长度小到一定值时，将会压缩 weak_table 的容量
+    weak_compact_maybe(weak_table);
+}
+```
+
+
 
 <br>
 
@@ -463,8 +704,10 @@ id weak_register_no_lock(weak_table_t *weak_table, id referent_id, id *referrer_
 
 - [C++ 模板](https://www.runoob.com/cplusplus/cpp-templates.html)
 
+- [weak 弱引用的实现方式](https://www.desgard.com/iOS-Source-Probe/Objective-C/Runtime/weak%20%E5%BC%B1%E5%BC%95%E7%94%A8%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%96%B9%E5%BC%8F.html)
+
 <br>
 
-写于2019-07-30
+写于2019-07-30  完成于2019-08-06
 
 <br>
