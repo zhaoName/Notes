@@ -554,7 +554,7 @@ static void weak_entry_insert(weak_table_t *weak_table, weak_entry_t *new_entry)
 
 ### 0x05 总结
 
-![](https://images.gitee.com/uploads/images/2019/0806/182630_83ab4ab5_1355277.png "MemoryManage_image0406.png")
+![](https://images.gitee.com/uploads/images/2019/0807/093007_303d1780_1355277.png "MemoryManage_image0406.png")
 
 
 ## 四、弱引用释放底层实现
