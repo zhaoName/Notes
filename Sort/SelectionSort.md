@@ -78,3 +78,12 @@ void c_selectionSort(int arr[], int len)
 1 5 6 9 10 12 15 
 1 5 6 9 10 12 15 
 ```
+
+
+<br>
+
+**参考：**[选择排序](https://github.com/hustcc/JS-Sorting-Algorithm/blob/master/2.selectionSort.md)
+
+写于2019-08-16
+
+<br>
