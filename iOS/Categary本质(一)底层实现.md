@@ -260,7 +260,7 @@ struct category_t {
 
 查看分类在`runtime`中合并过程
 
-- 在`objc-os.mm`中 `_objc_init()` -> `_dyld_objc_notify_register()` -> map_images() -> `map_images_nolock()` -> `_read_images()`
+- 在`objc-os.mm`中 `_objc_init()` -> `_dyld_objc_notify_register()` -> `map_images()` -> `map_images_nolock()` -> `_read_images()`
 
 - 在`objc-runtime-new.mm`中`_read_images()` -> `remethodizeClass()` -> `attachCategories()` -> `attachLists()`
 
@@ -338,7 +338,7 @@ static void remethodizeClass(Class cls)
 
 
 ```
-// 这个方法的作用是将所有分类的 实例方法列表(类方法列表,取决于clss是class还是meta-class)、协议列表、属性列表
+// 这个方法的作用是将所有分类的 实例方法列表(类方法列表,取决于cls是class还是meta-class)、协议列表、属性列表
 // 放在对应的大二维数组中(mlists、proplists、protolists)
 // 然后调用attachLists()函数，将分类的信息合并到calss(meta-class)中
 static void attachCategories(Class cls, category_list *cats, bool flush_caches)

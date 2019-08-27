@@ -42,19 +42,19 @@
 static Class realizeClass(Class cls)
 {
     runtimeLock.assertLocked();
-
+    
     const class_ro_t *ro;
     class_rw_t *rw;
     Class supercls;
     Class metacls;
     bool isMeta;
-
+    
     if (!cls) return nil;
     if (cls->isRealized()) return cls;
     assert(cls == remapClass(cls));
-
+    
     // fixme verify class is not in an un-dlopened part of the shared cache?
-	// 在 objc_class 中定义的 cls->data() 返回的是 class_rw_t
+    // 在 objc_class 中定义的 cls->data() 返回的是 class_rw_t
     // 但在 realizeClass() 时可以看到，刚加载某个类时 是没有 class_rw_t 的
     // cls->data() 中存放的是 class_ro_t
     ro = (const class_ro_t *)cls->data();

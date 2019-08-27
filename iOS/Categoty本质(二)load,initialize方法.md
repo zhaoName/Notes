@@ -19,13 +19,13 @@
 // ZZPerson+TestA.m
 + (void)load
 {
-	NSLog(@"+[ZZPerson(TestA) load]");
+    NSLog(@"+[ZZPerson(TestA) load]");
 }
 
 // ZZPerson+TestB.m
 + (void)load
 {
-	NSLog(@"+[ZZPerson(TestB) load]");
+    NSLog(@"+[ZZPerson(TestB) load]");
 }
 ```
 
@@ -39,7 +39,7 @@
 2019-04-27 23:53:36.527958+0800 ZZCategory[50064:5855381] +[ZZPerson(TestB) load]
 ```
 
-控制台会有打印信息！！这说明**`+load`方法是在程序将类或分类载进内存时就会自动调用。**
+控制台会有打印信息！！这说明 **`+load`方法是在程序将类或分类载进内存时就会自动调用。**
 
 但是看到控制台的打印信息又有点疑惑！根据[Categary本质(一)底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Categary本质(一)底层实现.md)所分析的结果，当分类中存在同样的方法，最终会调用哪个分类的方法，由分类的编译顺序决定，后编译的优先调用。那应该只会调用`ZZPerson+TestB`中的`+load`方法！但结果原类和分类中的`+load`都调用了，这是为啥呢？
 
@@ -89,17 +89,17 @@ void load_images(const char *path __unused, const struct mach_header *mh)
 void prepare_load_methods(const headerType *mhdr)
 {
     size_t count, i;
-
+    
     runtimeLock.assertLocked();
-	// 从源文件中获取所有类，并遍历
-    classref_t *classlist = 
-        _getObjc2NonlazyClassList(mhdr, &count);
+    // 从源文件中获取所有类，并遍历
+    classref_t *classlist =
+    _getObjc2NonlazyClassList(mhdr, &count);
     for (i = 0; i < count; i++) {
-    	// 按 superclass -> class 的顺序将cls和+load对应起来 存在数组里
+        // 按 superclass -> class 的顺序将cls和+load对应起来 存在数组里
         schedule_class_load(remapClass(classlist[i]));
     }
-
-	// 从源文件中获取所有分类， 并遍历
+    
+    // 从源文件中获取所有分类， 并遍历
     category_t **categorylist = _getObjc2NonlazyCategoryList(mhdr, &count);
     for (i = 0; i < count; i++) {
         category_t *cat = categorylist[i];
@@ -280,13 +280,13 @@ static bool call_category_loads(void)
 // ZZStudent+TestA.m
 + (void)load
 {
-	NSLog(@"+[ZZStudent(Add1) load]");
+    NSLog(@"+[ZZStudent(Add1) load]");
 }
 
 // ZZStudent+TestB.m
 + (void)load
 {
-	NSLog(@"+[ZZStudent(Add2) load]");
+    NSLog(@"+[ZZStudent(Add2) load]");
 }
 ```
 
@@ -332,13 +332,13 @@ static bool call_category_loads(void)
 // ZZPerson+TestA.m
 + (void)initialize
 {
-	NSLog(@"+[ZZPerson(TestA) initialize]");
+    NSLog(@"+[ZZPerson(TestA) initialize]");
 }
 
 // ZZPerson+TestB.m
 + (void)initialize
 {
-	NSLog(@"+[ZZPerson(TestB) initialize]");
+    NSLog(@"+[ZZPerson(TestB) initialize]");
 }
 
 // ZZStudent.m
@@ -350,13 +350,13 @@ static bool call_category_loads(void)
 // ZZStudent+TestA.m
 + (void)initialize
 {
-	NSLog(@"+[ZZStudent(Add1) initialize]");
+    NSLog(@"+[ZZStudent(Add1) initialize]");
 }
 
 // ZZStudent+TestB.m
 + (void)initialize
 {
-	NSLog(@"+[ZZStudent(Add2) initialize]");
+    NSLog(@"+[ZZStudent(Add2) initialize]");
 }
 ```
 
@@ -390,19 +390,17 @@ static bool call_category_loads(void)
 -  `lookUpImpOrForward()`
 
 ```
-IMP lookUpImpOrForward(Class cls, SEL sel, id inst, 
-                       bool initialize, bool cache, bool resolver)
+IMP lookUpImpOrForward(Class cls, SEL sel, id inst, bool initialize, bool cache, bool resolver)
 {
-	......
-	
-	// 若需要initialize 且类没有被initialize过
-	if (initialize  &&  !cls->isInitialized()) {
+    ......
+    // 若需要initialize 且类没有被initialize过
+    if (initialize  &&  !cls->isInitialized()) {
         runtimeLock.unlock();
         // 初始化类
         _class_initialize (_class_getNonMetaClass(cls, inst));
         runtimeLock.lock();
     }
-   ......
+    ......
 }
 ```
 

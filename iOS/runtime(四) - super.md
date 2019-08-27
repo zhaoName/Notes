@@ -178,7 +178,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 ### 0x02 `objc_msgSendSuper2`
 
-再来看个有意思的事，在`ZNPerson`中声明并实现`test`实例方法，在子类`ZNStudent`中重写`test`方法并调用`[super test]`，并下断点，`Xcode``Debug -> Debug Workflow -> Always show Disassmebly`进入汇编模式。
+再来看个有意思的事，在`ZNPerson`中声明并实现`test`实例方法，在子类`ZNStudent`中重写`test`方法并调用`[super test]`，并下断点，`Xcode -> Debug -> Debug Workflow -> Always show Disassmebly`进入汇编模式。
 
 ```
 // ZNStudent.m

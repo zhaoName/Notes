@@ -93,7 +93,7 @@
 
 ## 三、本质分析、验证
 
-### 0x01 添加KVO前后类对象变化
+### 0x01 添加 KVO 前后类对象变化
 
 我们知道实例对象调用对象方法是通过实例对象的`isa`指针找到类对象，再从类对象的方法列表中找到要调用的对象方法。那意思就是说`KVO`的底层实现和`KVOPerson`这个类并无关系(也不会是父类`NSObject`)，否则`perosn2`也会通过`setAge:`方法触发`KVO`。
 
@@ -118,7 +118,7 @@ NSLog(@"添加KVO之后person1的父类%@", [object_getClass(self.person1) super
 那`NSKVONotifying_KVOPerson`是哪来的呢？它是通过`OC`的运行时机制动态创建的，只要你给某个对象添加`KVO`之后，系统就会通过运行时机制动态创建一个继承自`XXX`的子类`NSKVONotifying_XXX`。
 
 
-### 0x02 添加KVO前后对象方法调用流程
+### 0x02 添加 KVO 前后对象方法调用流程
 
 - 添加`KVO`之前
 
@@ -185,7 +185,7 @@ $ nm Foundation | grep ValueAndNotify
 000000018190d498 t __NSSetUnsignedShortValueAndNotify
 ```
 
-### 0x04 NSKVONotifying_KVOPerson的对象方法
+### 0x04 NSKVONotifying_KVOPerson 的对象方法
 
 从流程图中到`NSKVONotifying_KVOPerson`中有四个对象方法，下面来证明下
 
@@ -214,7 +214,7 @@ $ nm Foundation | grep ValueAndNotify
 2019-04-17 22:19:32.622877+0800 KVO[40409:1295635] Class:KVOPerson instanceMethod:setAge:, age
 ```
 
-### 0x05 KVO本质实现流程
+### 0x05 KVO 本质实现流程
 
 由于`_NSSetIntValueAndNotify()`是`Foundation`框架下的函数，所以我们不能看到其内部实现。在这只是写`NSKVONotifying_KVOPerson`的伪代码
 
@@ -223,14 +223,14 @@ $ nm Foundation | grep ValueAndNotify
 
 - (Class)class
 {
-	// 调用[self.person1 class]返回的还是KVOPerson
-	return self.superClass;
+    // 调用[self.person1 class]返回的还是KVOPerson
+    return self.superClass;
 }
 
 // 重写父类KVOPerson的方法
 - (void)setAge:(NSInteger)age
 {
-    _NSSetLongLongValueAndNotify();   
+    _NSSetLongLongValueAndNotify();
 }
 
 void _NSSetLongLongValueAndNotify()
@@ -243,14 +243,14 @@ void _NSSetLongLongValueAndNotify()
 
 - (void)didChangeValueForKey:(NSString *)key
 {
-	// 属性值已经改变 通知监听器
+    // 属性值已经改变 通知监听器
     [self observeValueForKeyPath:key ofObject:self change:nil context:nil];
 }
 ```
 
 ## 四、面试题
 
-### 0x01 KVO本质
+### 0x01 KVO 本质
 
 - 用`runtime`动态生成一个子类，并让示例对象的`isa`指正指向这个子类
 
@@ -267,7 +267,7 @@ void _NSSetLongLongValueAndNotify()
 	- 在`didChangeValueForKey:`方法中触发监听器的`observeValueForKeyPath:ofObject:change:context:`方法
 
 
-### 0x02 如何手动触发KVO
+### 0x02 如何手动触发 KVO
 
 - 手动调用`willChangeValueForKey:`和`didChangeValueForKey:`方法就可手动触发`KVO`
 

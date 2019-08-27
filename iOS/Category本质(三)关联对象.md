@@ -54,7 +54,7 @@ static const char *NameKey = "NameKey";
 但这样每次声明属性都要维护写一个类似`static const char *NameKey = "NameKey";`这样的`key `很麻烦！我们改进下
 
 ```
-// 使用属性的getter方法的@selector作为key，既能保证唯一又不用维护
+// 使用属性的 getter 方法的 @selector 作为 key，既能保证唯一又不用维护
 - (void)setName:(NSString *)name
 {
     objc_setAssociatedObject(self, @selector(name), name, OBJC_ASSOCIATION_COPY_NONATOMIC);
@@ -85,53 +85,54 @@ void objc_setAssociatedObject(id object, const void *key, id value, objc_Associa
 }
 
 // objc-references.mm
-void _object_set_associative_reference(id object, void *key, id value, uintptr_t policy) {
+void _object_set_associative_reference(id object, void *key, id value, uintptr_t policy) 
+{
     // retain the new value (if any) outside the lock.
     ObjcAssociation old_association(0, nil);
     id new_value = value ? acquireValue(value, policy) : nil;
     {
         AssociationsManager manager;
-        // 取出AssociationsManager中的AssociationsHashMap
+        // 取出 AssociationsManager 中的 AssociationsHashMap
         AssociationsHashMap &associations(manager.associations());
-        // 将object包装成disguised_ptr_t类型的值
+        // 将 object 包装成 disguised_ptr_t 类型的值
         disguised_ptr_t disguised_object = DISGUISE(object);
         
-        // 若传进来的value不为空 且经过acquireValuev()转换的值不为空
+        // 若传进来的 value 不为空 且经过 acquireValuev() 转换的值不为空
         if (new_value) {
             // break any existing association.
             AssociationsHashMap::iterator i = associations.find(disguised_object);
             
             if (i != associations.end()) {
-                // object对应的ObjectAssociationMap已存在，则遍历ObjectAssociationMap内部
+                // object对应的 ObjectAssociationMap 已存在，则遍历 ObjectAssociationMap 内部
                 ObjectAssociationMap *refs = i->second;
                 ObjectAssociationMap::iterator j = refs->find(key);
                 if (j != refs->end()) 
                 {
                     old_association = j->second;
-                    // key对应的ObjcAssociation已存在 则覆盖原有的值
+                    // key 对应的 ObjcAssociation 已存在 则覆盖原有的值
                     j->second = ObjcAssociation(policy, new_value);
                 } 
                 else 
                 {
-                	// key对应的ObjcAssociation不存在，生成新的ObjcAssociation将value和policy存起来
-                	// 新生成的ObjcAssociation和key对应起来，存进ObjectAssociationMap中
+                	// key 对应的 ObjcAssociation 不存在，生成新的 ObjcAssociation 将 alue 和 policy 存起来
+                	// 新生成的 ObjcAssociation 和 key 对应起来，存进 ObjectAssociationMap中
                     (*refs)[key] = ObjcAssociation(policy, new_value);
                 }
             } 
             else {
                 // create the new association (first time).
-                // object对应的ObjectAssociationMap不存在，则创建新的ObjectAssociationMap并绑定上对应的object
+                // object 对应的 ObjectAssociationMap 不存在，则创建新的 ObjectAssociationMap 并绑定上对应的 object
                 ObjectAssociationMap *refs = new ObjectAssociationMap;
                 associations[disguised_object] = refs;
                 
-                // 新的ObjectAssociationMap中存放key和对应的ObjcAssociation(policy, new_value)
+                // 新的 ObjectAssociationMap 中存放 key 和对应的 ObjcAssociation(policy, new_value)
                 (*refs)[key] = ObjcAssociation(policy, new_value);
                 object->setHasAssociatedObjects();
             }
         }
         else {
             // setting the association to nil breaks the association.
-            // 若value为空，且存储value的ObjcAssociation存在，则删除AssociationsHashMap中的这对值
+            // 若 value 为空，且存储 value 的 ObjcAssociation 存在，则删除 AssociationsHashMap中的这对值
             AssociationsHashMap::iterator i = associations.find(disguised_object);
             if (i !=  associations.end()) {
                 ObjectAssociationMap *refs = i->second;

@@ -295,21 +295,21 @@ ZNBlock();
 
 ```
 struct __main_block_impl_0 {
-	struct __block_impl impl;
-	struct __main_block_desc_0* Desc;
-	int c;
-	// C++ 语法： c(_c)的意思是会自动将 _c 赋值给 c
-	__main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int _c, int flags=0) : c(_c) {
-		impl.isa = &_NSConcreteStackBlock;
-		impl.Flags = flags;
-		impl.FuncPtr = fp;
-		Desc = desc;
-	}
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    int c;
+    // C++ 语法： c(_c)的意思是会自动将 _c 赋值给 c
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int _c, int flags=0) : c(_c) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
 };
 
 static void __main_block_func_0(struct __main_block_impl_0 *__cself)
 {
-	// 实际 block 中打印的变量 c 是 block 内部的变量 c 不是局部变量 c
+    // 实际 block 中打印的变量 c 是 block 内部的变量 c 不是局部变量 c
     int c = __cself->c; // bound by copy
     NSLog((NSString *)&__NSConstantStringImpl__var_folders_cl_ztrmqfr12jd289xtmjfhsr340000gn_T_main_104428_mi_0, c);
 }
@@ -356,25 +356,25 @@ ZNBlock();
 
 ```
 struct __main_block_impl_0 {
-  struct __block_impl impl;
-  struct __main_block_desc_0* Desc;
-  int c;
-  // 指针类型
-  int *d;
-  // c(_c), d(_d): C++语法自动将c = _c, d = _d
-  __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int _c, int *_d, int flags=0) : c(_c), d(_d) {
-    impl.isa = &_NSConcreteStackBlock;
-    impl.Flags = flags;
-    impl.FuncPtr = fp;
-    Desc = desc;
-  }
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    int c;
+    // 指针类型
+    int *d;
+    // c(_c), d(_d): C++语法自动将c = _c, d = _d
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int _c, int *_d, int flags=0) : c(_c), d(_d) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
 };
 
 static void __main_block_func_0(struct __main_block_impl_0 *__cself) 
 {
     int c = __cself->c; // bound by copy
     int *d = __cself->d; // bound by copy
-	// 
+	
     NSLog((NSString *)&__NSConstantStringImpl__var_folders_cl_ztrmqfr12jd289xtmjfhsr340000gn_T_main_68a222_mi_0, c, (*d));
 }
 
@@ -427,14 +427,14 @@ int zn_age = 10;
 
 // 可以看到 block 内部并没有捕获全局变量
 struct __main_block_impl_0 {
-  struct __block_impl impl;
-  struct __main_block_desc_0* Desc;
-  __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int flags=0) {
-    impl.isa = &_NSConcreteStackBlock;
-    impl.Flags = flags;
-    impl.FuncPtr = fp;
-    Desc = desc;
-  }
+    struct __block_impl impl;
+    struct __main_block_desc_0* Desc;
+    __main_block_impl_0(void *fp, struct __main_block_desc_0 *desc, int flags=0) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
 };
 
 static void __main_block_func_0(struct __main_block_impl_0 *__cself)
@@ -479,16 +479,16 @@ int main(int argc, const char * argv[]) {
 ```
 // block_instance 的底层实现
 struct __ZNPerson__test_block_impl_0 {
-  struct __block_impl impl;
-  struct __ZNPerson__test_block_desc_0* Desc;
-  // 捕获到 self
-  ZNPerson *const __strong self;
-  __ZNPerson__test_block_impl_0(void *fp, struct __ZNPerson__test_block_desc_0 *desc, ZNPerson *const __strong _self, int flags=0) : self(_self) {
-    impl.isa = &_NSConcreteStackBlock;
-    impl.Flags = flags;
-    impl.FuncPtr = fp;
-    Desc = desc;
-  }
+    struct __block_impl impl;
+    struct __ZNPerson__test_block_desc_0* Desc;
+    // 捕获到 self
+    ZNPerson *const __strong self;
+    __ZNPerson__test_block_impl_0(void *fp, struct __ZNPerson__test_block_desc_0 *desc, ZNPerson *const __strong _self, int flags=0) : self(_self) {
+        impl.isa = &_NSConcreteStackBlock;
+        impl.Flags = flags;
+        impl.FuncPtr = fp;
+        Desc = desc;
+    }
 };
 
 // ZNPerson 的对象方法 test
@@ -578,7 +578,7 @@ NSLog(@"类型：%@ === %@ === %@", [ZNBlock class], [[ZNBlock class] superclass
 
 ### 0x05 每种`Block`类型`copy`后结果
 
-上面已知`__NSStackBlock__`类型`Block``copy`后会变成`__NSMallocBlock__ `类型的`Block`,那其他两种情况呢？
+上面已知`__NSStackBlock__`类型的`Block` `copy`后会变成`__NSMallocBlock__ `类型的`Block`, 那其他两种情况呢？
 
 - `__NSGlobalBlock__`
 
