@@ -11,6 +11,8 @@
 ## iOS
 
 
+- [CocoaPods - Uninstall And Install](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods%20-%20Uninstall%20And%20Install.md)
+
 - [内存管理 - Timer](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20Timer.md)
 
 
