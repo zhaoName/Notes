@@ -185,7 +185,36 @@ Resolving deltas: 100% (563214/563214), done.
 Checking out files: 100% (141834/141834), done.
 ```
 
-可以看到克隆速度可以达到几M/s。这时可以用`pod search *** `搜索三方库
+可以看到克隆速度可以达到几M/s。这时的`.cocoapods`是不最新的，然后再执行`pod setup`更新。
+
+```
+$ pod setup                   
+
+Setting up CocoaPods master repo
+  $ /usr/bin/git -C /Users/chuangqi/.cocoapods/repos/master fetch origin --progress
+  remote: Enumerating objects: 185, done.        
+  remote: Counting objects: 100% (185/185), done.        
+  remote: Compressing objects: 100% (130/130), done.        
+  remote: Total 136 (delta 86), reused 0 (delta 0), pack-reused 0        
+  Receiving objects: 100% (136/136), 17.09 KiB | 5.70 MiB/s, done.
+  Resolving deltas: 100% (86/86), completed with 45 local objects.
+  From https://github.com/CocoaPods/Specs
+     b8605f7895b..5133b4ee80d  master     -> origin/master
+  $ /usr/bin/git -C /Users/chuangqi/.cocoapods/repos/master rev-parse --abbrev-ref HEAD
+  master
+  $ /usr/bin/git -C /Users/chuangqi/.cocoapods/repos/master reset --hard origin/master
+  HEAD is now at 5133b4ee80d [Add] qrh 1.0.1
+
+CocoaPods 1.8.0.beta.2 is available.
+To update use: `sudo gem install cocoapods --pre`
+[!] This is a test version we'd love you to try.
+
+For more information, see https://blog.cocoapods.org and the CHANGELOG for this version at https://github.com/CocoaPods/CocoaPods/releases/tag/1.8.0.beta.2
+
+Setup completed
+```
+
+完成后用`pod search *** `搜索三方库
 
 ```
 $ pod search AFNetworking
@@ -206,6 +235,8 @@ $ pod search AFNetworking
      - AFNetworking/NSURLSession (3.1.0)
      - AFNetworking/UIKit (3.1.0)
 ```
+
+
 
 至此`CocoaPds`安装完成。
 
