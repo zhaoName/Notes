@@ -423,6 +423,38 @@ You can use the `--no-clean` option to inspect any issue.
 无论是验证`lib`还是`spec`都要求没有任何错误和警告。错误需要你一点点调试，警告可以用`--allow-warnings`忽略。更多命令可以到[这里查看](https://guides.cocoapods.org/terminal/commands.html#pod_spec_lint)。
 
 
+
+### 0x03 `Remote branch 0.1.0 not found in upstream origin`
+
+
+在提交`podspec`到私有`spec repo`，可能会遇到如下错误
+
+```
+$ pod repo push ZZPrivateSpecs ZZBase.podspec                               
+
+Validating spec
+ -> ZZBase (0.1.0)
+ - ERROR | [OSX] unknown: Encountered an unknown error ([!] /usr/bin/git clone https://git.coding.net/zhongdaima/TestTool.git /var/folders/gt/l6g6khk5053fhhw0d5f7qjw80000gn/T/d20180521-4470-1c18v0s --template= --single-branch --depth 1 --branch 0.1.0
+
+Cloning into '/var/folders/gt/l6g6khk5053fhhw0d5f7qjw80000gn/T/d20180521-4470-1c18v0s'...
+warning: Could not find remote branch 0.1.0 to clone.
+fatal: Remote branch 0.1.0 not found in upstream origin
+) during validation.
+
+[!] The `ZZBase.podspec` specification does not validate.
+```
+
+这是因为没有找到`0.1.0`版本，我们需要给`ZZBase`打`tag`。标签的值`0.1.0`与`.podspec`文件中`s.version`的值保持一致。
+
+```
+$ git tag '0.1.0'
+
+# git push --tags
+$ git push origin 0.1.0
+```
+
+
+
 <br>
 
 **参考：**
