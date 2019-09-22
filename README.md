@@ -3,15 +3,21 @@
 
 <br>
 
-这个仓库是记录平时所学用的。现在大多来源于付费视频，当然参考别人的我也会标注来源。若你发现有侵权，请联系我。
+这个仓库是记录平时所学用的，若你发现有侵权，请联系我。
 
-
-按时间倒叙排版
 
 ## iOS
 
 
 - [CocoaPods - Uninstall And Install](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods%20-%20Uninstall%20And%20Install.md)
+
+- [CocoaPods - Podfile](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods%20-%20Podfile.md)
+
+- [CocoaPods - spec](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods%20-%20spec.md)
+
+- [Cocoapods - Private Pods](https://github.com/zhaoName/Notes/blob/master/iOS/Cocoapods%20-%20Private%20Pods.md)
+
+- [组件化(一) - 私有库使用](https://github.com/zhaoName/Notes/blob/master/iOS/%E7%BB%84%E4%BB%B6%E5%8C%96(%E4%B8%80)%20-%20%E7%A7%81%E6%9C%89%E5%BA%93%E4%BD%BF%E7%94%A8.md)
 
 - [内存管理 - Timer](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20Timer.md)
 
