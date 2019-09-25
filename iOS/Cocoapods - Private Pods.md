@@ -453,6 +453,24 @@ $ git tag '0.1.0'
 $ git push origin 0.1.0
 ```
 
+### 0x04 `The 'resource_bundles' pattern for 'ZZBase' did not match any file.`
+
+验证`spec `时出现`The 'resource_bundles' pattern for 'ZZBase' did not match any file.`错误。
+
+```
+$ pod spec lint --allow-warnings             
+
+ -> ZZBase (0.1.2)
+    - WARN  | url: The URL (https://github.com/zhaoName/ZZBase) is not reachable.
+    - ERROR | [iOS] file patterns: The `resource_bundles` pattern for `ZZBase` did not match any file.
+    - NOTE  | [ZZBase/ZZCategray,ZZBase/ZZNetwork] xcodebuild:  note: Using new build system
+
+    Analyzed 1 podspec.
+
+[!] The spec did not pass validation, due to 1 error.
+```
+
+可能是由于：远程`tag`已经是最新版本，但`.podspec`中的版本忘记更改到最新版。将`.podspec`中的版本更新就可以。
 
 
 <br>
