@@ -1,5 +1,5 @@
 
-# CocoaPods - spec
+# CocoaPods(三) - spec
 
 
 <br>
@@ -295,6 +295,22 @@ spec. static_framework = true
 ```
 spec.dependency 'AFNetworking', '~> 1.0'
 ```
+
+- `prefix_header_file` : 是否在 pod 中使用 pch 文件，默认使用
+
+```
+spec.prefix_header_file = false
+```
+
+
+- `prefix_header_contents` : 向 pch 文件中添加内容，如
+
+```
+spec.prefix_header_contents = '#import <UIKit/UIKit.h>'
+```
+
+
+
 
 <br>
 

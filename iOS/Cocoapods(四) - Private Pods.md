@@ -1,4 +1,4 @@
-# Cocoapods - Private Pods
+# Cocoapods(四) - Private Pods
 
 <br>
 
@@ -206,7 +206,24 @@ Pod::Spec.new do |s|
 end
 ```
 
-### 0x03 将代码提交到仓库
+### 0x03 验证本地`lib`
+
+```
+$ pod lib lint --allow-warnings          
+
+ -> ZZBase (0.1.0)
+    - WARN  | url: The URL (https://github.com/zhaoName/ZZBase) is not reachable.
+    - NOTE  | xcodebuild:  note: Using new build system
+    - NOTE  | [iOS] xcodebuild:  note: Planning build
+    - NOTE  | [iOS] xcodebuild:  note: Constructing build description
+
+ZZBase passed validation.
+```
+
+可以先验证本地`lib`，这样可以出错的话可以早点发现，防止重复提交到远程仓库，删除远程 tag 重新打。
+
+
+### 0x04 将代码提交到仓库
 
 完善代码，确认无误后再将代码提交到`ZZBase`仓库
 
@@ -248,7 +265,7 @@ To https://github.com/zhaoName/ZZBase.git
  + b4fa9f2...afbdcc0 master -> master (forced update)
 ```
 
-### 0x04 打标签
+### 0x05 打标签
 
 标签的值`0.1.0`与`.podspec`文件中`s.version`的值保持一致。
 
@@ -257,21 +274,6 @@ $ git tag '0.1.0'
 $ git push --tags
 ```
 
-
-
-### 0x05 验证本地`lib`
-
-```
-$ pod lib lint --allow-warnings          
-
- -> ZZBase (0.1.0)
-    - WARN  | url: The URL (https://github.com/zhaoName/ZZBase) is not reachable.
-    - NOTE  | xcodebuild:  note: Using new build system
-    - NOTE  | [iOS] xcodebuild:  note: Planning build
-    - NOTE  | [iOS] xcodebuild:  note: Constructing build description
-
-ZZBase passed validation.
-```
 
 ### 0x06 验证`spec`
 
