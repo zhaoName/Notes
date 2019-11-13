@@ -6,9 +6,16 @@
 //  Copyright © 2019 XMB. All rights reserved.
 //
 
+#define ZZArrayListCompileDefine
+typedef struct {
+    unsigned int capacity; // allocate memory size
+    unsigned int count; // count of element currently in list
+    void **value;
+}ZZArrayList;
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "ZZArrayList.h"
 
 
@@ -28,7 +35,7 @@ ZZArrayList* zz_init_arrylist(unsigned int capacity)
 /// length of list
 unsigned int zz_lengthOfArrayList(ZZArrayList *list)
 {
-    if (list == NULL) return 0;
+    assert(list);
     return list->count;
 }
 
@@ -44,16 +51,14 @@ void zz_insertElem(ZZArrayList *list, void *elem)
 /// insert element at index
 void zz_insertElemAtIndex(ZZArrayList *list, void *elem, unsigned int index)
 {
-    if (list == NULL || elem == NULL || index >= list->capacity) return;
-    // list is full
-    if (list->count == list->capacity) return;
-    //prunsigned intf("%d\n", *(unsigned int *)(elem));
+    if (list == NULL || elem == NULL || index >= list->count) return;
+    //printf("%d\n", *(unsigned int *)(elem));
     
     for (unsigned int i=list->count; i>index; i--) {
         list->value[i] = list->value[i-1];
     }
     list->value[index] = elem;
-    //prunsigned intf("%d\n", *(unsigned int *)(list->value[index]));
+    //printf("%d\n", *(unsigned int *)(list->value[index]));
     list->count++;
 }
 
@@ -62,17 +67,17 @@ void zz_deleteElem(ZZArrayList *list, void *elem)
 {
     if (list == NULL || elem == NULL) return;
     
-    unsigned int deleteCout = 0;
+    unsigned int deleteCount = 0;
     for (int i=0; i<list->count; i++)
     {
         if (list->value[i] == elem) {
-            deleteCout++;
+            deleteCount++;
         }
         else {
-            list->value[i-deleteCout] = list->value[i];
+            list->value[i-deleteCount] = list->value[i];
         }
      }
-    list->count -= deleteCout;
+    list->count -= deleteCount;
 }
 
 /// delete element at index
@@ -93,35 +98,36 @@ void zz_updateElemAtIndex(ZZArrayList *list, unsigned int index, void *newValue)
     list->value[index] = newValue;
 }
 
-/// select
-void* zz_selectElemAtIndex(ZZArrayList *list, unsigned int index)
+/// get elem
+void* zz_getElemAtIndex(ZZArrayList *list, unsigned int index)
 {
-    if (list == NULL || index >= list->count || index < 0) return NULL;
+    assert(index < list->count);
     return list->value[index];
 }
-
 
 #pragma mark -- clear
 
 /// clear list
 void zz_clearArrayList(ZZArrayList *list)
 {
-    if (list == NULL) return;
+    assert(list);
     list->count = 0;
 }
 
 /// release list
 void zz_releaseArrayList(ZZArrayList *list)
 {
-    if (list == NULL) return;
+    assert(list);
+    free(list->value);
+    free(list);
 }
 
-#pragma mark -- prunsigned int
+#pragma mark -- print
 
-/// prunsigned int list
+/// print list
 void zz_printArrayList(ZZArrayList *list)
 {
-    if (list == NULL) return;
+    assert(list);
     
     printf("[");
     for (unsigned int i=0; i<list->count; i++) {

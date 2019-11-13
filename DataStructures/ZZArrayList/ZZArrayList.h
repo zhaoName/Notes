@@ -10,13 +10,9 @@
 #define ZZArrayList_h
 
 
-struct ZZArrayList {
-    unsigned int capacity; // alloc
-    unsigned int count; // count of element currently in list
-    void **value;
-};
-typedef struct ZZArrayList ZZArrayList;
-
+#ifndef ZZArrayListCompileDefine
+typedef void ZZArrayList;
+#endif
 
 /// init list
 ZZArrayList* zz_init_arrylist(unsigned int capacity);
@@ -35,7 +31,7 @@ void zz_deleteElemAtIndex(ZZArrayList *list, unsigned int index);
 /// update element
 void zz_updateElemAtIndex(ZZArrayList *list, unsigned int index, void *newValue);
 /// select
-void* zz_selectElemAtIndex(ZZArrayList *list, unsigned int index);
+void* zz_getElemAtIndex(ZZArrayList *list, unsigned int index);
 
 
 
@@ -45,7 +41,7 @@ void zz_clearArrayList(ZZArrayList *list);
 void zz_releaseArrayList(ZZArrayList *list);
 
 
-/// prunsigned int list
+/// print list
 void zz_printArrayList(ZZArrayList *list);
 
 #endif /* ZZArrayList_h */
