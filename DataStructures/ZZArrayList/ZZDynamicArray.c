@@ -17,6 +17,7 @@ typedef struct {
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 #include "ZZDynamicArray.h"
 
 
@@ -28,21 +29,24 @@ ZZDynamicArray* zz_init_dynamicArray(unsigned int capacity)
     if (arr) {
         arr->capacity = capacity;
         arr->count = 0;
-        arr->value = malloc(sizeof(void *) * capacity);
+        arr->value = malloc(sizeof(void *) * (capacity ? capacity : 1));
     }
     return arr;
 }
 
-void zz_resize_dynamicArray(ZZDynamicArray *arr)
+void zz_resize_dynamicArray(ZZDynamicArray *arr, unsigned int newSize)
 {
     assert(arr);
+    unsigned int newCapacity = arr->capacity;
     // grow if arr is full
-    if (arr->count > arr->capacity - 1) {
-        arr->capacity *= 2;;
+    if (newSize > arr->capacity) {
+        while (newCapacity < newSize) {
+            newCapacity *= 2;
+        }
     }
     // shrink if arr is almost empty
-    else if (arr->count * 2 < arr->capacity) {
-        arr->capacity = arr->capacity * 0.5;
+    else if (newSize * 2 < arr->capacity) {
+        newCapacity *= 0.5;
     }
     else {
         return;
@@ -52,7 +56,8 @@ void zz_resize_dynamicArray(ZZDynamicArray *arr)
     // 若 newSize > size：扩大原来内存块大小
     // 若原来内存块尾部有足够大的内存空间，则直接在原来内存块尾部开辟新的空间、
     // 若原来内存块尾部没有足够大的内存空间，则会重新开辟一块 newSize 大小的内存空间，并将原来内存块的内容拷贝过来
-    arr->value = realloc(arr->value, sizeof(void *) * arr->capacity);
+    arr->value = realloc(arr->value, sizeof(void *) * newCapacity);
+    arr->capacity = newCapacity;
     assert(arr->value);
 }
 
@@ -77,7 +82,7 @@ void zz_insertElemAtIndex(ZZDynamicArray *arr, void *elem, unsigned int index)
 {
     if (arr == NULL || elem == NULL || index > arr->count) return;
     // grow if full
-    zz_resize_dynamicArray(arr);
+    zz_resize_dynamicArray(arr, arr->count+1);
     //printf("%d\n", *(unsigned int *)(elem));
 
     for (unsigned int i=arr->count; i>index; i--) {
@@ -105,7 +110,7 @@ void zz_deleteElem(ZZDynamicArray *arr, void *elem)
      }
     arr->count -= deleteCount;
     // shrink if almost empty
-    zz_resize_dynamicArray(arr);
+    zz_resize_dynamicArray(arr, arr->count);
 }
 
 /// delete element at index
@@ -118,7 +123,7 @@ void zz_deleteElemAtIndex(ZZDynamicArray *arr, unsigned int index)
     }
     arr->count--;
     // shrink if almost empty
-    zz_resize_dynamicArray(arr);
+    zz_resize_dynamicArray(arr, arr->count);
 }
 
 /// update element
@@ -152,6 +157,51 @@ void zz_release_dynamicArray(ZZDynamicArray *arr)
     free(arr->value);
     free(arr);
 }
+
+#pragma mark -- 
+
+/// return a sublist  [index, length-1]
+ZZDynamicArray* zz_subArray_dynamicArray(ZZDynamicArray *arr, unsigned int index, unsigned int length)
+{
+    assert(arr);
+    // out of range
+    if (index + length > arr->count) return NULL;
+    
+    ZZDynamicArray *newArr = zz_init_dynamicArray(length);
+    memmove(newArr->value, arr->value + index, length * sizeof(void *));
+    newArr->count = length;
+    return newArr;
+}
+
+/// return a copy of list
+ZZDynamicArray* zz_copy_dynamicArray(ZZDynamicArray *arr)
+{
+    return zz_subArray_dynamicArray(arr, 0, arr->count);
+}
+
+/// append list onto des
+ZZDynamicArray* zz_append_dynamicArray(ZZDynamicArray *des, ZZDynamicArray *src)
+{
+    return zz_insert_dynamicArray(des, src, des->count);
+}
+
+/// insert list at given index
+ZZDynamicArray* zz_insert_dynamicArray(ZZDynamicArray *des, ZZDynamicArray *src, unsigned int index)
+{
+    // out of range
+    if (index > des->count) return NULL;
+    
+    // expansion if capacity of des is not enough
+    zz_resize_dynamicArray(des, des->count + src->count);
+    // move data after index to right
+    memmove(des->value + index + src->count, des->value + index, (des->count - index) * sizeof(void *));
+    // copy src to des
+    memmove(des->value + index, src->value, src->count * sizeof(void*));
+    // modify des count
+    des->count += src->count;
+    return des;
+}
+
 
 #pragma mark -- print
 

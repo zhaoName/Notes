@@ -33,12 +33,20 @@ void zz_updateElemAtIndex(ZZDynamicArray *arr, unsigned int index, void *newValu
 void* zz_getElemAtIndex(ZZDynamicArray *arr, unsigned int index);
 
 
-
 /// clear list
 void zz_clear_dynamicArray(ZZDynamicArray *arr);
 /// release list
 void zz_release_dynamicArray(ZZDynamicArray *arr);
 
+
+/// return a sublist 
+ZZDynamicArray* zz_subArray_dynamicArray(ZZDynamicArray *arr, unsigned int index, unsigned int length);
+/// return a copy of list
+ZZDynamicArray* zz_copy_dynamicArray(ZZDynamicArray *arr);
+/// append list onto des
+ZZDynamicArray* zz_append_dynamicArray(ZZDynamicArray *des, ZZDynamicArray *src);
+/// insert list at given index
+ZZDynamicArray* zz_insert_dynamicArray(ZZDynamicArray *des, ZZDynamicArray *src, unsigned int index);
 
 /// print list
 void zz_print_dynamicArray(ZZDynamicArray *arr);
