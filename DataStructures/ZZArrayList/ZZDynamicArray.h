@@ -47,6 +47,9 @@ ZZDynamicArray* zz_copy_dynamicArray(ZZDynamicArray *arr);
 ZZDynamicArray* zz_append_dynamicArray(ZZDynamicArray *des, ZZDynamicArray *src);
 /// insert list at given index
 ZZDynamicArray* zz_insert_dynamicArray(ZZDynamicArray *des, ZZDynamicArray *src, unsigned int index);
+/// judge arr contained elem or not, return 1 or 0
+unsigned int zz_containsElem(ZZDynamicArray *arr, void *ele);
+
 
 /// print list
 void zz_print_dynamicArray(ZZDynamicArray *arr);

@@ -203,6 +203,17 @@ ZZDynamicArray* zz_insert_dynamicArray(ZZDynamicArray *des, ZZDynamicArray *src,
     return des;
 }
 
+unsigned int zz_containsElem(ZZDynamicArray *arr, void *ele)
+{
+    assert(arr);
+    for (int i=0; i<arr->count; i++) {
+        if (arr->value[i] == ele) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 
 #pragma mark -- print
 

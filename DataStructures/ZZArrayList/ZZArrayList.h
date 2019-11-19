@@ -34,6 +34,9 @@ void zz_updateElemAtIndex(ZZArrayList *list, unsigned int index, void *newValue)
 void* zz_getElemAtIndex(ZZArrayList *list, unsigned int index);
 
 
+/// judge arr contained elem or not, return 1 or 0
+unsigned int zz_containsElem(ZZArrayList *list, void *ele)
+
 
 /// clear list
 void zz_clearArrayList(ZZArrayList *list);

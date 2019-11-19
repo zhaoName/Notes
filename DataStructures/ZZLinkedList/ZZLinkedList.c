@@ -167,6 +167,21 @@ void* zz_getNodeAtIndex(ZZLinkedList *list, unsigned int index)
     return nd->data;
 }
 
+#pragma mark -- 
+
+/// judge linked list contains node or not
+unsigned int zz_containsNode(ZZLinkedList *list, void *data)
+{
+    assert(list);
+    Node *nd = list;
+    while (nd) {
+        if (nd->data == data) {
+            return 1;
+        }
+        nd = nd->next;
+    }
+    return 0;
+}
 
 #pragma mark --
 

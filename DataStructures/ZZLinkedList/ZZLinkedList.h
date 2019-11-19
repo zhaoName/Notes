@@ -27,7 +27,6 @@ void zz_addNode(ZZLinkedList *list, void* data);
  */
 ZZLinkedList* zz_insertNodeAtIndex(ZZLinkedList *list, void* data, unsigned int index);
 
-
 /**
  * delete node that node value is equal to given data
  *
@@ -39,6 +38,8 @@ ZZLinkedList* zz_deleteNodeAtIndex(ZZLinkedList *list, unsigned int index);
 void zz_updateNodeAtIndex(ZZLinkedList *list, unsigned int index, void* newData);
 void* zz_getNodeAtIndex(ZZLinkedList *list, unsigned int index);
 
+/// judge linked list contains node or not
+unsigned int zz_containsNode(ZZLinkedList *list, void *data);
 
 unsigned int zz_length_linkedList(ZZLinkedList *list);
 unsigned int zz_isEmpty(ZZLinkedList *list);

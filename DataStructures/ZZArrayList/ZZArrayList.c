@@ -105,6 +105,19 @@ void* zz_getElemAtIndex(ZZArrayList *list, unsigned int index)
     return list->value[index];
 }
 
+#pragma mark --
+
+unsigned int zz_containsElem(ZZArrayList *list, void *ele)
+{
+    assert(list);
+    for (int i=0; i<list->count; i++) {
+        if (list->value[i] == ele) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 #pragma mark -- clear
 
 /// clear list
