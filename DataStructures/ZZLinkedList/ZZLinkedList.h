@@ -2,7 +2,7 @@
 //  ZZLinkedList.h
 //  ZZDataStructures
 //
-//  Created by zhao on 2019/11/15.
+//  Created by zhaoName on 2019/11/15.
 //  Copyright © 2019 XMB. All rights reserved.
 //  C 单链表 无头结点
 
@@ -10,12 +10,9 @@
 #define ZZLinkedList_h
 
 
-typedef struct ZZNode{
-    void *data;
-    struct ZZNode *next;
-}Node;
-typedef struct ZZNode ZZLinkedList;
-
+#ifndef ZZLinkedListCompileDefine
+typedef void ZZLinkedList;
+#endif
 
 ZZLinkedList* zz_init_linkedList(void);
 
