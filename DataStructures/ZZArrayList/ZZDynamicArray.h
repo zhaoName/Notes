@@ -36,7 +36,7 @@ void* zz_getElemAtIndex(ZZDynamicArray *arr, unsigned int index);
 /// clear list
 void zz_clear_dynamicArray(ZZDynamicArray *arr);
 /// release list
-void zz_release_dynamicArray(ZZDynamicArray *arr);
+void zz_release_dynamicArray(ZZDynamicArray **arr);
 
 
 /// return a sublist 

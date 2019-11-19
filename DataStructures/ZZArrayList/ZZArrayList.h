@@ -38,7 +38,7 @@ void* zz_getElemAtIndex(ZZArrayList *list, unsigned int index);
 /// clear list
 void zz_clearArrayList(ZZArrayList *list);
 /// release list
-void zz_releaseArrayList(ZZArrayList *list);
+void zz_releaseArrayList(ZZArrayList **list);
 
 
 /// print list

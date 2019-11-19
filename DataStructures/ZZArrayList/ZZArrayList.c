@@ -115,17 +115,18 @@ void zz_clearArrayList(ZZArrayList *list)
 }
 
 /// release list
-void zz_releaseArrayList(ZZArrayList *list)
+void zz_releaseArrayList(ZZArrayList **list)
 {
-    assert(list);
-    free(list->value);
-    free(list);
+    assert(*list);
+    free((*list)->value);
+    free(*list);
+    *list = NULL;
 }
 
 #pragma mark -- print
 
 /// print list
-void zz_printArrayList(ZZArrayList *list)
+ zz_printArrayList(ZZArrayList *list)
 {
     assert(list);
     

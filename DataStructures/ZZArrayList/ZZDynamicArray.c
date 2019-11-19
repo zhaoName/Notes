@@ -151,11 +151,12 @@ void zz_clear_dynamicArray(ZZDynamicArray *arr)
 }
 
 /// release arr
-void zz_release_dynamicArray(ZZDynamicArray *arr)
+void zz_release_dynamicArray(ZZDynamicArray **arr)
 {
     assert(arr);
-    free(arr->value);
-    free(arr);
+    free((*arr)->value);
+    free(*arr);
+    *arr = NULL;
 }
 
 #pragma mark -- 
