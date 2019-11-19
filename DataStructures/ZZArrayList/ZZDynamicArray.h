@@ -19,8 +19,8 @@ ZZDynamicArray* zz_init_dynamicArray(unsigned int capacity);
 unsigned int zz_length_dynamicArray(ZZDynamicArray *arr);
 
 
-/// insert element at last
-void zz_insertElem(ZZDynamicArray *arr, void *elem);
+/// insert element at tail
+void zz_addElem(ZZDynamicArray *arr, void *elem);
 /// insert element at index
 void zz_insertElemAtIndex(ZZDynamicArray *arr, void *elem, unsigned int index);
 /// delete all given element if existed

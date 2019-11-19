@@ -139,7 +139,7 @@ void zz_releaseArrayList(ZZArrayList **list)
 #pragma mark -- print
 
 /// print list
- zz_printArrayList(ZZArrayList *list)
+void zz_printArrayList(ZZArrayList *list)
 {
     assert(list);
     

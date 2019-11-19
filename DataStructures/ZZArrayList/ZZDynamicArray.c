@@ -71,7 +71,7 @@ unsigned int zz_length_dynamicArray(ZZDynamicArray *arr)
 #pragma mark -- CRUD
 
 /// insert element at last
-void zz_insertElem(ZZDynamicArray *arr, void *elem)
+void zz_addElem(ZZDynamicArray *arr, void *elem)
 {
     if (arr == NULL || elem == NULL) return;
     zz_insertElemAtIndex(arr, elem, arr->count);

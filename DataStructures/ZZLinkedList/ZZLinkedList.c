@@ -183,7 +183,7 @@ unsigned int zz_containsNode(ZZLinkedList *list, void *data)
     return 0;
 }
 
-#pragma mark --
+#pragma mark -- 
 
 unsigned int zz_length_linkedList(ZZLinkedList *list)
 {
