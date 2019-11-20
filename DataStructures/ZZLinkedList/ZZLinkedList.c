@@ -230,13 +230,12 @@ void zz_relsese_linkedList(ZZLinkedList **list)
 
 void zz_print_linkedList(ZZLinkedList *list)
 {
-    printf("[");
     Node *nd = list;
     while (nd) {
         int *ele = (int *)nd->data;
-        printf("%d, ", *ele);
+        printf("%d->", *ele);
         nd = nd->next;
     }
-    printf("]\n");
+    printf("null\n");
 }
 
