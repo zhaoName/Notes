@@ -44,6 +44,7 @@ ZZHeadLinkedList* zz_reverse_headLinkedList(ZZHeadLinkedList *list)
  *    void *data;
  *    struct ZZNode *next;
  * }Node;
+ * 
  * typedef struct ZZNode ZZLinkedList;
  */
 ZZLinkedList* zz_reverse_linkedList(ZZLinkedList *list)
