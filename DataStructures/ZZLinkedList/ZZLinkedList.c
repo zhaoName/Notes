@@ -86,24 +86,28 @@ ZZLinkedList* zz_insertNodeAtIndex(ZZLinkedList *list, void* data, unsigned int 
 ZZLinkedList* zz_deleteNodeWithData(ZZLinkedList *list, void *data)
 {
     assert(list);
-    // 
-    while (list->data == data) {
+    // you need to give priority ot determine if the list is empty
+    // because the list may be empty after deleting a node.
+    while (list && list->data == data) {
         // delete first node
         Node *nd = list;
         list = list->next;
         free(nd);
         count--;
     }
-    Node *nd = list;
+    // list == null indicates that all nodes in the linked list have been deleted
+    // eg. list: 1->1->null   data: 1
+    if (list == NULL) return NULL;
     // count limit range, no need to judge node->next is null
     // lookup the previous node that need to deleted
-    for (int i=0; i<count-1; i++)  {
+    Node *nd = list;
+    while (nd->next) {
         if (nd->next->data == data) {
+            Node *delNode = nd->next;
             nd->next = nd->next->next;
-            free(nd->next);
+            free(delNode);
             count--;
-        }
-        else {
+        } else {
             nd = nd->next;
         }
     }
@@ -225,6 +229,39 @@ void zz_relsese_linkedList(ZZLinkedList **list)
     count = 0;
 }
 
+#pragma mark -- algorithm
+
+ZZLinkedList* zz_reverse_linkedList(ZZLinkedList *list)
+{
+    if (list == NULL) return NULL;
+    
+    ZZLinkedList *reverseList = zz_init_linkedList();
+    Node *nd = list;
+    int i = 0;
+    while (nd) {
+        Node *nextNode = nd->next;
+        if (i == 0) {
+            reverseList->data = nd->data;
+            reverseList->next = NULL;
+        }
+        else{
+            nd->next = reverseList;
+            reverseList = nd;
+        }
+        i++;
+        nd = nextNode;
+    }
+    return reverseList;
+}
+
+ZZLinkedList* zz_recursive_reverse_linkedList(ZZLinkedList *list)
+{
+    if (list == NULL) return NULL;
+    ZZLinkedList *reverseList = zz_init_linkedList();
+    
+    
+    return reverseList;
+}
 
 #pragma mark -- print
 

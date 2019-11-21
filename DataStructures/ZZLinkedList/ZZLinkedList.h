@@ -46,6 +46,10 @@ unsigned int zz_isEmpty(ZZLinkedList *list);
 void zz_clear_linkedList(ZZLinkedList *list);
 void zz_relsese_linkedList(ZZLinkedList **list);
 
+/// use iterative methods to rolve reverse linked list
+ZZLinkedList* zz_reverse_linkedList(ZZLinkedList *list);
+/// use recursive methods to rolve reverse linked list
+ZZLinkedList* zz_recursive_reverse_linkedList(ZZLinkedList *list);
 
 void zz_print_linkedList(ZZLinkedList *list);
 
