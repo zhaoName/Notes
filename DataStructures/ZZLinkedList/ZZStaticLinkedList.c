@@ -39,12 +39,19 @@ void zz_insertNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int 
     assert(list);
     // get the cursor of the next node
     unsigned int nextIndex = list[0].cur;
-    
-    for (int i=0; i<index; i++) {
-        int k = list[i].cur;
-    }
     list[nextIndex].cur = 0;
     list[nextIndex].data = newData;
+    
+    for (int i=0; i<count; i++)
+    {
+        if (list[i].cur == index) {
+            list[nextIndex].cur = list[i].cur;
+            list[i].cur = nextIndex;
+            count++;
+            break;
+        }
+    }
+    
     if (index == 0) {
         list[nextIndex].cur = list[count+1].cur;
         list[count+1].cur = nextIndex;
@@ -54,6 +61,13 @@ void zz_insertNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int 
     count++;
 }
 
+
+void zz_deleteNodeAtIndex(ZZStaticLinkedList *list, unsigned int index)
+{
+    assert(list);
+    
+    
+}
 
 #pragma mark -- priate method
 
