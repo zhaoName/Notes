@@ -33,4 +33,6 @@ void zz_addNode(ZZStaticLinkedList *list, void *newData);
 void zz_insertNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int index);
 
 
+void zz_print_staticLinkedList(ZZStaticLinkedList *list);
+
 #endif /* ZZStaticLinkedList_h */
