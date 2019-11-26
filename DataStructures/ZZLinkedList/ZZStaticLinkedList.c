@@ -96,7 +96,23 @@ void zz_deleteNodeAtIndex(ZZStaticLinkedList *list, unsigned int index)
 
 void zz_deleteNodeWithData(ZZStaticLinkedList *list, void *data)
 {
+    assert(list);
     
+    unsigned int index = _capaticy-1;
+    for (int i=0; i<_count; i++) {
+        // lookup the index of previous node that given index
+        if (list[list[index].cur].data == data) {
+            unsigned int delIndex = list[index].cur;
+            list[index].cur = list[delIndex].cur;
+            list[delIndex].data = NULL;
+            list[delIndex].cur = list[0].cur;
+            list[0].cur = delIndex;
+            _count--;
+        }
+        else {
+            index = list[index].cur;
+        }
+    }
 }
 
 void zz_updateNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int index)

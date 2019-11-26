@@ -38,7 +38,7 @@ void zz_insertNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int 
 * @param index node position in the linked list, [0, _count-1] in list, [1, _capacity-2] in array
 */
 void zz_deleteNodeAtIndex(ZZStaticLinkedList *list, unsigned int index);
-
+void zz_deleteNodeWithData(ZZStaticLinkedList *list, void *data);
 void zz_updateNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int index);
 void* zz_getNodeDataAtIndex(ZZStaticLinkedList *list, unsigned int index);
 
