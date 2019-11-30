@@ -41,5 +41,6 @@ void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList *list);
 
 
 void zz_print_doubleLinkedList(ZZDoubleHeadLinkedList *list);
+void zz_reverse_print_doubleLinkedList(ZZDoubleHeadLinkedList *list);
 
 #endif /* ZZDoubleHeadLinkedList_h */

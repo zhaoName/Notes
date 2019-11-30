@@ -70,23 +70,119 @@ void zz_insertNodeAtIndex(ZZDoubleHeadLinkedList *list, void *newData, unsigned 
 
 void zz_deleteNodeAtIndex(ZZDoubleHeadLinkedList *list, unsigned int index)
 {
+    assert(index < list->count);
     
+    ZZNode *nd = list->head;
+    for (int i=0; i<index; i++) {
+        nd = nd->next;
+    }
+    ZZNode *delNode = nd->next;
+    if (index == list->count - 1) {
+        nd->next = NULL;
+        list->tail = nd;
+    }
+    else {
+        nd->next->next->prev = nd;
+        nd->next = nd->next->next;
+    }
+    delNode = NULL;
+    free(delNode);
+    list->count--;
 }
 
 void zz_deleteNodeWithData(ZZDoubleHeadLinkedList *list, void *data)
 {
+    assert(list);
     
+    ZZNode *nd = list->head;
+    for (int i=0; i<=list->count; i++)
+    {
+        if (nd->next->data == data) {
+            ZZNode *delNode = nd->next;
+            if (i == list->count) {
+                nd->next = NULL;
+                list->tail = nd;
+            }
+            else {
+                nd->next->next->prev = nd;
+                nd->next = nd->next->next;
+            }
+            delNode = NULL;
+            free(delNode);
+            list->count--;
+        }
+        else {
+            nd = nd->next;
+        }
+    }
 }
 
-void* zz_getNodeAtIndex(ZZDoubleHeadLinkedList *list, unsigned int index);
-void zz_updateNodeAtInde(ZZDoubleHeadLinkedList *list, void *newData, unsigned int index);
+void* zz_getNodeAtIndex(ZZDoubleHeadLinkedList *list, unsigned int index)
+{
+    assert(index < list->count);
+    
+    if (index == list->count - 1) {
+        return list->tail->data;
+    }
+    ZZNode *nd = list->head->next;
+    for (int i=0; i<index; i++) {
+        nd = nd->next;
+    }
+    return nd->data;
+}
+
+void zz_updateNodeAtInde(ZZDoubleHeadLinkedList *list, void *newData, unsigned int index)
+{
+    assert(index < list->count);
+    
+    if (index == list->count - 1) {
+        list->tail->data = newData;
+        return;
+    }
+    ZZNode *nd = list->head->next;
+    for (int i=0; i<index; i++) {
+        nd = nd->next;
+    }
+    nd->data = newData;
+}
 
 
 #pragma mark -- clear
 
-unsigned int zz_lenght_doubleLinkedList(ZZDoubleHeadLinkedList *list);
-void zz_clear_doubleLinkedList(ZZDoubleHeadLinkedList *list);
-void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList *list);
+unsigned int zz_lenght_doubleLinkedList(ZZDoubleHeadLinkedList *list)
+{
+    assert(list);
+    return list->count;
+}
+
+void zz_clear_doubleLinkedList(ZZDoubleHeadLinkedList *list)
+{
+    assert(list);
+    ZZNode *nd = list->head;
+    for (int i=0; i<=list->count; i++) {
+        
+    }
+    list->head = NULL;
+    list->tail = NULL;
+    list->count = 0;
+}
+
+void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList *list)
+{
+    assert(list);
+    assert(list);
+    ZZNode *nd = list->head;
+    
+    for (int i=0; i<=list->count; i++) {
+        zz_deleteNodeAtIndex(list, i);
+    }
+    free(list->head);
+    list->head = NULL;
+    free(list->tail);
+    list->tail = NULL;
+    list->count = 0;
+    free(list);
+}
 
 
 #pragma mark -- print
@@ -103,4 +199,16 @@ void zz_print_doubleLinkedList(ZZDoubleHeadLinkedList *list)
     }
     printf("null\n");
     
+}
+
+void zz_reverse_print_doubleLinkedList(ZZDoubleHeadLinkedList *list)
+{
+    assert(list);
+    ZZNode *nd = list->tail;
+    while (nd != list->head) {
+        int *ele = (int *)nd->data;
+        printf("%d->", *ele);
+        nd = nd->prev;
+    }
+    printf("head\n");
 }
