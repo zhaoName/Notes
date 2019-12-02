@@ -94,8 +94,9 @@ void zz_deleteNodeWithData(ZZDoubleHeadLinkedList *list, void *data)
 {
     assert(list);
     
+    int i = 0;
     ZZNode *nd = list->head;
-    for (int i=0; i<=list->count; i++)
+    while (nd->next)
     {
         if (nd->next->data == data) {
             ZZNode *delNode = nd->next;
@@ -113,6 +114,7 @@ void zz_deleteNodeWithData(ZZDoubleHeadLinkedList *list, void *data)
         }
         else {
             nd = nd->next;
+            i++;
         }
     }
 }
@@ -177,9 +179,9 @@ void zz_clear_doubleLinkedList(ZZDoubleHeadLinkedList *list)
 {
     assert(list);
     ZZNode *nd = list->head;
-    for (int i=0; i<list->count; i++) {
+    while (nd->next) {
         ZZNode *delNode = nd->next;
-        if (i == list->count -1) {
+        if (list->count == 1) {
             nd->next = NULL;
             list->tail = nd;
         }
@@ -193,7 +195,6 @@ void zz_clear_doubleLinkedList(ZZDoubleHeadLinkedList *list)
     }
     list->head->next = NULL;
     list->tail = NULL;
-    list->count = 0;
 }
 
 void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList **list)
@@ -201,9 +202,9 @@ void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList **list)
     assert(*list);
     assert(*list);
     ZZNode *nd = (*list)->head;
-    for (int i=0; i<=(*list)->count; i++) {
+    while (nd->next) {
         ZZNode *delNode = nd->next;
-        if (i == (*list)->count -1) {
+        if ((*list)->count == 1) {
             nd->next = NULL;
             (*list)->tail = nd;
         }
@@ -219,7 +220,6 @@ void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList **list)
     (*list)->head = NULL;
     //free((*list)->tail);
     (*list)->tail = NULL;
-    (*list)->count = 0;
     free(*list);
 }
 

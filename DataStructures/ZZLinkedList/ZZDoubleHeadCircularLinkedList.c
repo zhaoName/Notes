@@ -76,8 +76,9 @@ void zz_deleteNodeWithData(ZZDHCircularLinkedList *list, void *data)
 {
     assert(list);
     
+    int i = 0;
     ZZNode *nd = list->head;
-    for (int i=0; i<=list->count; i++)
+    while (nd->next != list->head)
     {
         if (nd->next->data == data) {
             ZZNode *delNode = nd->next;
@@ -89,6 +90,7 @@ void zz_deleteNodeWithData(ZZDHCircularLinkedList *list, void *data)
         }
         else {
             nd = nd->next;
+            i++;
         }
     }
 }
@@ -169,24 +171,24 @@ void zz_clear_dhCircularLinkedList(ZZDHCircularLinkedList *list)
     list->count = 0;
 }
 
-void zz_release__dhCircularLinkedList(ZZDHCircularLinkedList *list)
+void zz_release__dhCircularLinkedList(ZZDHCircularLinkedList **list)
 {
-    assert(list);
+    assert(*list);
     
-    ZZNode *nd = list->head->next;
-    while (nd != list->head) {
+    ZZNode *nd = (*list)->head->next;
+    while (nd != (*list)->head) {
         // point to next node
-        nd->next->prev = list->head;
-        list->head->next = nd->next;
+        nd->next->prev = (*list)->head;
+        (*list)->head->next = nd->next;
         // free current node
         free(nd);
         // reset nd
-        nd = list->head->next;
+        nd = (*list)->head->next;
     }
-    free(list->head);
-    list->head = NULL;
-    list->count = 0;
-    free(list);
+    free((*list)->head);
+    (*list)->head = NULL;
+    (*list)->count = 0;
+    free((*list));
 }
 
 #pragma mark -- print

@@ -62,8 +62,9 @@ void zz_deleteNodeWithData(ZZCircularHeadLinkedList *list, void *data)
 {
     assert(list);
     
+    int i = 0;
     ZZNode *nd = list->head;
-    for (int i=0; i<list->count; i++)
+    while (nd->next != list->head)
     {
         if (nd->next->data == data) {
             ZZNode *delNode = nd->next;
@@ -77,6 +78,7 @@ void zz_deleteNodeWithData(ZZCircularHeadLinkedList *list, void *data)
         }
         else {
             nd = nd->next;
+            i++;
         }
     }
 }

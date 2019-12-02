@@ -40,7 +40,7 @@ int zz_indexOfData(ZZDHCircularLinkedList *list, void *data);
 
 unsigned int zz_length_dhCircularLinkedList(ZZDHCircularLinkedList *list);
 void zz_clear_dhCircularLinkedList(ZZDHCircularLinkedList *list);
-void zz_release__dhCircularLinkedList(ZZDHCircularLinkedList *list);
+void zz_release__dhCircularLinkedList(ZZDHCircularLinkedList **list);
 
 
 void zz_print_dhCircularLinkedList(ZZDHCircularLinkedList *list);
