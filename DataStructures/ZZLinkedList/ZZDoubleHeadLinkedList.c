@@ -149,6 +149,24 @@ void zz_updateNodeAtInde(ZZDoubleHeadLinkedList *list, void *newData, unsigned i
 
 #pragma mark -- clear
 
+/// find the index of node whose value is equal to given data
+/// data == null or don't find return -1
+int zz_indexOfData_doubleLinkedList(ZZDoubleHeadLinkedList *list, void *data)
+{
+    assert(list);
+    if (data == NULL) return -1;
+    
+    ZZNode *nd = list->head->next;
+    for (int i=0; i<list->count; i++) {
+        if (nd->data == data) {
+            return i;
+        } else {
+            nd = nd->next;
+        }
+    }
+    return -1;
+}
+
 unsigned int zz_lenght_doubleLinkedList(ZZDoubleHeadLinkedList *list)
 {
     assert(list);
@@ -159,29 +177,50 @@ void zz_clear_doubleLinkedList(ZZDoubleHeadLinkedList *list)
 {
     assert(list);
     ZZNode *nd = list->head;
-    for (int i=0; i<=list->count; i++) {
-        
+    for (int i=0; i<list->count; i++) {
+        ZZNode *delNode = nd->next;
+        if (i == list->count -1) {
+            nd->next = NULL;
+            list->tail = nd;
+        }
+        else {
+            nd->next->next->prev = nd;
+            nd->next = nd->next->next;
+        }
+        delNode = NULL;
+        free(delNode);
+        list->count--;
     }
-    list->head = NULL;
+    list->head->next = NULL;
     list->tail = NULL;
     list->count = 0;
 }
 
-void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList *list)
+void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList **list)
 {
-    assert(list);
-    assert(list);
-    ZZNode *nd = list->head;
-    
-    for (int i=0; i<=list->count; i++) {
-        zz_deleteNodeAtIndex(list, i);
+    assert(*list);
+    assert(*list);
+    ZZNode *nd = (*list)->head;
+    for (int i=0; i<=(*list)->count; i++) {
+        ZZNode *delNode = nd->next;
+        if (i == (*list)->count -1) {
+            nd->next = NULL;
+            (*list)->tail = nd;
+        }
+        else {
+            nd->next->next->prev = nd;
+            nd->next = nd->next->next;
+        }
+        delNode = NULL;
+        free(delNode);
+        (*list)->count--;
     }
-    free(list->head);
-    list->head = NULL;
-    free(list->tail);
-    list->tail = NULL;
-    list->count = 0;
-    free(list);
+    free((*list)->head);
+    (*list)->head = NULL;
+    //free((*list)->tail);
+    (*list)->tail = NULL;
+    (*list)->count = 0;
+    free(*list);
 }
 
 

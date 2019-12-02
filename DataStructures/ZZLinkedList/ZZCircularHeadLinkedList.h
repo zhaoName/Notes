@@ -33,6 +33,9 @@ void zz_updateNodeAtIndex(ZZCircularHeadLinkedList *list, unsigned int index, vo
 void* zz_getNodeAtIndex(ZZCircularHeadLinkedList *list, unsigned int index);
 
 
+/// find the index of node whose value is equal to given data
+/// data == null or don't find return -1
+int zz_indeOfData__circularLinkedList(ZZCircularHeadLinkedList *list, void *data);
 unsigned int zz_length_circularLinkedList(ZZCircularHeadLinkedList *list);
 void zz_clear_circularLinkedList(ZZCircularHeadLinkedList *list);
 void zz_release_circularLinkedList(ZZCircularHeadLinkedList **list);

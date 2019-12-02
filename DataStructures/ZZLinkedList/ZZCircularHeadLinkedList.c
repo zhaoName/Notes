@@ -124,6 +124,24 @@ void* zz_getNodeAtIndex(ZZCircularHeadLinkedList *list, unsigned int index)
 
 #pragma mark -- clear
 
+/// find the index of node whose value is equal to given data
+/// data == null or don't find return -1
+int zz_indeOfData__circularLinkedList(ZZCircularHeadLinkedList *list, void *data)
+{
+    assert(list);
+    if (data == NULL) return -1;
+    
+    ZZNode *nd = list->head->next;
+    for (int i=0; i<list->count; i++) {
+        if (nd->data == data) {
+            return i;
+        } else {
+            nd = nd->next;
+        }
+    }
+    return -1;
+}
+
 unsigned int zz_length_circularLinkedList(ZZCircularHeadLinkedList *list)
 {
     assert(list);

@@ -34,10 +34,13 @@ void zz_deleteNodeWithData(ZZDoubleHeadLinkedList *list, void *data);
 void* zz_getNodeAtIndex(ZZDoubleHeadLinkedList *list, unsigned int index);
 void zz_updateNodeAtInde(ZZDoubleHeadLinkedList *list, void *newData, unsigned int index);
 
-
+/// find the index of node whose value is equal to given data
+/// data == null or don't find return -1
+int zz_indexOfData_doubleLinkedList(ZZDoubleHeadLinkedList *list, void *data);
+/// count of list
 unsigned int zz_lenght_doubleLinkedList(ZZDoubleHeadLinkedList *list);
 void zz_clear_doubleLinkedList(ZZDoubleHeadLinkedList *list);
-void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList *list);
+void zz_release_doubleLinkedList(ZZDoubleHeadLinkedList **list);
 
 
 void zz_print_doubleLinkedList(ZZDoubleHeadLinkedList *list);
