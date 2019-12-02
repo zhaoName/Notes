@@ -17,6 +17,7 @@ typedef struct ZZNode {
 typedef struct {
     unsigned int count;
     ZZNode *head;
+    // tail pointer, point to the last node
     ZZNode *tail;
 }ZZCircularHeadLinkedList;
 

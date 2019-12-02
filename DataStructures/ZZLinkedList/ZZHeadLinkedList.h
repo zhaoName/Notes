@@ -33,6 +33,8 @@ unsigned int zz_isEmpty(ZZHeadLinkedList *list);
 void zz_clear_headLinkedList(ZZHeadLinkedList *list);
 void zz_release_headLinkedList(ZZHeadLinkedList **list);
 
+ZZHeadLinkedList* zz_reverse_headLinkedList(ZZHeadLinkedList *list);
+
 void zz_print_headLinkedList(ZZHeadLinkedList *list);
 
 #endif /* ZZHeadLinkedList_h */

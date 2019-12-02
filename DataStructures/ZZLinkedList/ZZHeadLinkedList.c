@@ -169,6 +169,22 @@ void zz_release_headLinkedList(ZZHeadLinkedList **list)
     *list = NULL;
 }
 
+#pragma mark -- algorithm
+
+ZZHeadLinkedList* zz_reverse_headLinkedList(ZZHeadLinkedList *list)
+{
+    assert(list);
+    ZZHeadLinkedList *reverseList = zz_init_headLinkedList();
+    Node *nd = list->head->next;
+    while (nd) {
+        Node *nextNode = nd->next;
+        nd->next = reverseList->head->next;;
+        reverseList->head->next = nd;
+        nd = nextNode;
+    }
+    return reverseList;
+}
+
 #pragma mark -- print
 
 void zz_print_headLinkedList(ZZHeadLinkedList *list)

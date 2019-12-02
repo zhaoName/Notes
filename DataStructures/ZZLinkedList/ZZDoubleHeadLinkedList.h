@@ -18,6 +18,7 @@ typedef struct ZZNode {
 typedef struct DoubleLinkedList {
     unsigned int count;
     ZZNode *head;
+    // tail pointer, point to the last node
     ZZNode *tail;
 }ZZDoubleHeadLinkedList;
 
