@@ -37,6 +37,11 @@ ZZLinkedList* zz_deleteNodeWithData(ZZLinkedList *list, void *data);
 ZZLinkedList* zz_deleteNodeAtIndex(ZZLinkedList *list, unsigned int index);
 void zz_updateNodeAtIndex(ZZLinkedList *list, unsigned int index, void* newData);
 void* zz_getNodeAtIndex(ZZLinkedList *list, unsigned int index);
+/**
+ * find the index of node whose value is equal to given data
+ * data == null or don't find return -1
+ */
+int zz_indexOfNode(ZZLinkedList *list, void *data);
 
 /// judge linked list contains node or not
 unsigned int zz_containsNode(ZZLinkedList *list, void *data);

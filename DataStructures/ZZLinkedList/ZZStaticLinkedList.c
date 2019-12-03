@@ -142,6 +142,25 @@ void* zz_getNodeDataAtIndex(ZZStaticLinkedList *list, unsigned int index)
     return list[curIndex].data;
 }
 
+/**
+ * find the index of node whose value is equal to given data
+ * data == null or don't find return -1
+ */
+int zz_indexOfNode(ZZStaticLinkedList *list, void *data)
+{
+    assert(list);
+    if (data == NULL) return -1;
+    
+    unsigned int curIndex = _capacity-1;
+    while (curIndex) {
+        curIndex = list[curIndex].cur;
+        if (list[curIndex].data == data) {
+            return curIndex;
+        }
+    }
+    return -1;
+}
+
 #pragma mark -- clear
 
 unsigned int zz_length_staticLinkedList(ZZStaticLinkedList *list)

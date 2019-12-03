@@ -115,6 +115,21 @@ void* zz_getNodeAtIndex(ZZHeadLinkedList *list, unsigned int index)
     return nd->data;
 }
 
+int zz_indexOfNode(ZZHeadLinkedList *list, void *data)
+{
+    assert(list);
+    if (data == NULL) return -1;
+    
+    Node *nd = list->head->next;
+    for (int i=0; i<list->count; i++) {
+        if (nd->data == data) {
+            return i;
+        }
+        nd = nd->next;
+    }
+    return -1;
+}
+
 #pragma mark -- extend
 
 unsigned int zz_containsNode(ZZHeadLinkedList *list, void *data)

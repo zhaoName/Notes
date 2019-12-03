@@ -23,8 +23,15 @@ void zz_deleteNode(ZZHeadLinkedList *list, void *data);
 void zz_deleteNodeAtIndex(ZZHeadLinkedList *list, unsigned int index);
 void zz_updateNodeAtIndex(ZZHeadLinkedList *list, unsigned int index, void *newData);
 void* zz_getNodeAtIndex(ZZHeadLinkedList *list, unsigned int index);
-
-
+/**
+ * find the index of node whose value is equal to given data
+ * data == null or don't find return -1
+ */
+int zz_indexOfNode(ZZHeadLinkedList *list, void *data);
+/**
+ * determine if a node is included in the linked list
+ * return 1 or 0
+ */
 unsigned int zz_containsNode(ZZHeadLinkedList *list, void *data);
 
 

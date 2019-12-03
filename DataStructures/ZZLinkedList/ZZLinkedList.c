@@ -18,8 +18,8 @@ typedef struct ZZNode ZZLinkedList;
 #include <assert.h>
 #include <stdlib.h>
 
-/// linked list count
-unsigned int count = 0;
+/// linked list _count
+unsigned int _count = 0;
 
 #pragma mark -- Init
 
@@ -28,7 +28,7 @@ ZZLinkedList* zz_init_linkedList(void)
     ZZLinkedList *list = malloc(sizeof(ZZLinkedList));
     assert(list);
     list->next = NULL;
-    count = 0;
+    _count = 0;
     return list;
 }
 
@@ -39,14 +39,14 @@ ZZLinkedList* zz_init_linkedList(void)
 void zz_addNode(ZZLinkedList *list, void* data)
 {
     assert(list);
-    zz_insertNodeAtIndex(list, data, count);
+    zz_insertNodeAtIndex(list, data, _count);
 }
 
 /// insert node at index
 ZZLinkedList* zz_insertNodeAtIndex(ZZLinkedList *list, void* data, unsigned int index)
 {
     assert(list);
-    assert(index <= count);
+    assert(index <= _count);
     
     // create new node
     Node *node = malloc(sizeof(Node));
@@ -55,7 +55,7 @@ ZZLinkedList* zz_insertNodeAtIndex(ZZLinkedList *list, void* data, unsigned int 
     
     if (index == 0) {
         // list is null, and insert first node
-        if (count == 0) {
+        if (_count == 0) {
             list->data = node->data;
             free(node);
         }
@@ -78,7 +78,7 @@ ZZLinkedList* zz_insertNodeAtIndex(ZZLinkedList *list, void* data, unsigned int 
         node->next = nd->next;
         nd->next = node;
     }
-    count++;
+    _count++;
     return list;
 }
 
@@ -93,12 +93,12 @@ ZZLinkedList* zz_deleteNodeWithData(ZZLinkedList *list, void *data)
         Node *nd = list;
         list = list->next;
         free(nd);
-        count--;
+        _count--;
     }
     // list == null indicates that all nodes in the linked list have been deleted
     // eg. list: 1->1->null   data: 1
     if (list == NULL) return NULL;
-    // count limit range, no need to judge node->next is null
+    // _count limit range, no need to judge node->next is null
     // lookup the previous node that need to deleted
     Node *nd = list;
     while (nd->next) {
@@ -106,7 +106,7 @@ ZZLinkedList* zz_deleteNodeWithData(ZZLinkedList *list, void *data)
             Node *delNode = nd->next;
             nd->next = nd->next->next;
             free(delNode);
-            count--;
+            _count--;
         } else {
             nd = nd->next;
         }
@@ -118,14 +118,14 @@ ZZLinkedList* zz_deleteNodeAtIndex(ZZLinkedList *list, unsigned int index)
 {
     assert(list);
     // out of range
-    if (index >= count) return list;
+    if (index >= _count) return list;
     
     // delete first node requires special handle
     if (index == 0) {
         Node *nd = list;
         list = list->next;
         free(nd);
-        count--;
+        _count--;
     }
     else {
         Node *nd = list;
@@ -139,7 +139,7 @@ ZZLinkedList* zz_deleteNodeAtIndex(ZZLinkedList *list, unsigned int index)
         if (nd->next) {
             nd->next = nd->next->next;
             free(nd->next);
-            count--;
+            _count--;
         }
     }
     return list;
@@ -149,7 +149,7 @@ void zz_updateNodeAtIndex(ZZLinkedList *list, unsigned int index, void* newData)
 {
     assert(list);
     // out of range
-    if (index >= count) return;
+    if (index >= _count) return;
     
     Node *nd = list;
     for (unsigned int i=0; i<index; i++) {
@@ -162,13 +162,27 @@ void* zz_getNodeAtIndex(ZZLinkedList *list, unsigned int index)
 {
     assert(list);
     // out of range
-    if (index > count) return NULL;
+    if (index > _count) return NULL;
     
     Node *nd = list;
     for (unsigned int i=0; i<index; i++) {
         nd = nd->next;
     }
     return nd->data;
+}
+
+int zz_indexOfNode(ZZLinkedList *list, void *data)
+{
+    assert(list);
+    if (data == NULL) return -1;
+    Node *nd = list;
+    for (int i=0; i<_count; i++) {
+        if (nd->data == data) {
+            return i;
+        }
+        nd = nd->next;
+    }
+    return -1;
 }
 
 #pragma mark -- 
@@ -192,13 +206,13 @@ unsigned int zz_containsNode(ZZLinkedList *list, void *data)
 unsigned int zz_length_linkedList(ZZLinkedList *list)
 {
     assert(list);
-    return count;
+    return _count;
 }
 
 unsigned int zz_isEmpty(ZZLinkedList *list)
 {
     assert(list);
-    if (count == 0) return 0;
+    if (_count == 0) return 0;
     else return 1;
 }
 
@@ -211,7 +225,7 @@ void zz_clear_linkedList(ZZLinkedList *list)
         free(nd);
         nd = list->next;
     }
-    count = 0;
+    _count = 0;
     // set first node data is null. first node next was null
     list->data = NULL;
 }
@@ -226,7 +240,7 @@ void zz_relsese_linkedList(ZZLinkedList **list)
         *list = nd;
     }
     *list = NULL;
-    count = 0;
+    _count = 0;
 }
 
 #pragma mark -- algorithm

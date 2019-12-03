@@ -41,7 +41,11 @@ void zz_deleteNodeAtIndex(ZZStaticLinkedList *list, unsigned int index);
 void zz_deleteNodeWithData(ZZStaticLinkedList *list, void *data);
 void zz_updateNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int index);
 void* zz_getNodeDataAtIndex(ZZStaticLinkedList *list, unsigned int index);
-
+/**
+ * find the index of node whose value is equal to given data
+ * data == null or don't find return -1
+ */
+int zz_indexOfNode(ZZStaticLinkedList *list, void *data);
 
 
 unsigned int zz_length_staticLinkedList(ZZStaticLinkedList *list);
