@@ -14,7 +14,7 @@
 /// count of list
 unsigned int _count = 0;
 /// length of array
-unsigned int _capaticy = 0;
+unsigned int _capacity = 0;
 
 ZZStaticLinkedList* zz_init_staticLinkedList(unsigned int capacity)
 {
@@ -26,7 +26,7 @@ ZZStaticLinkedList* zz_init_staticLinkedList(unsigned int capacity)
         }
         // init list is null
         list[capacity-1].cur = 0;
-        _capaticy = capacity >= 3 ? capacity : 3;
+        _capacity = capacity >= 3 ? capacity : 3;
     }
     return list;
 }
@@ -47,7 +47,7 @@ void zz_addNode(ZZStaticLinkedList *list, void *newData)
 void zz_insertNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int index)
 {
     assert(list);
-    if (index > _count || _count + 2 > _capaticy) return;
+    if (index > _count || _count + 2 > _capacity) return;
     
     // get the index of the next node
     unsigned int nextIndex = list[0].cur;
@@ -58,7 +58,7 @@ void zz_insertNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int 
     list[nextIndex].data = newData;
     
     // lookup the index of previous node that given index
-    int preIndex = _capaticy-1;
+    int preIndex = _capacity-1;
     for (int i=0; i<index; i++) {
         preIndex = list[preIndex].cur;
     }
@@ -79,7 +79,7 @@ void zz_deleteNodeAtIndex(ZZStaticLinkedList *list, unsigned int index)
     if (index >= _count) return;
     
     // lookup the index of previous node that given index
-    unsigned int nextIndex = _capaticy-1;
+    unsigned int nextIndex = _capacity-1;
     for (int i=0; i<index; i++) {
         nextIndex = list[nextIndex].cur;
     }
@@ -98,8 +98,9 @@ void zz_deleteNodeWithData(ZZStaticLinkedList *list, void *data)
 {
     assert(list);
     
-    unsigned int index = _capaticy-1;
-    for (int i=0; i<_count; i++) {
+    unsigned int index = _capacity-1;
+    while (index)
+    {
         // lookup the index of previous node that given index
         if (list[list[index].cur].data == data) {
             unsigned int delIndex = list[index].cur;
@@ -121,7 +122,7 @@ void zz_updateNodeAtIndex(ZZStaticLinkedList *list, void *newData, unsigned int 
     if (index > _count) return;
     
     // lookup the index of the currnt node in array
-    unsigned int curIndex = _capaticy-1;
+    unsigned int curIndex = _capacity-1;
     for (int i=0; i<=index; i++) {
         curIndex = list[curIndex].cur;
     }
@@ -134,7 +135,7 @@ void* zz_getNodeDataAtIndex(ZZStaticLinkedList *list, unsigned int index)
     if (index > _count) return NULL;
     
     // lookup the index of the currnt node in array
-    unsigned int curIndex = _capaticy-1;
+    unsigned int curIndex = _capacity-1;
     for (int i=0; i<=index; i++) {
         curIndex = list[curIndex].cur;
     }
@@ -147,7 +148,7 @@ unsigned int zz_length_staticLinkedList(ZZStaticLinkedList *list)
 {
     assert(list);
     unsigned int length = 0;
-    unsigned int index = list[_capaticy - 1].cur;
+    unsigned int index = list[_capacity - 1].cur;
     while (index) {
         index = list[index].cur;
         length++;
@@ -159,23 +160,19 @@ unsigned int zz_length_staticLinkedList(ZZStaticLinkedList *list)
 void zz_clear_staticLinkedList(ZZStaticLinkedList *list)
 {
     assert(list);
-    unsigned int index = _capaticy-1;
-    for (int i=0; i<_count; i++) {
-        index = list[_capaticy-1].cur;
-        list[_capaticy-1].cur = list[index].cur;
-        
-        list[index].data = NULL;
-        list[index].cur = index+1;
+    for (int i=0; i<_capacity; i++) {
+        list[i].cur = i+1;
+        list[i].data = NULL;
     }
     _count = 0;
-    list[0].cur = 1;
+    list[_capacity-1].cur = 0;
 }
 
 void zz_release_staticLinkedList(ZZStaticLinkedList **list)
 {
     assert(*list);
     _count = 0;
-    _capaticy = 0;
+    _capacity = 0;
     free(*list);
 }
 
@@ -184,13 +181,13 @@ void zz_release_staticLinkedList(ZZStaticLinkedList **list)
 
 void zz_print_staticLinkedList(ZZStaticLinkedList *list)
 {
-    unsigned int index = list[_capaticy-1].cur;
+    unsigned int index = list[_capacity-1].cur;
     for (int i=0; i<_count; i++) {
         printf("[%d-%d]->", *(int *)(list[index].data), list[index].cur);
         index = list[index].cur;
     }
     printf("null\n");
     
-    printf("nextNode:%d--firstNode:%d\n", list[0].cur, list[_capaticy-1].cur);
+    printf("nextNode:%d--firstNode:%d\n", list[0].cur, list[_capacity-1].cur);
 }
 
