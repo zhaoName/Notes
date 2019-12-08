@@ -83,3 +83,57 @@ void* zz_getHeadElem_linkedQueue(ZZLinkedQueue *queue)
         return NULL;
     }
 }
+
+#pragma mark -- clear
+
+unsigned int zz_isEmpty_linkedQueue(ZZLinkedQueue *queue)
+{
+    assert(queue);
+    return queue->head == queue->rear;
+    //return queue->count == 0;
+}
+
+unsigned int zz_length_linkedQueue(ZZLinkedQueue *queue)
+{
+    assert(queue);
+    return queue->count;
+}
+
+void zz_clear_linkedQueue(ZZLinkedQueue *queue)
+{
+    assert(queue);
+    ZZQueueNode *nd = queue->head->next;
+    while (nd) {
+        queue->head->next = nd->next;
+        free(nd);
+        nd = queue->head->next;
+    }
+    queue->rear = queue->head;
+    queue->count = 0;
+}
+
+void zz_release_linkedQueue(ZZLinkedQueue *queue)
+{
+    assert(queue);
+    ZZQueueNode *nd = queue->head->next;
+    while (nd) {
+        queue->head->next = nd->next;
+        free(nd);
+        nd = queue->head->next;
+    }
+    free(queue->rear);
+    free(queue->head);
+    queue->count = 0;
+    free(queue);
+}
+
+void zz_print_linkedQueue(ZZLinkedQueue *queue)
+{
+    printf("[");
+    ZZQueueNode *nd = queue->head->next;
+    while (nd) {
+        printf("%d, ", *(int*)nd->data);
+        nd = nd->next;
+    }
+    printf("]\n");
+}
