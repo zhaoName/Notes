@@ -24,6 +24,11 @@ typedef struct ZZLinkedQueue{
 }ZZLinkedQueue;
 
 
+/**
+ * init linked queue
+ *
+ * if queue is empty, rear == head or head->next = null
+ */
 ZZLinkedQueue* zz_init_linkedQueue(void);
 
 /**
@@ -45,7 +50,7 @@ void* zz_getHeadElem_linkedQueue(ZZLinkedQueue *queue);
 unsigned int zz_isEmpty_linkedQueue(ZZLinkedQueue *queue);
 unsigned int zz_length_linkedQueue(ZZLinkedQueue *queue);
 void zz_clear_linkedQueue(ZZLinkedQueue *queue);
-void zz_release_linkedQueue(ZZLinkedQueue *queue);
+void zz_release_linkedQueue(ZZLinkedQueue **queue);
 
 void zz_print_linkedQueue(ZZLinkedQueue *queue);
 
