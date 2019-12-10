@@ -32,6 +32,26 @@ ZZArrayQueue* zz_init_arrayQueue(unsigned int capacity)
     return queue;
 }
 
+#pragma mark -- private method
+/**
+ * resize queue if it is full
+ */
+void zz_resize_arrayQueue(ZZArrayQueue *queue)
+{
+    assert(queue);
+    void **newData = malloc(sizeof(void*) * _queueSize * 2);
+    // create new array and copy data to newData
+    int i = 0;
+    for (int j = queue->front; j != queue->rear; j = (j+1) % _queueSize) {
+        newData[i++] = queue->data[j];
+    }
+    // reset queue
+    queue->data = newData;
+    queue->front = 0;
+    queue->rear = i;
+    _queueSize *= 2;
+}
+
 #pragma mark -- opreation
 /**
  * insert new element in queue if it is not full, and modify queue->rear
@@ -44,6 +64,7 @@ void zz_addElem_arrayQueue(ZZArrayQueue *queue, void *newData)
     if ((queue->rear + 1) % _queueSize == queue->front) {
         printf("Queue is full !!\n");
         return;
+        //zz_resize_arrayQueue(queue);
     }
     queue->data[queue->rear] = newData;
     queue->rear = (queue->rear + 1)  % _queueSize;
