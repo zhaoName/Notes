@@ -6,7 +6,9 @@
 
 ## C
 
-### 带头结点
+### 第一思路
+
+- 带头结点
 
 ```
 /**
@@ -40,7 +42,7 @@ void zz_deleteNode(ZZHeadLinkedList *list, void *data)
 ```
 
 
-### 不带头结点
+- 不带头结点
 
 ```
 /**
@@ -82,3 +84,30 @@ ZZLinkedList* zz_deleteNodeWithData(ZZLinkedList *list, void *data)
     return list;
 }
 ```
+
+<br>
+
+
+### 参考别人
+
+递归思路：从后往前删除节点。
+
+```
+/**
+ * struct ListNode {
+ *    int val;
+ *    struct ListNode *next;
+ * };
+ */
+struct ListNode* removeElements(struct ListNode* head, int val)
+{
+    if (head == NULL) return NULL;
+    
+    head->next = removeElements(head->next, val);
+    if (head->val == val)
+        return head->next;
+    else
+        return head;
+}
+```
+
