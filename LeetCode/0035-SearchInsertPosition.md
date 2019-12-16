@@ -28,16 +28,21 @@ int searchInsert(int* nums, int numsSize, int target)
 ```
 int searchInsert(int* nums, int numsSize, int target)
 {
-    if(numsSize==0) return 0;
-    int low=0,high=numsSize-1,index=numsSize/2;
-    while(low<high)
+    int left = 0, middle = 0;
+    int right = numsSize - 1;
+    
+    while (left <= right)
     {
-        if(target==nums[index]) return index;
-        if(target>nums[index]) low=index+1;
-        else high=index-1;
-        index=(high+low)/2;
+        middle = left + (right - left) / 2;
+        if (nums[middle] == target) return middle;
+        else if (nums[middle] < target) {
+            left = middle + 1;
+        }
+        else {
+            right = middle - 1;
+        }
     }
-    if(target>nums[index]) return index+1;
-    return index;
+    // 返回 left: nums =[1, 2, 4, 6] target = 7
+    return left;
 }
 ```
