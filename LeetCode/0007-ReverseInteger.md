@@ -35,3 +35,27 @@ int reverse(int x)
     return (int)sum;
 }
 ```
+
+<br>
+
+### 优化
+
+```
+/**
+ * 32-bit int: -2147483648 ~ 2147483647
+ *
+ * 若 temp = sum * 10 + x % 10 溢出 则 sum ≥ IntMax / 10
+ * 若 sum > IntMax / 10, 则 sum * 10 + x % 10 一定溢出
+ * 若 sum = IntMax / 10, 则  x % 10 > 7 一定溢出
+ */
+int reverse(int x)
+{
+    long sum = 0;
+    while (x != 0) {
+        sum = sum * 10 + x % 10;
+        x = x / 10;
+    }
+    if (sum > 2147483647 || sum < -2147483647) return 0;
+    return (int)sum;
+}
+```
