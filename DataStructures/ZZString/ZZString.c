@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 
 #pragma mark -- BF
 
@@ -154,13 +155,36 @@ void zz_handle_pattertStr_self(char *patternStr, int patternStrSize, int **suffi
     }
 }
 
+/**
+ * 综合 坏字符 好后缀 规则
+ *
+ * 1> 假设好后缀长度为 k，若suffic[k] != -1，则滑动 j - suffic[k] + 1
+ * 2> 若suffic[k] == -1，取好后缀的子串b[r, m-1](j+2<= r <=m-1)的长度 k=m-r
+ *    若prefix[k] == 1,则存在与好后缀子串匹配的 前缀子串，滑动距离为 r
+ * 3> 若上述两条都不满足 则滑动模式串长度
+ */
+int zz_good_index(int *suffic, int *prefix, int patternStrSize, int j)
+{
+    // patternStrSize-j-1 为好后缀的长度
+    if (suffic[patternStrSize-j-1] != -1) {
+        return j - suffic[patternStrSize-j-1] + 1;
+    }
+    int r = j + 2;
+    while (r <= patternStrSize - 1) {
+        if (prefix[patternStrSize - r] == 1) {
+            return r;
+        }
+        ++r;
+    }
+    return patternStrSize;
+}
 
 /**
  * BM 算法
  *
  * 坏字符(主串)：逆序对比模式串和主串 第一个不同的字符 记做坏字符
- * 第一个不同的字符在模式串中的位置 si
- * 坏字符在模式串中的位置(第一个) xi
+ * 第一个不同的字符在模式串中的下标 si
+ * 坏字符在模式串中的下标(第一个) xi
  * 模式串滑动的位置 si - xi
  *
  * 好后缀(主串)：
@@ -171,24 +195,42 @@ int zz_BM(char *mainStr, char *patternStr)
 {
     int mainStrSize = (int)strlen(mainStr);
     int patternStrSize = (int)strlen(patternStr);
+    // 将模式串中的字符 构建成散列表
     int *hashArray = zz_create_hashArray(patternStr, patternStrSize);
+    // 好后缀 前缀子串
+    int *suffic = malloc(sizeof(int) * patternStrSize);
+    int *prefix = malloc(sizeof(int) * patternStrSize);
+    // 预处理模式串
+    zz_handle_pattertStr_dalao(patternStr, patternStrSize, &suffic, &prefix);
+    
     
     int i = 0;
-    while (i < mainStrSize - patternStrSize)
+    while (i <= mainStrSize - patternStrSize)
     {
-        for (int j=patternStrSize-1; j>=0; --j)
-        {
-            if (mainStr[i+j] == patternStr[j]) {
-                if (j < 0) return i;
-                continue;
-            }
-            else {
-                // 坏字符在模式串中的位置
-                int xi = hashArray[(int)mainStr[i+j]];
-                // 模式串滑动的位置
-                i = i + (j - xi);
-            }
+        // j 是坏字符对应模式串中的下标(即比较到下标为 j 的元素时，出现主串和模式串不匹配的情况)
+        int j;
+        for (j=patternStrSize-1; j>=0; --j) {
+            if (mainStr[i+j] != patternStr[j]) break;
         }
+        // 模式串和主串匹配成功
+        if (j < 0) return i;
+        
+        // 坏字符在模式串中出现的下标
+        int xi = hashArray[(int)mainStr[i+j]];
+        // 坏字符规则 要滑动的距离
+        int bad_index = j - xi;
+        
+        // 好后缀规则 要滑动的距离
+        int good_index = 0;
+        // 若存在好后缀
+        if (j < patternStrSize - 1) {
+            good_index = zz_good_index(suffic, prefix, patternStrSize, j);
+        }
+        // 综合好后缀和坏字符之后 实际滑动的距离
+        i = i + (bad_index > good_index ? bad_index : good_index);
     }
+    free(hashArray);
+    free(suffic);
+    free(prefix);
     return -1;
 }

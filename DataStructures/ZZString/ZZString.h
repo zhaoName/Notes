@@ -19,5 +19,7 @@ int zz_bf(char *mainStr, char *subStr);
 int zz_bf_1(char *mainStr, char *subStr);
 
 
+int zz_BM(char *mainStr, char *patternStr);
+
 
 #endif /* ZZString_h */
