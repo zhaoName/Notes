@@ -95,7 +95,7 @@ int* zz_create_hashArray(char *patternStr, int patternStrSize)
 /**
  * 预处理模式串
  *
- * 模式串后缀子串[i, patternStrSize-1]    0 < i <= patternStrSize-1
+ * 模式串后缀子串[r, patternStrSize-1]  j+2 <= r <= patternStrSize-1 (j 为坏字符对应模式串中的下标)
  * 模式串前缀子串[0, j]    0 <= j < [(patternStrSize * 0.5) - 1]
  *
  * @param suffic 下标为模式串后缀子串的长度 值为模式串中另一个和后缀子串匹配的子串的起始下标值
@@ -156,9 +156,9 @@ void zz_handle_pattertStr_self(char *patternStr, int patternStrSize, int **suffi
 }
 
 /**
- * 综合 坏字符 好后缀 规则
+ * 根据 好后缀规则 计算模式串要往后滑动的距离
  *
- * 1> 假设好后缀长度为 k，若suffic[k] != -1，则滑动 j - suffic[k] + 1
+ * 1> 假设好后缀长度为 k，若suffic[k] != -1，则滑动 j - suffic[k] + 1 (j 为坏字符对应模式串中的下标)
  * 2> 若suffic[k] == -1，取好后缀的子串b[r, m-1](j+2<= r <=m-1)的长度 k=m-r
  *    若prefix[k] == 1,则存在与好后缀子串匹配的 前缀子串，滑动距离为 r
  * 3> 若上述两条都不满足 则滑动模式串长度
