@@ -22,4 +22,6 @@ int zz_bf_1(char *mainStr, char *subStr);
 int zz_BM(char *mainStr, char *patternStr);
 
 
+int zz_KMP(char *mainStr, char *patternStr);
+
 #endif /* ZZString_h */
