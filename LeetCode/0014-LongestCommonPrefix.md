@@ -64,3 +64,48 @@ char* longestCommonPrefix(char **strs, int strsSize)
    return result;
 }
 ```
+
+
+- 优化思路
+
+```
+char * longestCommonPrefix_1(char ** strs, int strsSize)
+{
+    if (strsSize <= 0) return "";
+
+    char *first = strs[0];
+    for (int i=1; i<strsSize; i++)
+    {
+        int j = 0;
+        while (first[j] != '\0' && strs[i][j] != '\0') {
+        if (first[j] != strs[i][j]) break;
+            j++;
+        }
+        // leetcode 中没报错，但 Xcode 中报错
+        // char *first = "xxx" 存储在常量区 不能修改
+        first[j] = '\0';
+    }
+    return first;
+}
+```
+
+
+<br>
+
+
+### Python
+
+
+```
+class Solution:
+    def longestCommonPrefix(self, strs: List[str]) -> str:
+        if len(strs) == 0: return ""
+        firstStr = strs[0]
+        for i in range(1, len(strs)):
+            while strs[i].find(firstStr) != 0:
+                firstStr = firstStr[0:len(firstStr)-1]
+                if len(firstStr) == 0:
+                    return ""
+
+        return firstStr
+```
