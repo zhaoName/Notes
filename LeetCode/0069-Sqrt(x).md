@@ -66,3 +66,28 @@ int mySqrt(int x)
    return x/2;
 }
 ```
+
+<br>
+
+### Python
+
+- 牛顿迭代法
+
+```
+def mySqrt(x):
+    if x == 0:
+        return 0
+    cur = x
+    while True:
+        pre = cur
+        cur = (cur + x / cur) / 2
+        if abs(cur - pre) < 1e-6:
+            return int(cur)
+```
+
+
+<br>
+
+
+关于牛顿迭代法的原理可参考[这里](https://www.zhihu.com/question/20690553)
+
