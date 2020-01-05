@@ -40,6 +40,8 @@ int climbStairs(int n)
  */
 int climbStairs_1(int n)
 {
+   if (n==1) return 1;
+   
    int s1 = 1;
    int s2 = 2;
    for (int i=3; i<=n; i++) {
