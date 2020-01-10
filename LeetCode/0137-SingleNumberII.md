@@ -70,8 +70,6 @@ int singleNumber(int* nums, int numsSize)
          if (s[j] == 3) s[j] = 0;
       }
    }
-   // 当要查找的数字为奇数 s[0] 必为1, 而对 1(flag) 左移>0位 得到结果必为偶数
-   // 所以 左移得到的结果 | s[0],以保证从 二进制 => 10进制的正确性
    int res = s[0];
    unsigned int flag = 1;
    for (int i=0; i<32; i++) {
