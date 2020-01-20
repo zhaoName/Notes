@@ -2,11 +2,28 @@
 # 206.Reverse Linked List
 
 
+
+## 题目
+
+```
+Reverse a singly linked list.
+
+Example:
+Input: 1->2->3->4->5->NULL
+Output: 5->4->3->2->1->NULL
+
+Follow up:
+A linked list can be reversed either iteratively or recursively. Could you implement both?
+```
+
 <br>
 
-## C 
 
-### 带头结点
+## 解法
+
+### C 
+
+- 带头结点
 
 ```
 /**
@@ -36,7 +53,7 @@ ZZHeadLinkedList* zz_reverse_headLinkedList(ZZHeadLinkedList *list)
 ```
 
 
-### 不带头结点
+- 不带头结点
 
 ```
 /**
@@ -71,3 +88,24 @@ ZZLinkedList* zz_reverse_linkedList(ZZLinkedList *list)
 }
 ```
 
+<br>
+
+### Python
+
+```
+def reverseList(self, head: ListNode) -> ListNode:
+	if not head: return None
+	
+	reNode = ListNode(0)
+	temp, i = head, 0
+	while temp:
+		nextNd = temp.next
+		if i == 0:
+			reNode.val = temp.val
+		else:
+			temp.next = reNode
+			reNode = temp
+		temp = nextNd
+		i += 1
+	return reNode
+```
