@@ -149,7 +149,7 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 }
 ```
 
-用一幅图来解释![]()
+用一幅图来解释
 
 ![输入图片说明](https://gitee.com/uploads/images/2019/0428/095343_2168d977_1355277.png "Snip20190428_8.png")
 
