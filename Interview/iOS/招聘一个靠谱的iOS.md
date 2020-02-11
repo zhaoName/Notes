@@ -180,23 +180,195 @@ sunnyxx 为了搞清属性是怎么实现的,曾经反编译过相关的代码,�
 
 ### 0x06. @protocol 和 category 中如何使用 @property
 
+@protocol 和 category 中都能使用 @property 声明属性，但只有 setter getter 方法的声明，没有带下划线的成员变量和 setter getter 方法的实现。
+
+> @protocol 中使用 @property
+
+```
+@protocol ZZPersonDelegate <NSObject>
+@property (nonatomic, copy) NSString *name;/**< */
+@end
+
+@interface ZZPerosn : NSObject<ZZPersonDelegate>
+@end
+
+@implementation ZZPerosn
+- (void)useProperty
+{
+    // 协议中使用 @property 声明的属性，不会生成同名带下划线的成员变量
+    // 上面的警告也明确说明 编译器不会自动合成协议中的属性 "name"
+    // _name
+}
+@end
+
+// ViewController.m
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    ZZPerosn *p = [[ZZPerosn alloc] init];
+    p.name = @"zhaoName";
+    
+    NSLog(@"p.name:%@", p.name);
+}
+```
+
+- 不会生成同名带下划线的成员变量
+
+![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image01.png)
+
+- 编译器只会生成 setter getter 的声明，不会自动生成 setter getter 方法的实现
+
+![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image02.png)
+
+- 在 protocol 中使用 @property 时，我们需要在遵守这个协议的类中，完善属性的方法实现和带成员变量
+
+```
+// 第一种方法 @synthesize 告诉编译器自动帮我们合成
+@implementation ZZPerosn
+
+@synthesize name = _name;
+@end
+
+
+// 第二种方法  @dynamic 手动合成
+@implementation ZZPerosn
+{
+    NSString *_name;
+}
+@dynamic name;
+
+- (void)setName:(NSString *)name
+{
+    _name = name;
+}
+
+- (NSString *)name
+{
+    return _name;
+}
+@end
+
+// 打印结果
+2020-02-11 16:16:12.353601+0800 ProtocolAndCategaryUseProperty[33612:1394241] p.name:zhaoName
+```
+
+> category 中使用 @property
+
+category 中使用 @property 声明属性，也是只有 setter getter 方法的声明，没有带下划线的成员变量和 setter getter 方法的实现。但是也解决这个问题需要用到两个函数`objc_setAssociatedObject `、`objc_getAssociatedObject `
+
+```
+@implementation ZZperson (Property)
+
+- (void)setName:(NSString *)name
+{
+    objc_setAssociatedObject(self, @"name", name, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (NSString *)name
+{
+    return objc_getAssociatedObject(self, @"name");
+}
+@end
+```
+
+<br>
+
+### 0x07. runtime 如何实现 weak 属性
+
+
+<br>
+
+
+### 0x08. @property 中有哪些属性关键字？/ @property 后面可以有哪些修饰符？
+
+- 原子性：`nonatomic`、`atomic`
+
+- 读写权限：`readonly`、`readwrite `
+
+- 修饰符：`strong`、`copy`、`assgin`、`unsafe_unretained `、`weak`
+
+- 方法名：`getter=<name>` 、`setter=<name>`
+
+`setter=<name>`一般用在特殊的情境下，比如：
+
+在数据反序列化、转模型的过程中，服务器返回的字段如果以 init 开头，所以你需要定义一个 init 开头的属性，但默认生成的 setter 与 getter 方法也会以 init 开头，而编译器会把所有以 init 开头的方法当成初始化方法，而初始化方法只能返回 self 类型，因此编译器会报错。
+
+这时你就可以使用下面的方式来避免编译器报错：
+
+```
+@property(nonatomic, strong, getter=p_initBy, setter=setP_initBy:)NSString *initBy;
+```
+
+另外也可以用关键字进行特殊说明，来避免编译器报错：
+
+```
+@property(nonatomic, readwrite, copy, null_resettable) NSString *initBy;
+- (NSString *)initBy __attribute__((objc_method_family(none)));
+```
+
+- 不常用的：`nonnull`、`null_resettable`、`nullable`
+
+<br>
+
+
+### 0x09. weak 属性需要在 dealloc 中置 nil 么？
 
 
 
 <br>
 
-### 0x07. 
+
+### 0x0a. @synthesize 和 @dynamic 分别有什么作用？
+
+`@property`有两个对应的词，一个是 `@synthesize`，一个是`@dynamic`。如果 `@synthesize`和`@dynamic`都没写，那么默认的就是`@syntheszie var = _var`
+
+> `@synthesize` 作用
+
+- `@synthesize` 不需要我们手动实现 setter 和 getter 方法，编译器会帮我们自动合成这两个方法
+
+> `@dynamic` 的作用
+
+- `@dynamic`的作用是告诉编译器，属性的 setter 与 getter 方法由用户自己实现，不用自动合成。
+
+- 假如一个属性被声明为`@dynamic var`，然后你没有提供 setter、getter 方法，编译的时候没问题，但是当程序运行到`instanceObject.var = some`，就会由于缺 setter 方法会导致程序崩溃；或者当运行到`some = instanceObject.var`时，由于缺 getter 方法同样会导致崩溃。
+
+<br>
+
+
+### 0x0b. ARC下，不显式指定任何属性关键字时，默认的关键字都有哪些？
+
+- 对应基本数据类型默认关键字是 `atomic、readwrite、assign `
+
+- 对于普通的 OC 对象 `atomic、readwrite、strong`
 
 
 <br>
 
 
-### 0x08. 
+### 0x0c. 用@property声明的NSString（或NSArray，NSDictionary）经常使用copy关键字，为什么？如果改用strong关键字，可能造成什么问题？
+
+> 为什么用 copy 关键字 ？
+
+为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本.
+
+> 用 strong 会造成什么问题 ？
+
+如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性.
+
+<br>
 
 
+### 0x0d.
 
 
+<br>
 
 
+### 0x0e.
 
+
+<br>
+
+
+### 0x0f.
 
