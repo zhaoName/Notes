@@ -275,6 +275,11 @@ category 中使用 @property 声明属性，也是只有 setter getter 方法的
 
 ### 0x07. runtime 如何实现 weak 属性
 
+![](../../Images/内存管理/MemoryManage_image0403.png)
+
+
+![](../../Images/内存管理/MemoryManage_image0404.png)
+
 
 <br>
 
@@ -313,7 +318,31 @@ category 中使用 @property 声明属性，也是只有 setter getter 方法的
 
 ### 0x09. weak 属性需要在 dealloc 中置 nil 么？
 
+在 ARC 环境无论是强指针还是弱指针都无需在 dealloc 设置为 nil, ARC 会自动帮我们处理。在属性所指的对象遭到摧毁时，属性值也会清空。
 
+查看 runtime 的 dealloc 方法可以看到，在 dealloc 方法中会自动清空 weak_table,释放空间
+
+```
+// runtime-750  NSObject.mm
+
+NEVER_INLINE void objc_object::clearDeallocating_slow()
+{
+    assert(isa.nonpointer  &&  (isa.weakly_referenced || isa.has_sidetable_rc));
+
+    SideTable& table = SideTables()[this];
+    table.lock();
+    // 若对象被弱引用
+    if (isa.weakly_referenced) {
+    	// 清空 weak_table
+        weak_clear_no_lock(&table.weak_table, (id)this);
+    }
+    // 若对象的引用计数存储在 SideTable 中，则清空引用计数表
+    if (isa.has_sidetable_rc) {
+        table.refcnts.erase(this);
+    }
+    table.unlock();
+}
+```
 
 <br>
 
@@ -358,17 +387,350 @@ category 中使用 @property 声明属性，也是只有 setter getter 方法的
 <br>
 
 
-### 0x0d.
+### 0x0d. @synthesize 合成实例变量的规则是什么？假如 property 名为 foo，存在一个名为 _foo 的实例变量，那么还会自动合成新变量么？
+
+> @synthesize 合成实例变量的规则
+
+- 若指定了成员变量的名称,会生成一个指定的名称的成员变量, setter/getter 方法不变
+
+![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image03.png)
+
+- 若声明一个和成员变量相同名称的属性，则这个属性只有 setter/getter 方法的声明
+
+![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image04.png)
+
+- 若 `@synthesize foo`, 则会生成一个同名的成员变量
+
+![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image05.png)
+
+
+> 假如 property 名为 foo，存在一个名为 _foo 的实例变量，那么还会自动合成新变量么？
+
+不会
+
+```
+@interface ViewController ()
+@property (nonatomic, copy) NSString *string;/**< */
+@end
+
+@implementation ViewController
+{
+    NSString *_string;
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.string = @"1";
+    self->_string = @"2";
+    NSLog(@"%@  %@", self.string, self->_string);
+}
+
+// 打印结果
+2020-02-12 22:02:51.443936+0800 ProtocolAndCategaryUseProperty[39673:1696341] 2  2
+```
 
 
 <br>
 
 
-### 0x0e.
+### 0x0e. 在有了自动合成属性实例变量之后，@synthesize还有哪些使用场景？
+
+- 同时重写 setter、getter 方法，系统就不会生成 ivar（实例变量/成员变量），这时需要用`@synthesize foo = _foo`
+
+- 在协议中声明的属性，遵守协议的类要想使用这个属性，必须手动添加 setter、getter 方法的实现或使用`@synthesize foo = _foo`由编译器帮我们自动合成。
+
+- 修改成员变量的名称`@synthesize foo = _otherName`
+
+更多信息请看[When should I use @synthesize explicitly?](https://stackoverflow.com/questions/19784454/when-should-i-use-synthesize-explicitly/19821816#19821816)
+
+<br>
+
+
+### 0x0f. objc 中向一个 nil 对象发送消息将会发生什么？
+
+OC 中想一个对象发送消息在底层都会调用`objc_msgSend(receiver, selector)`。在 runtime 中查找`objc_msgSend()`的源码
+
+```
+ENTRY _objc_msgSend
+    UNWIND _objc_msgSend, NoFrame
+
+    // nil check and tagged pointer check
+    // p0 中存放的是方法的第一个参数也就是消息接收者，也就是实例对象 或类对象
+    // 当其为空时 直接 return, 这也就解释了 [nil xxx] 为什么不会崩溃
+    cmp    p0, #0
+    // (MSB tagged pointer looks negative)
+    b.le    LNilOrTagged
+    ...
+    
+#if SUPPORT_TAGGED_POINTERS
+LNilOrTagged:
+	b.eq	LReturnZero		// nil check
+	...
+#endif
+
+LReturnZero:
+	// x0 is already zero
+	mov	x1, #0
+	movi	d0, #0
+	movi	d1, #0
+	movi	d2, #0
+	movi	d3, #0
+	ret
+    ......
+END_ENTRY _objc_msgSend
+```
+
+进入到`objc_msgSend(receiver, selector)`中会判断`recevier`是否为 `nil`，若为`nil`则直接返回。
+
+<br>
+
+
+### 0x10. objc 中向一个对象发送消息`[obj foo]`和`objc_msgSend()`函数之间有什么关系？
+
+我们用`clang`指令将`[obj foo]`转成 C++ 代码，可以得到如下代码
+
+```
+// 简化后的
+((void ()(id, SEL))(void )objc_msgSend)((id)obj, sel_registerName("foo"));
+```
+
+也就是说`[obj foo]`在 objc 编译时，会被转意为：`objc_msgSend(obj, @selector(foo))`
+
+<br>
+
+
+### 0x11. 什么时候会报unrecognized selector的异常？
+
+实例对象或类对象调用某个方法，而在类对象（包括他的父类对象）或元类对象（父元类对象）中都找不到这个方法的实现，就会报这个错误。
 
 
 <br>
 
 
-### 0x0f.
+### 0x12. 一个 objc 对象如何进行内存布局？（考虑有父类的情况）
 
+题目中的 对象 看他的回答是指实例对象。
+
+![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image06.png)
+
+
+<br>
+
+### 0x13. 一个 objc 对象的 isa 的指针指向什么？有什么作用？
+
+> 一个 objc 对象的 isa 的指针指向什么？
+
+实例对象的`isa`指向类对象，类对象的`isa`指向元类对象，元类对象的`isa`指向根元类对象，根元类对象的`isa`指向自己。
+
+> 有什么作用？
+
+- 调用实现方法时(忽略方法缓存)，由实例对象的`isa`找到类对象，再查找存储在类对象中的实例方法，没找到则通过类对象的`superclass`找到父类对象，再查找存储在父类对象中的实例方法，以此类推知道根父类对象(`NSObject`)
+
+- 调用类方法时(忽略方法缓存)，由实例对象的`isa`找到类对象，再由类对象的`isa`找到元类对象，然后遍历存储在元类对象中的类方法。若没找到则通过元类对象的`superclass`找到父元类对象，再查找存储在父元类对象中的类方法，以此类推知道根父元类对象。
+
+
+<br>
+
+### 0x14. 下面的代码输出什么？
+
+```
+@implementation Son : Father
+- (id)init
+{
+   self = [super init];
+   if (self) {
+       NSLog(@"%@", NSStringFromClass([self class]));
+       NSLog(@"%@", NSStringFromClass([super class]));
+   }
+   return self;
+}
+@end
+```
+
+两个都输出`Son`。第一个不用解释都懂。我们来解释第二个
+
+- `[super class]`用`clang`指令转化为 C++ 代码底层调用的是`objc_msgSendSuper()`，但我们转成汇编看到调用的是`objc_msgSendSuper2()`。我们以汇编为准。
+
+- `[super class]`的消息接收者仍然是当前实例 self，super 的作用是不要从当前类中查找实例方法，而从父类中开始查找实例方法。
+
+- `[super class]`相当于调用`[self class]`从父类`Father `的`class对象`中开始查找实例方法`-class`。最终在`NSObject`的`class对象`中找到并调用。再由`NSObject.mm`的源码可知结果是`Son`。
+
+```
+// NSObject.mm
+- (Class)class {
+    return object_getClass(self);
+}
+
+```
+
+<br>
+
+### 0x15. runtime 如何通过 selector 找到对应的 IMP 地址？（分别考虑类方法和实例方法）
+
+- 先从方法缓存缓存中找。方法缓存使用散列表实现，key是`selector & (count-1)`，value是 IMP.
+
+- 再从类对象(元类对象)中查找。这里是遍历查找
+
+
+<br>
+
+### 0x16. 使用 runtime Associate 方法关联的对象，需要在主对象dealloc 的时候释放么？
+
+无论在MRC下还是ARC下均不需要。
+
+- **原文回答**
+
+[2011年版本的Apple API 官方文档 - Associative References ](https://web.archive.org/web/20120818164935/https://developer.apple.com/library/ios/#/web/20120820002100/http://developer.apple.com/library/ios/documentation/cocoa/conceptual/objectivec/Chapters/ocAssociativeReferences.html)一节中有一个MRC环境下的例子：
+
+```
+// 在MRC下，使用runtime Associate方法关联的对象，不需要在主对象dealloc的时候释放
+// http://weibo.com/luohanchenyilong/ (微博@iOS程序犭袁)
+// https://github.com/ChenYilong
+// 摘自2011年版本的Apple API 官方文档 - Associative References 
+
+static char overviewKey;
+ 
+NSArray *array =
+    [[NSArray alloc] initWithObjects:@"One", @"Two", @"Three", nil];
+// For the purposes of illustration, use initWithFormat: to ensure
+// the string can be deallocated
+NSString *overview =
+    [[NSString alloc] initWithFormat:@"%@", @"First three numbers"];
+ 
+objc_setAssociatedObject (
+    array,
+    &overviewKey,
+    overview,
+    OBJC_ASSOCIATION_RETAIN
+);
+ 
+[overview release];
+// (1) overview valid
+[array release];
+// (2) overview invalid
+```
+
+文档指出
+
+> At point 1, the string overview is still valid because the OBJC_ASSOCIATION_RETAIN policy specifies that the array retains the associated object. When the array is deallocated, however (at point 2), overview is released and so in this case also deallocated.
+
+我们可以看到，在[array release];之后，overview就会被release释放掉了。
+
+既然会被销毁，那么具体在什么时间点？
+
+> 根据 WWDC 2011, Session 322 (第36分22秒) 中发布的内存销毁时间表，被关联的对象在生命周期内要比对象本身释放的晚很多。它们会在被 NSObject -dealloc 调用的 object_dispose() 方法中释放。
+
+对象的内存销毁时间表，分四个步骤：
+
+```
+// 根据 WWDC 2011, Session 322 (36分22秒)中发布的内存销毁时间表 
+1. 调用 -release ：引用计数变为零
+	* 对象正在被销毁，生命周期即将结束.
+	* 不能再有新的 __weak 弱引用， 否则将指向 nil.
+	* 调用 [self dealloc] 
+2. 子类 调用 -dealloc
+	* 继承关系中最底层的子类 在调用 -dealloc
+	* 如果是 MRC 代码 则会手动释放实例变量们（iVars）
+	* 继承关系中每一层的父类 都在调用 -dealloc
+3. NSObject 调 -dealloc
+	* 只做一件事：调用 Objective-C runtime 中的 object_dispose() 方法
+4. 调用 object_dispose()
+	* 为 C++ 的实例变量们（iVars）调用 destructors 
+	* 为 ARC 状态下的 实例变量们（iVars） 调用 -release 
+	* 解除所有使用 runtime Associate方法关联的对象
+	* 解除所有 __weak 引用
+	* 调用 free()
+```
+
+对象的内存销毁时间表：[参考链接](http://stackoverflow.com/a/10843510/3395008)。
+
+- **自己回答**
+
+在主对象被释放时，会调用`dealloc`方法，我们查看 runtime 的 `dealloc` 方法可以看到，在 `dealloc` 方法中会自动释放 Associate 方法关联的对象
+
+```
+// objc-runtime-new.mm
+void *objc_destructInstance(id obj) 
+{
+    if (obj) {
+        // Read all of the flags at once for performance.
+        bool cxx = obj->hasCxxDtor();
+        bool assoc = obj->hasAssociatedObjects();
+
+        // This order is important.
+        if (cxx) object_cxxDestruct(obj); // 释放成员变量
+        if (assoc) _object_remove_assocations(obj); // 移除关联对象
+        // 清空弱引用表 清空引用计数表
+        obj->clearDeallocating();
+    }
+    return obj;
+}
+
+// objc-references.mm
+void _object_remove_assocations(id object) 
+{
+    vector< ObjcAssociation,ObjcAllocator<ObjcAssociation> > elements;
+    {
+        AssociationsManager manager;
+        AssociationsHashMap &associations(manager.associations());
+        if (associations.size() == 0) return;
+        disguised_ptr_t disguised_object = DISGUISE(object);
+        AssociationsHashMap::iterator i = associations.find(disguised_object);
+        if (i != associations.end()) {
+            // copy all of the associations that need to be removed.
+            ObjectAssociationMap *refs = i->second;
+            for (ObjectAssociationMap::iterator j = refs->begin(), end = refs->end(); j != end; ++j) {
+                elements.push_back(j->second);
+            }
+            // remove the secondary table.
+            delete refs;
+            associations.erase(i);
+        }
+    }
+    // the calls to releaseValue() happen outside of the lock.
+    for_each(elements.begin(), elements.end(), ReleaseValue());
+}
+```
+
+
+<br>
+
+### 0x17.  objc 中的类方法和实例方法有什么本质区别和联系？
+
+> 类方法
+
+- 类方法是属于类对象的
+
+- 类方法只能通过类对象调用
+
+- 类方法中的self是类对象
+
+- 类方法可以调用其他的类方法
+
+- 类方法中不能访问成员变量
+
+- 类方法中不能直接调用对象方法
+
+> 实例方法
+
+- 实例方法是属于实例对象的
+
+- 实例方法只能通过实例对象调用
+
+- 实例方法中的self是实例对象
+
+- 实例方法中可以访问成员变量
+
+- 实例方法中直接调用实例方法
+
+- 实例方法中也可以调用类方法(通过类名)
+
+<br>
+
+### 0x18.
+
+
+<br>
+
+### 0x19.
