@@ -728,9 +728,360 @@ void _object_remove_assocations(id object)
 
 <br>
 
-### 0x18.
+`@property`部分主要参考 Apple 官方文档：[Properties Encapsulate an Object’s Values](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/EncapsulatingData/EncapsulatingData.html#//apple_ref/doc/uid/TP40011210-CH5-SW2) 
+
+runtime 部分主要参考Apple官方文档：[Declared Properties](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtPropertyIntrospection.html)
+
+<br>
+
+### 0x18. `_objc_msgForward`函数是做什么的，直接调用它将会发生什么？
+
+> `_objc_msgForward`函数是做什么的 ?
+
+**原文答案**
+
+`_objc_msgForward`消息转发做的几件事：
+
+- 调用`resolveInstanceMethod:`方法 (或`resolveClassMethod:`)。允许用户在此时为该 Class 动态添加实现。如果有实现了，则调用并返回YES，那么重新开始`objc_msgSend`流程。这一次对象会响应这个选择器，一般是因为它已经调用过`class_addMethod`。如果仍没实现，继续下面的动作。
+
+- 调用`forwardingTargetForSelector:`方法，尝试找到一个能响应该消息的对象。如果获取到，则直接把消息转发给它，返回非 nil 对象。否则返回 nil ，继续下面的动作。注意，这里不要返回 self ，否则会形成死循环。
+
+- 调用`methodSignatureForSelector:`方法，尝试获得一个方法签名。如果获取不到，则直接调用`doesNotRecognizeSelector`抛出异常。如果能获取，则返回非nil：创建一个 `NSlnvocation` 并传给`forwardInvocation:`。
+
+- 调用`forwardInvocation:`方法，将第3步获取到的方法签名包装成 `Invocation` 传入，如何处理就在这里面了，并返回非nil。
+
+- 调用`doesNotRecognizeSelector:` ，默认的实现是抛出异常。如果第3步没能获得一个方法签名，执行该步骤。
+
+
+**自己认为**
+
+```
+/***********************************************************************
+* lookUpImpOrForward.
+* The standard IMP lookup. 
+* initialize==NO tries to avoid +initialize (but sometimes fails)
+* cache==NO skips optimistic unlocked lookup (but uses cache elsewhere)
+* Most callers should use initialize==YES and cache==YES.
+* inst is an instance of cls or a subclass thereof, or nil if none is known. 
+*   If cls is an un-initialized metaclass then a non-nil inst is faster.
+* May return _objc_msgForward_impcache. IMPs destined for external use 
+*   must be converted to _objc_msgForward or _objc_msgForward_stret.
+*   If you don't want forwarding at all, use lookUpImpOrNil() instead.
+**********************************************************************/
+IMP lookUpImpOrForward(Class cls, SEL sel, id inst, 
+                       bool initialize, bool cache, bool resolver)
+{
+	...
+    // No implementation found. Try method resolver once.
+    // 缓存和方法列表中都没找到且未曾动态解析 resolveClassMethod 和 resolveInstanceMethod
+    if (resolver  &&  !triedResolver) {
+        runtimeLock.unlock();
+        _class_resolveMethod(cls, sel, inst);
+        runtimeLock.lock();
+        // Don't cache the result; we don't hold the lock so it may have 
+        // changed already. Re-do the search from scratch instead.
+        triedResolver = YES;
+        goto retry;
+    }
+
+    // No implementation found, and method resolver didn't help. 
+    // Use forwarding.
+    // 是否实现 forwardingTargetForSelector 和 forwardInvocation
+    imp = (IMP)_objc_msgForward_impcache;
+    cache_fill(cls, sel, imp, inst);
+ done:
+    runtimeLock.unlock();
+    return imp;
+}
+
+
+// objc-msg-arm64.s
+STATIC_ENTRY __objc_msgForward_impcache
+	// No stret specialization.
+	b   __objc_msgForward
+END_ENTRY __objc_msgForward_impcache
+
+
+ENTRY __objc_msgForward
+	adrp    x17, __objc_forward_handler@PAGE
+	ldr p17, [x17, __objc_forward_handler@PAGEOFF]
+	TailCallFunctionPointer x17
+END_ENTRY __objc_msgForward
+```
+
+也就是说`_objc_msgForward`做的事不包括动态方法解析即 调用`resolveInstanceMethod:` 或 `resolveClassMethod:`方法。只有消息转发
+
+
+> 直接调用它将会发生什么？
+
+`_objc_msgForward`是 IMP 类型，用于消息转发的：当向一个对象发送一条消息，但它并没有实现的时候，`_objc_msgForward`会尝试做消息转发。
+
+一旦直接调用`_objc_msgForward`，将跳过查找 IMP 的过程（即使你有这个方法的实现），直接触发“消息转发”。这时就看你写代码的能力了，用不好程序就会崩溃。
 
 
 <br>
 
-### 0x19.
+### 0x19. runtime 如何实现 weak 变量的自动置 nil？
+
+runtime 中用全局哈希表`weak_table`存储，放 weak 修饰的对象被释放时，调用`dealloc`方法，`dealloc`方法中会将 weak 变量的自动置 nil。具体代码如下
+
+```
+/** 
+ * Called by dealloc; nils out all weak pointers that point to the 
+ * provided object so that they can no longer be used.
+ * 
+ * @param weak_table 
+ * @param referent The object being deallocated. 
+ */
+void weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
+{
+    // object
+    objc_object *referent = (objc_object *)referent_id;
+    // 取出 referent(object) 对应的 entry
+    weak_entry_t *entry = weak_entry_for_referent(weak_table, referent);
+    if (entry == nil) {
+        /// XXX shouldn't happen, but does with mismatched CF/objc
+        //printf("XXX no entry for clear deallocating %p\n", referent);
+        return;
+    }
+
+    // zero out references
+    weak_referrer_t *referrers;
+    size_t count;
+    
+    if (entry->out_of_line()) {
+        // hash 结构的数组
+        referrers = entry->referrers;
+        count = TABLE_SIZE(entry);
+    } 
+    else {
+        // 正常顺序存储的数组
+        referrers = entry->inline_referrers;
+        count = WEAK_INLINE_COUNT;
+    }
+    
+    for (size_t i = 0; i < count; ++i) {
+        objc_object **referrer = referrers[i];
+        if (referrer) {
+            if (*referrer == referent) {
+                // 将对象置为 nil
+                *referrer = nil;
+            }
+            else if (*referrer) {
+                _objc_inform("__weak variable at %p holds %p instead of %p. "
+                             "This is probably incorrect use of "
+                             "objc_storeWeak() and objc_loadWeak(). "
+                             "Break on objc_weak_error to debug.\n", 
+                             referrer, (void*)*referrer, (void*)referent);
+                objc_weak_error();
+            }
+        }
+    }
+    // 从 weak_table 中移除对应的 entry
+    weak_entry_remove(weak_table, entry);
+}
+```
+
+<br>
+
+### 0x1a. 能否向编译后得到的类中增加实例变量？能否向运行时创建的类中添加实例变量？为什么
+
+**原文答案**
+
+- 不能向编译后得到的类中增加实例变量；
+
+- 能向运行时创建的类中添加实例变量；
+
+解释下：
+
+- 因为编译后的类已经注册在 runtime 中，类结构体中的 `objc_ivar_list` 实例变量的链表 和 `instance_size` 实例变量的内存大小已经确定，同时runtime 会调用 `class_setIvarLayout` 或 `class_setWeakIvarLayout` 来处理 `strong weak `引用。所以不能向存在的类中添加实例变量；
+
+- 运行时创建的类是可以添加实例变量，调用 `class_addIvar` 函数。但是得在调用 `objc_allocateClassPair` 之后，`objc_registerClassPair` 之前，原因同上。
+
+
+**自己答案**
+
+- 类的底层结构式 `objc_class ` 结构体，而成员变量存储在`objc_class ` 结构体中的`struct class_rw_t`结构体中，`class_rw_t `是只读属性。所以在编译后得到的类不能再添加成员变量。
+
+
+<br>
+
+### 0x1b. runloop 和线程有什么关系？
+
+在`CF-1153.18`的`CFRunLoop.h`中可以看到并没有暴露创建`RunLoop` 的结构。只提供了两个获取`RunLoop` 的函数：`CFRunLoopGetCurrent()`和`CFRunLoopGetMain()`。它们俩的内部实现逻辑大致如下：
+
+```
+static CFMutableDictionaryRef __CFRunLoops = NULL;
+static CFLock_t loopsLock = CFLockInit;
+
+// should only be called by Foundation
+// t==0 is a synonym for "main thread" that always works
+CF_EXPORT CFRunLoopRef _CFRunLoopGet0(pthread_t t)
+{
+    if (pthread_equal(t, kNilPthreadT)) {
+        t = pthread_main_thread_np();
+    }
+    __CFLock(&loopsLock);
+    if (!__CFRunLoops) {
+        __CFUnlock(&loopsLock);
+        // 创建字典
+        CFMutableDictionaryRef dict = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, NULL, &kCFTypeDictionaryValueCallBacks);
+        // 由主线程创建主线上的 RunLoop
+        CFRunLoopRef mainLoop = __CFRunLoopCreate(pthread_main_thread_np());
+        // 主线程为 key，RunLoop 为 value 存入字典
+        CFDictionarySetValue(dict, pthreadPointer(pthread_main_thread_np()), mainLoop);
+        if (!OSAtomicCompareAndSwapPtrBarrier(NULL, dict, (void * volatile *)&__CFRunLoops)) {
+            CFRelease(dict);
+        }
+        CFRelease(mainLoop);
+        __CFLock(&loopsLock);
+    }
+    
+    // 由传进来的线程 取 loop
+    CFRunLoopRef loop = (CFRunLoopRef)CFDictionaryGetValue(__CFRunLoops, pthreadPointer(t));
+    __CFUnlock(&loopsLock);
+    if (!loop) {
+        // 取不出来就创建一个
+        CFRunLoopRef newLoop = __CFRunLoopCreate(t);
+        __CFLock(&loopsLock);
+        loop = (CFRunLoopRef)CFDictionaryGetValue(__CFRunLoops, pthreadPointer(t));
+        if (!loop) {
+            CFDictionarySetValue(__CFRunLoops, pthreadPointer(t), newLoop);
+            loop = newLoop;
+        }
+        // don't release run loops inside the loopsLock, because CFRunLoopDeallocate may end up taking it
+        __CFUnlock(&loopsLock);
+        CFRelease(newLoop);
+    }
+    if (pthread_equal(t, pthread_self())) {
+        // 注册一个回调，当线程销毁时，顺便也销毁其对应的 RunLoop 
+        _CFSetTSD(__CFTSDKeyRunLoop, (void *)loop, NULL);
+        if (0 == _CFGetTSD(__CFTSDKeyRunLoopCntr)) {
+            _CFSetTSD(__CFTSDKeyRunLoopCntr, (void *)(PTHREAD_DESTRUCTOR_ITERATIONS-1), (void (*)(void *))__CFFinalizeRunLoop);
+        }
+    }
+    return loop;
+}
+
+CFRunLoopRef CFRunLoopGetMain(void) {
+    CHECK_FOR_FORK();
+    static CFRunLoopRef __main = NULL; // no retain needed
+    if (!__main) __main = _CFRunLoopGet0(pthread_main_thread_np()); // no CAS needed
+    return __main;
+}
+
+CFRunLoopRef CFRunLoopGetCurrent(void) {
+    CHECK_FOR_FORK();
+    CFRunLoopRef rl = (CFRunLoopRef)_CFGetTSD(__CFTSDKeyRunLoop);
+    if (rl) return rl;
+    return _CFRunLoopGet0(pthread_self());
+}
+```
+
+由源码可知：
+
+- 线程和`RunLoop` 是一对一的关系，保存在一个静态全局字典中，线程为`key `，`RunLoop`为`value `
+
+- `RunLoop`的创建类似懒加载，刚创建的线程没有`RunLoop`，若不主动获取那它一直不会有
+
+- `RunLoop`的创建是发生在第一次获取时，`RunLoop`的销毁是发生在线程结束时
+
+- 只能在某个线程内容获取其`RunLoop`，主线程除外。
+
+<br>
+
+### 0x1c. runloop 的 mode 作用是什么？
+
+
+model 主要是用来指定事件在运行循环中的优先级的，分为：
+
+- NSDefaultRunLoopMode（kCFRunLoopDefaultMode）：默认，空闲状态
+
+- UITrackingRunLoopMode：ScrollView滑动时
+
+- UIInitializationRunLoopMode：启动时
+
+- NSRunLoopCommonModes（kCFRunLoopCommonModes）：Mode集合
+
+苹果公开提供的 Mode 有两个：
+
+- NSDefaultRunLoopMode（kCFRunLoopDefaultMode）
+
+- NSRunLoopCommonModes（kCFRunLoopCommonModes）
+
+<br>
+
+### 0x1d. 以`+ scheduledTimerWithTimeInterval...`的方式触发的 timer，在滑动页面上的列表时，timer 会暂定回调，为什么？如何解决？
+
+> 为什么？
+
+RunLoop 只能运行在一种 mode 下，如果要换 mode，当前的 loop 也需要停下重启成新的。利用这个机制，`ScrollView`滚动过程中`NSDefaultRunLoopMode（kCFRunLoopDefaultMode）`的mode会切换到`UITrackingRunLoopMode`来保证`ScrollView`的流畅滑动：只能在`NSDefaultRunLoopMode`模式下处理的事件会影响`ScrollView`的滑动。
+
+如果我们把一个NSTimer对象以NSDefaultRunLoopMode（kCFRunLoopDefaultMode）添加到主运行循环中的时候, ScrollView滚动过程中会因为mode的切换，而导致NSTimer将不再被调度。
+
+> 如何解决？
+
+Timer 计时会被`scrollView`的滑动影响的问题可以通过将 timer 添加到`NSRunLoopCommonModes（kCFRunLoopCommonModes）`来解决.
+
+
+<br>
+
+### 0x1f. 猜想runloop内部是如何实现的？
+
+一般来讲，一个线程一次只能执行一个任务，执行完成后线程就会退出。如果我们需要一个机制，让线程能随时处理事件但并不退出，通常的代码逻辑 是这样的：
+
+```
+function loop() {
+    initialize();
+    do {
+        var message = get_next_message();
+        process_message(message);
+    } while (message != quit);
+}
+```
+
+<br>
+
+### 0x20. objc 使用什么机制管理对象内存？
+
+通过 `retainCount` 的机制来决定对象是否需要释放。 每次 runloop 的时候，都会检查对象的 `retainCount`，如果`retainCount` 为 0，说明该对象没有地方需要继续使用了，可以释放掉了。
+
+<br>
+
+### 0x21. ARC 通过什么方式帮助开发者管理内存？
+
+编译器在适当的时候添加`retain/release/autorelease`代码。
+
+<br>
+
+### 0x22.
+
+<br>
+
+### 0x23. `BAD_ACCESS` 在什么情况下出现？
+
+访问了悬垂指针，比如对一个已经释放的对象执行了`release`、访问已经释放对象的成员变量或者发消息。 死循环
+
+<br>
+
+### 0x24.
+
+<br>
+
+### 0x25.
+
+<br>
+
+### 0x26.
+
+<br>
+
+### 0x27.
+
+<br>
+
+### 0x28.
+
+<br>
+
+### 0x29.
