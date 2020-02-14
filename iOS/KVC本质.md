@@ -49,22 +49,22 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 `setValue:forKey:`原理
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/100921_07ac55a0_1355277.png "Snip20190418_16.png")
+![](../Images/KVC本质/kvc_image1.png)
 
 - 先通过`key`顺序查找`setKey:`和`_setKey:`方法
 
 优先查找`setKey:`方法
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/093745_8cd6025e_1355277.png "Snip20190418_13.png")
+![](../Images/KVC本质/kvc_image2.png)
 
 `setKey:`方法找不到会`_setKey:`方法
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/093430_e4f521bb_1355277.png "Snip20190417_11.png")
+![](../Images/KVC本质/kvc_image3.png)
 
 
 - 若`setKey:`和`_setKey:`都没找到,且`accessInstanceVariablesDirectly`返回为`NO`，则程序报`setValue:forUndefinedKey:`错误崩溃
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/093922_33ea157d_1355277.png "Snip20190417_12.png")
+![](../Images/KVC本质/kvc_image4.png)
 
 
 - 若`accessInstanceVariablesDirectly`返回为`YES`,则顺序查找`_key` `_isKey` `key` `isKey`四个成员变量
@@ -72,31 +72,31 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 `_age`成员
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/093957_bdc20463_1355277.png "Snip20190417_2.png")
+![](../Images/KVC本质/kvc_image5.png)
 
 
 `_isAge`成员
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/094144_232e62a3_1355277.png "Snip20190417_3.png")
+![](../Images/KVC本质/kvc_image6.png)
 
 
 `age`成员
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/094221_af1fea62_1355277.png "Snip20190417_4.png")
+![](../Images/KVC本质/kvc_image7.png)
 
 `isAge`成员
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/094302_c51e302e_1355277.png "Snip20190417_6.png")
+![](../Images/KVC本质/kvc_image8.png)
 
 - 若四个成员变量都没找到，则程序报`setValue:forUndefinedKey:`错误崩溃
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0418/094325_2e4cf8cf_1355277.png "Snip20190417_7.png")
+![](../Images/KVC本质/kvc_image9.png)
 
 ## 三、KVC取值原理
 
 `valueForKey:`原理
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0419/094650_6503cb26_1355277.png "Snip20190419_19.png")
+![](../Images/KVC本质/kvc_image10.png)
 
 
 - 优先按照`getKey` `key` `isKey` `_key`顺序查找方法，设置新值

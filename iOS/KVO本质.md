@@ -122,11 +122,11 @@ NSLog(@"添加KVO之后person1的父类%@", [object_getClass(self.person1) super
 
 - 添加`KVO`之前
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0417/104225_19d07122_1355277.png "Screen Shot 2019-04-17 at 10.39.35 AM.png")
+![](../Images/KVO本质/kvo_image1.png)
 
 - 添加`KVO`之后
 
-![](https://images.gitee.com/uploads/images/2019/0417/104359_5c427002_1355277.png "Screen Shot 2019-04-17 at 10.39.41 AM.png")
+![](../Images/KVO本质/kvo_image2.png)
 
 ### 0x03 验证
 

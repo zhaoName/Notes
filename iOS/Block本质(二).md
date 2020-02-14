@@ -24,20 +24,19 @@ ZNPeron.m
 // main.m
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-    
         ZNBlock block;
-	{
-	    ZNPerson *per = [[ZNPerson alloc] init];
-	    per.name = @"zhaoName";
-
-	    block = ^{
-		 NSLog(@"per.age：%@", per.name);
-	    };
-	    // MRC 下加下句代码
-	    //[per release];
-	}
-	block();
-	NSLog(@"========");
+		{
+		    ZNPerson *per = [[ZNPerson alloc] init];
+		    per.name = @"zhaoName";
+	
+		    block = ^{
+				 NSLog(@"per.age：%@", per.name);
+		    };
+		    // MRC 下加下句代码
+		    //[per release];
+		}
+		block();
+		NSLog(@"========");
     }
     return 0;
 }
@@ -154,7 +153,7 @@ static void __main_block_dispose_0(struct __main_block_impl_0*src)
 
 那`__main_block_copy_0 `和`__main_block_dispose_0 `函数什么时候调用呢？
 
-![](https://images.gitee.com/uploads/images/2019/0618/233640_655815ca_1355277.png "1111.png")
+![](../Images/Block本质(二)/block_image0201.png)
 
 
 **总结: 当`Block `内部访问了对象类型的`auto `变量时**
@@ -413,7 +412,7 @@ __Block_byref_age_0 age = {(void*)0,(__Block_byref_age_0 *)&age, 0, sizeof(__Blo
 
 可以看到`__block`修饰的变量会变成`__Block_byref_age_0 `类型的结构体，其内部也有个成员变量`age`。
 
-![](https://images.gitee.com/uploads/images/2019/0618/233826_505764f4_1355277.png "222.png")
+![](../Images/Block本质(二)/block_image0202.png)
 
 - 下面来解释下为什么能在`Block`内部修改带有`__block `修饰符的变量？
 
@@ -482,7 +481,7 @@ ZNBlock block_sec = &__main_block_impl_1(__main_block_func_1, &__main_block_desc
 
 若`Block`在栈上，当超出其作用域后，`Block`和`__block`变量都会被释放。
 
-![](https://images.gitee.com/uploads/images/2019/0618/233901_65103114_1355277.png "333.png")
+![](../Images/Block本质(二)/block_image0203.png)
 
 - `Block`在堆上
 
@@ -514,11 +513,11 @@ static struct __main_block_desc_0 {
 
 当`Block`被拷贝到堆上时，会调用`__main_block_copy_0 `函数，`__main_block_copy_0 `函数内部调用`_Block_object_assign `函数对`__block`进行强引用。
 
-![](https://images.gitee.com/uploads/images/2019/0619/100205_a21fb68d_1355277.png "Screen Shot 2019-06-19 at 10.01.19 AM.png")
+![](../Images/Block本质(二)/block_image0204.png)
 
 当`Block`从堆上销毁时，会调用`__main_block_dispose_0 `函数，`__main_block_dispose_0 `函数内部调用`_Block_object_dispose `函数，自动释放`__block`变量。
 
-![](https://images.gitee.com/uploads/images/2019/0618/234018_76d121f4_1355277.png "555.png")
+![](../Images/Block本质(二)/block_image0205.png)
 
 
 - 捕获对象类型的`auto `变量和`__block `变量的区别
@@ -533,12 +532,12 @@ static struct __main_block_desc_0 {
 `__block`变量从栈上复制到堆上时，会将成员`__forwarding `的值替换成复制到目标堆上的`__block`变量的值。这样无论`__block`在栈上还是在堆上都能正确的访问该变量。
 
 
-![](https://images.gitee.com/uploads/images/2019/0618/234050_80445b62_1355277.png "666.png")
+![](../Images/Block本质(二)/block_image0206.png)
 
 
 在`MRC`环境下测试：
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0618/235054_e1e69d88_1355277.jpeg "WechatIMG113.jpeg")
+![](../Images/Block本质(二)/block_image0207.png)
 
 
 
@@ -667,20 +666,20 @@ struct __Block_byref_per_0 {
 
 对`__block`修饰的对象类型的内存管理 大致如下图
 
-![](https://images.gitee.com/uploads/images/2019/0619/105410_52f8eb08_1355277.jpeg "1560912785999.jpg")
+![](../Images/Block本质(二)/block_image0208.png)
 
 - 当强引用`per `时
 
-![](https://images.gitee.com/uploads/images/2019/0619/141103_694c3074_1355277.png "1560913593390.png")
+![](../Images/Block本质(二)/block_image0209.png)
 
 - 当弱引用`per `时
 
-![](https://images.gitee.com/uploads/images/2019/0619/141119_cd4ff984_1355277.png "1560913737268.png")
+![](../Images/Block本质(二)/block_image0210.png)
 
 
 但在`MRC`环境下，`Block`永远不会强引用`__block`修饰的对象类型变量。
 
-![](https://images.gitee.com/uploads/images/2019/0619/144515_d5178052_1355277.png "1560926668259.png")
+![](../Images/Block本质(二)/block_image0211.png)
 
 这也是在`MRC`环境下，`__block`能解决循环引用的原因！
 
@@ -732,7 +731,7 @@ int main(int argc, const char * argv[]) {
 
 `ZNBlock`是对象`per`的成员，被`per`持有。在`ZNBlock`中访问了成员变量`name`，由上篇文章可知，`ZNBlock`内部会捕获`self (per)`变量，并持有它。`per`持有`ZNBlock`， `ZNBlock`持有`per`就导致了循环引用。
 
-![](https://images.gitee.com/uploads/images/2019/0619/184519_e0b9de3d_1355277.png "1111.png")
+![](../Images/Block本质(二)/block_image0212.png)
 
 
 ### 0x01 `__weak ` 
@@ -795,11 +794,11 @@ int main(int argc, const char * argv[]) {
 
 当没有在`test`方法中执行`self.block();`时，`ZNPerson`对象持有`ZNBlock`， `ZNBlock`内部持有`__block`变量，`__block`变量又持有`ZNPerson`对象。这样就造成循环引用。
 
-![](https://images.gitee.com/uploads/images/2019/0619/184340_b64b6b8d_1355277.png "Screen Shot 2019-06-19 at 6.42.08 PM.png")
+![](../Images/Block本质(二)/block_image0213.png)
 
 当在`test`方法中执行`self.block();`时，`weakSelf = nil`， `__block`变量对`ZNPerson`对象的强引用失效。那就不会构成循环引用，`ZNPerson`就能正常释放。
 
-![](https://images.gitee.com/uploads/images/2019/0619/184324_d67fc97f_1355277.png "Screen Shot 2019-06-19 at 6.42.15 PM.png")
+![](../Images/Block本质(二)/block_image0214.png)
 
 
 **总结**

@@ -191,7 +191,7 @@ int main(int argc, const char * argv[]) {
 }
 ```
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/190343_9104f6b6_1355277.png "Snip20190615_8.png")
+![](../Images/Block本质(一)/block_image0101.png)
 
 可以看到`Block`的底层结构是个`struct __main_block_impl_0`结构体类型。转换后的源代码一并写入了构造函数，所以看起来有点复杂。简化后如下
 
@@ -234,7 +234,7 @@ NSLog(@"imp->impl.FuncPtr: %p", imp->impl.FuncPtr);
 
 然后将断点下在`ZNBlock`函数内，然后将`Xcode `调成断点汇编模式`Debug -> Debug Workflow -> Always Show Disassembly` 可以看到函数起始地址和`FuncPtr`地址一致。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/185804_c252de9c_1355277.png "Snip20190615_1.png")
+![](../Images/Block本质(一)/block_image0102.png)
 
 
 第二个参数是`Block`的描述信息，会将其指针赋值给`struct __main_block_desc_0* Desc`。那构造函数调用结果如下
@@ -397,7 +397,7 @@ int main(int argc, const char * argv[]) {
 
 从源代码中可以看到局部变量是值传递，静态局部变量是指针传递。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/190143_d4cdb421_1355277.png "Snip20190615_2.png")
+![](../Images/Block本质(一)/block_image0103.png)
 
 
 ### 0x03 全局变量
@@ -505,7 +505,7 @@ static void _I_ZNPerson_test(ZNPerson * self, SEL _cmd)
 **总结：为了保证block内部能够正常访问外部的变量，block有个变量捕获机制**
 
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/190059_ccc863a7_1355277.png "Snip20190615_3.png")
+![](../Images/Block本质(一)/block_image0104.png)
 
 <br>
 
@@ -516,7 +516,7 @@ static void _I_ZNPerson_test(ZNPerson * self, SEL _cmd)
 
 为了更好地理解底层需要将工程调成`MRC`模式。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/190013_7fdef157_1355277.png "Snip20190615_5.png")
+![](../Images/Block本质(一)/block_image0105.png)
 
 ### 0x01 `__NSGlobalBlock__`
 
@@ -565,7 +565,7 @@ NSLog(@"类型：%@ === %@ === %@", [ZNBlock class], [[ZNBlock class] superclass
 
 **总结：**
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/185953_e3b976e0_1355277.png "Snip20190615_7.png")
+![](../Images/Block本质(一)/block_image0106.png)
 
 
 ### 0x04 三种类型的`Block`存储域
@@ -573,7 +573,7 @@ NSLog(@"类型：%@ === %@ === %@", [ZNBlock class], [[ZNBlock class] superclass
 从三种类型的`Block`的类名中也可以推断出其存储域。`__NSGlobalBlock__`和全局变量一样放在数据段，`__NSStackBlock__`放在栈段，`__NSMallocBlock__`放在堆段。
 
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0615/185853_1d8e204f_1355277.png "Snip20190615_6.png")
+![](../Images/Block本质(一)/block_image0107.png)
 
 
 ### 0x05 每种`Block`类型`copy`后结果
@@ -611,7 +611,7 @@ NSLog(@"类型：%@ === %@", [ZNBlock class], [ZNBlock copy]);
 
 **总结：**
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0616/000530_8bd41c29_1355277.png "Snip20190616_9.png")
+![](../Images/Block本质(一)/block_image0108.png)
 
 
 ## 四、`ARC `环境下`Block `的`copy `操作

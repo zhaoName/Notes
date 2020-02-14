@@ -116,11 +116,11 @@ class AutoreleasePoolPage
 
 `AutoreleasePool`没有单独的结构，是通过一个或多个`AutoreleasePoolPage `类以双向链表的形式组合而成的栈结构。
 
-![](https://images.gitee.com/uploads/images/2019/0815/223401_a5b64632_1355277.png "AutoreleasePool_image0101.png")
+![](../Images/AutoReleasePool/AutoreleasePool_image0101.png)
 
 每个`AutoreleasePoolPage`对象占用 4096 字节内存，除了用来存放它内部的成员变量，剩下的空间以压栈的方式存放`autorelease`对象的地址。指针`parent` 和指针`child` 使用于双向链表的指针。
 
-![](https://images.gitee.com/uploads/images/2019/0815/223437_56a92f6a_1355277.png "AutoreleasePool_image0102.png")
+![](../Images/AutoReleasePool/AutoreleasePool_image0102.png)
 
 指针`next`指向下一个`autorelease`对象将要存放的地址。如果`next `指向的地址加入一个 `object`，它就会移动到下一个为空的内存地址中。
 
@@ -133,7 +133,7 @@ class AutoreleasePoolPage
 
 由上面知道每次初始化自动释放池`@autoreleasepool{}`，会调用构造方法`objc_autoreleasePoolPush()`，在这时会先把`POOL_BOUNDARY `压入栈，然后再将对象依次压入栈。
 
-![](https://images.gitee.com/uploads/images/2019/0815/223459_11c61530_1355277.png "AutoreleasePool_image0103.png")
+![](../Images/AutoReleasePool/AutoreleasePool_image0103.png)
 
 而当自动释放池销毁时会调用析构函数`objc_autoreleasePoolPop()`，这时会向自动释放池中的对象发送`release`消息，直到遇到`POOL_BOUNDARY `，这时说明此自动释放池中的对象已释放完毕。
 
@@ -173,7 +173,7 @@ objc[28420]: [0x101007340]       0x10062b3b0  NSObject
 objc[28420]: [0x101007348]       0x10062b3c0  NSObject
 ```
 
-![](https://images.gitee.com/uploads/images/2019/0815/223521_45a06b6c_1355277.png "AutoreleasePool_image0104.png")
+![](../Images/AutoReleasePool/AutoreleasePool_image0104.png)
 
 若剩下的内存空间足够存储一个自动释放池`@autoreleasepool{}`中的`autorelease`对象，则存储下一个自动释放池`@autoreleasepool{}`中的`autorelease`对象不会创建新的`AutoreleasePoolPage `对象。
 
@@ -209,7 +209,7 @@ objc[28465]: [0x100801068]       0x100544050  NSObject
 objc[28465]: ##############
 ```
 
-![](https://images.gitee.com/uploads/images/2019/0815/223554_9f33f41c_1355277.png "AutoreleasePool_image0105.png")
+![](../Images/AutoReleasePool/AutoreleasePool_image0105.png)
 
 
 ## 三、`AutoreleasePoolPage::push()`
@@ -655,7 +655,7 @@ typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
 - `kCFRunLoopBeforeExit`事件，会调用`objc_autoreleasePoolPop()`
 
 
-![](https://images.gitee.com/uploads/images/2019/0815/181214_cb1fe30e_1355277.png "AutoreleasePool_image0106.png")
+![](../Images/AutoReleasePool/AutoreleasePool_image0106.png)
 
 
 当启动 RunLoop 时，也就是`kCFRunLoopEntry`即将进入 RunLoop，会调用`objc_autoreleasePoolPush()`方法，初始化`AutoreleasePoolPage `对象。

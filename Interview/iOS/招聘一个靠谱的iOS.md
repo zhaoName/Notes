@@ -1054,7 +1054,110 @@ function loop() {
 
 <br>
 
-### 0x22.
+### 0x22. 不手动指定`autoreleasepool`的前提下，一个`autorealese`对象在什么时刻释放？（比如在一个 vc 的`viewDidLoad`中创建）
+
+- **`@autoreleasepool{}`**
+
+```
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    NSLog(@"1111");
+    @autoreleasepool {
+        ZNPerson *per = [[[ZNPerson alloc] init] autorelease];
+    }
+    NSLog(@"22222");
+}
+
+// 打印结果
+2019-08-15 15:34:12.410255+0800 AutoreleasePool[39362:716481] 1111
+2019-08-15 15:34:12.410489+0800 AutoreleasePool[39362:716481] -[ZNPerson dealloc]
+2019-08-15 15:34:12.410611+0800 AutoreleasePool[39362:716481] 22222
+```
+
+可以看到加入到`@autoreleasepool{}`中的`autorelease`对象，会在调用`objc_autoreleasePoolPop `时调用`release`方法，释放对象。
+
+
+- **对象直接调用`autorelease `**
+
+```
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    NSLog(@"1111");
+    ZNPerson *per = [[[ZNPerson alloc] init] autorelease];
+    NSLog(@"22222");
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    NSLog(@"%s", __func__);
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    NSLog(@"%s", __func__);
+}
+
+// 打印结果
+2019-08-15 17:29:28.898374+0800 AutoreleasePool[50485:807839] 1111
+2019-08-15 17:29:28.898658+0800 AutoreleasePool[50485:807839] 22222
+2019-08-15 17:29:28.899450+0800 AutoreleasePool[50485:807839] -[ViewController viewWillAppear:]
+2019-08-15 17:29:28.905052+0800 AutoreleasePool[50485:807839] -[ZNPerson dealloc]
+2019-08-15 17:29:28.925806+0800 AutoreleasePool[50485:807839] -[ViewController viewDidAppear:]
+```
+
+可以看到对象直接调用`autorelease `方法，对象的释放是在`viewWillAppear:`后，而不是在`viewDidLoad `执行结束。这是为什么呢 ？
+
+这就和`RunLoop`有关了，iOS 在主线程的`Runloop`中注册了 2 个`Observer`。用于监听和自动释放池相关的事件。
+
+```
+"<CFRunLoopObserver 0x6000001c45a0 [0x1058e0ae8]>{activities = 0x1, callout = _wrapRunLoopWithAutoreleasePoolHandler (0x1083db87d) ...}}"
+
+"<CFRunLoopObserver 0x6000001c4640 [0x1058e0ae8]>{activities = 0xa0,callout = _wrapRunLoopWithAutoreleasePoolHandler (0x1083db87d) ...)}}"
+```
+
+再结合`CFRunLoopActivity `的值
+
+```
+typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
+    kCFRunLoopEntry = (1UL << 0),  // 1
+    kCFRunLoopBeforeTimers = (1UL << 1), // 2
+    kCFRunLoopBeforeSources = (1UL << 2), // 4
+    kCFRunLoopBeforeWaiting = (1UL << 5), // 32
+    kCFRunLoopAfterWaiting = (1UL << 6),  // 64
+    kCFRunLoopExit = (1UL << 7), // 128
+    kCFRunLoopAllActivities = 0x0FFFFFFFU
+};
+```
+
+可知第一个 Observer 监听的是`kCFRunLoopEntry `事件，会调用`objc_autoreleasePoolPush()`
+
+第二个 Observer 监听两个事件
+
+- `kCFRunLoopBeforeWaiting`事件，会调用`objc_autoreleasePoolPop()`、`objc_autoreleasePoolPush()`
+
+- `kCFRunLoopBeforeExit`事件，会调用`objc_autoreleasePoolPop()`
+
+
+![](../../Images/AutoReleasePool/AutoreleasePool_image0106.png)
+
+
+当启动 RunLoop 时，也就是`kCFRunLoopEntry`即将进入 RunLoop，会调用`objc_autoreleasePoolPush()`方法，初始化`AutoreleasePoolPage `对象。
+
+当 RunLoop 即将进入休眠时(`kCFRunLoopBeforeWaiting`)，先调用`objc_autoreleasePoolPop()`，将步骤 2 3 4 5 中的 `autorelease`对象释放掉，再调用`objc_autoreleasePoolPush()`，初始化新的`AutoreleasePoolPage `对象。
+
+若 RunLoop 没有被退出，会由步骤 9 跳转到步骤 2，然后再走到步骤6，即将进入休眠状态(`kCFRunLoopBeforeWaiting`)。此时依然先调用`objc_autoreleasePoolPop()`，将`autorelease`对象释放掉。再调用`objc_autoreleasePoolPush()`，初始化新的`AutoreleasePoolPage `对象。依次循环下去。
+
+若 RunLoop 即将退出(`kCFRunLoopBeforeExit`)，会调用`objc_autoreleasePoolPop()`，释放调 8 9 中的`autorelease`对象。
+
+
+这样`push`和`pop`一直都是成对出现，不会出现自动释放池中对象没有被释放的情况。
+
 
 <br>
 
@@ -1064,24 +1167,503 @@ function loop() {
 
 <br>
 
-### 0x24.
+### 0x24. 苹果是如何实现`autoreleasepool`的？
+
+```
+struct __AtAutoreleasePool {
+    // 构造函数，创建此结构体变量时调用
+    __AtAutoreleasePool() {
+        atautoreleasepoolobj = objc_autoreleasePoolPush();
+    }
+    // 析构函数，销毁结构体时调用
+    ~__AtAutoreleasePool() {
+        objc_autoreleasePoolPop(atautoreleasepoolobj);
+    }
+    void * atautoreleasepoolobj;
+};
+```
+
+在 runtime4-750 的 NSObject.mm 中找到其实现。可以看到这两个函数其内部会调用 C++ 实现的类`AutoreleasePoolPage `中的方法。也就是说加入到 `@autoreleasepool`中的对象，都是借助`AutoreleasePoolPage `管理的。
+
+```
+void *objc_autoreleasePoolPush(void)
+{
+    return AutoreleasePoolPage::push();
+}
+
+void objc_autoreleasePoolPop(void *ctxt)
+{
+    AutoreleasePoolPage::pop(ctxt);
+}
+```
+
+```
+// objc4-750 NSObject.mm
+
+#define POOL_BOUNDARY  nil
+
+#define I386_PGBYTES   4096 
+#define PAGE_SIZE      I386_PGBYTES
+#define PAGE_MAX_SIZE  PAGE_SIZE
+
+class AutoreleasePoolPage 
+{
+	// 对当前 AutoreleasePoolPage 完整性的校验
+    magic_t const magic;
+    // 指向下一个 autorelease 对象将要存放的地址
+    id *next;
+    // 当前 AutoreleasePoolPage 所在的线程
+    pthread_t const thread;
+    // 双向链表 父节点 指向前一个 Page 对象
+    AutoreleasePoolPage * const parent;
+    // 双向链表 子节点 指向下一个 Page 对象
+    AutoreleasePoolPage *child;
+    // 链表深度 节点个数
+    uint32_t const depth;
+    // high water mark 数据容纳的一个上限
+    uint32_t hiwat;
+}
+```
+
+`AutoreleasePool`没有单独的结构，是通过一个或多个`AutoreleasePoolPage `类以双向链表的形式组合而成的栈结构。
+
 
 <br>
 
-### 0x25.
+### 0x25. 使用 block 时什么情况会发生引用循环，如何解决？
+
+- **`__weak `** 
+
+```
+// ZNPreson.m
+- (void)test
+{
+    __weak typeof (self) weakSelf = self;
+    self.block = ^{
+        NSLog(@"name is %@", weakSelf.name);
+    };
+    self.block();
+}
+
+// 打印结果
+2019-06-19 16:59:43.846754+0800 BlockNature[14379:2181645] name is zhao
+2019-06-19 17:00:22.600143+0800 BlockNature[14379:2181645] -[ZNPerson dealloc]
+```
+
+- **`__unsafe_unretained `**
+
+
+```
+- (void)test
+{
+    __unsafe_unretained ZNPerson *weakSelf = self;
+    self.block = ^{
+        NSLog(@"name is %@", weakSelf.name);
+    };
+    self.block();
+}
+
+// 打印结果
+2019-06-19 17:08:20.955747+0800 BlockNature[14508:2185864] name is zhao
+2019-06-19 17:08:24.310285+0800 BlockNature[14508:2185864] -[ZNPerson dealloc]
+```
+
+- **`__block `** 
+
+```
+// ZNPerson.m
+- (void)test
+{
+    __block ZNPerson *weakSelf = self;
+    self.block = ^{
+        NSLog(@"name is %@", weakSelf.name);
+        weakSelf = nil;
+    };
+    self.block();
+}
+
+// 打印结果
+2019-06-19 18:35:24.183795+0800 BlockNature[17091:2230005] name is zhao
+2019-06-19 18:35:24.184131+0800 BlockNature[17091:2230005] -[ZNPerson dealloc]
+```
+
+**总结**
+
+- 用`__weak`修饰对象变量被释放后会自动将对象变量的值置为`nil`。
+
+- 用`__unsafe_unretained `修饰的对象被释放后，对象所指向的内存被回收，但对象的值不变。这样是不安全的，容易造成野指针访问。
+
+- ARC 环境下，用`__block`解决循环引用，必须要调用`block`且在`block`内部将对象置为`nil`。 （ MRC 环境下，`Block`永远不会强引用`__block`修饰的对象类型变量。）
 
 <br>
 
-### 0x26.
+### 0x26. 在 block 内如何修改 block 外部变量？
+
+- 局部变量：block 内部捕获局部变量是值拷贝，需要用`__block`修饰 block 的外部变量，才能在其内部修改。
+
+- 静态局部变量：block 内部捕获静态局部变量是直接捕获惊天局部变量的地址，所以可以在 block 内部直接修改静态局部变量的值。
+
+- 全局变量：全局变量放在数据段，大家都可以随意访问。block 不会捕获全局变量，但也可以在其内部修改全局变量。
+
 
 <br>
 
-### 0x27.
+### 0x27.  使用系统的某些`block api`（如`UIView`的 block 版本写动画时），是否也考虑引用循环问题？
+
+
+系统的某些block api中，UIView的block版本写动画时不需要考虑，但也有一些api 需要考虑：
+
+所谓“引用循环”是指双向的强引用，所以那些“单向的强引用”（block 强引用 self ）没有问题，比如这些：
+
+```
+[UIView animateWithDuration:duration animations:^{ [self.superview layoutIfNeeded]; }]; 
+
+[[NSOperationQueue mainQueue] addOperationWithBlock:^{ self.someProperty = xyz; }]; 
+
+[[NSNotificationCenter defaultCenter] addObserverForName:@"someNotification" 
+                                                 object:nil 
+                          queue:[NSOperationQueue mainQueue]
+                                             usingBlock:^(NSNotification * notification) {
+                                                   self.someProperty = xyz; }]; 
+                                                   
+```
+这些情况不需要考虑“引用循环”。
+
+但如果你使用一些参数中可能含有 ivar 的系统 api ，如 GCD 、NSNotificationCenter就要小心一点：比如GCD 内部如果引用了 self，而且 GCD 的其他参数是 ivar，则要考虑到循环引用：
+
+```
+__weak __typeof__(self) weakSelf = self;
+dispatch_group_async(_operationsGroup, _operationsQueue, ^
+{
+	__typeof__(self) strongSelf = weakSelf;
+	[strongSelf doSomething];
+	[strongSelf doSomethingElse];
+});
+```
+
+类似的：
+
+```
+ __weak __typeof__(self) weakSelf = self;
+ 
+ _observer = [[NSNotificationCenter defaultCenter] addObserverForName:@"testKey" object:nil queue:nil
+                                                           usingBlock:^(NSNotification *note) {
+     __typeof__(self) strongSelf = weakSelf;
+     [strongSelf dismissModalViewControllerAnimated:YES];
+ }];
+```
+ 
+`self --> _observer --> block --> self `显然这也是一个循环引用。
+
+检测代码中是否存在循环引用问题，可使用 Facebook 开源的一个检测工具[FBRetainCycleDetector](https://github.com/facebook/FBRetainCycleDetector) 。
+
 
 <br>
 
-### 0x28.
+### 0x28. GCD 的队列（`dispatch_queue_t`）分哪两种类型？
+
+- 串行 `DISPATCH_QUEUE_SERIAL `
+
+- 并发 `DISPATCH_QUEUE_CONCURRENT `
+
+- 体统提供 串行 `dispatch_get_main_queue()`
+
+- 体统提供 串行 `dispatch_get_global_queue()`
 
 <br>
 
-### 0x29.
+### 0x29. 如何用 GCD 同步若干个异步调用？（如根据若干个url异步加载多张图片，然后在都下载完成后合成一张整图
+
+使用`Dispatch Group`追加 block 到`Global Group Queue`,这些 block 如果全部执行完毕，就会执行`Main Dispatch Queue`中的结束处理的 block。
+
+```
+dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+dispatch_group_t group = dispatch_group_create();
+dispatch_group_async(group, queue, ^{ /*加载图片1 */ });
+dispatch_group_async(group, queue, ^{ /*加载图片2 */ });
+dispatch_group_async(group, queue, ^{ /*加载图片3 */ }); 
+dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        // 合并图片
+});
+```
+
+<br>
+
+### 0x2a. `dispatch_barrier_async`的作用是什么？
+
+看些文档上对`dispatch_barrier_async `的解释
+
+> Calls to this function always return immediately after the block has been submitted and never wait for the block to be invoked. When the barrier block reaches the front of a private concurrent queue, it is not executed immediately. Instead, the queue waits until its currently executing blocks finish executing. At that point, the barrier block executes by itself. Any blocks submitted after the barrier block are not executed until the barrier block completes.
+
+> The queue you specify should be a concurrent queue that you create yourself using the dispatch_queue_create function. If the queue you pass to this function is a serial queue or one of the global concurrent queues, this function behaves like the dispatch_async function.
+
+
+- `dispatch_barrier_async `可以用来处理资源抢夺问题
+
+```
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // 初始化
+    pthread_rwlock_init(&_rwlock, NULL);
+    for (int i=0; i<5; i++) {
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            [self readFile];
+        });
+    }
+    for (int i=0; i<5; i++) {
+        dispatch_async(dispatch_get_global_queue(0, 0), ^{
+            [self writeFile];
+        });
+    }
+    // 销毁
+    pthread_rwlock_destroy(&_rwlock);
+}
+
+- (void)readFile
+{
+    // 读加锁
+    pthread_rwlock_rdlock(&_rwlock);
+    sleep(.5);
+    NSLog(@"%s===%@", __func__, [NSThread currentThread]);
+    pthread_rwlock_unlock(&_rwlock);
+}
+
+- (void)writeFile
+{
+    // 写加锁
+    pthread_rwlock_wrlock(&_rwlock);
+    sleep(1);
+    NSLog(@"%s===%@", __func__, [NSThread currentThread]);
+    pthread_rwlock_unlock(&_rwlock);
+}
+
+
+// 打印结果
+2019-07-21 16:34:16.356524+0800 GCD-Lock[26088:2988106] -[ViewController readFile]===<NSThread: 0x6000003258c0>{number = 6, name = (null)}
+2019-07-21 16:34:16.356612+0800 GCD-Lock[26088:2988084] -[ViewController readFile]===<NSThread: 0x600000320280>{number = 4, name = (null)}
+2019-07-21 16:34:16.356612+0800 GCD-Lock[26088:2988082] -[ViewController readFile]===<NSThread: 0x600000325800>{number = 5, name = (null)}
+2019-07-21 16:34:16.356613+0800 GCD-Lock[26088:2988083] -[ViewController readFile]===<NSThread: 0x600000325740>{number = 3, name = (null)}
+2019-07-21 16:34:16.356842+0800 GCD-Lock[26088:2988106] -[ViewController readFile]===<NSThread: 0x6000003258c0>{number = 6, name = (null)}
+
+2019-07-21 16:34:17.358049+0800 GCD-Lock[26088:2988084] -[ViewController writeFile]===<NSThread: 0x600000320280>{number = 4, name = (null)}
+2019-07-21 16:34:18.358945+0800 GCD-Lock[26088:2988083] -[ViewController writeFile]===<NSThread: 0x600000325740>{number = 3, name = (null)}
+2019-07-21 16:34:19.359319+0800 GCD-Lock[26088:2988082] -[ViewController writeFile]===<NSThread: 0x600000325800>{number = 5, name = (null)}
+2019-07-21 16:34:20.359749+0800 GCD-Lock[26088:2988106] -[ViewController writeFile]===<NSThread: 0x6000003258c0>{number = 6, name = (null)}
+2019-07-21 16:34:21.360385+0800 GCD-Lock[26088:2988107] -[ViewController writeFile]===<NSThread: 0x60000032c180>{number = 7, name = (null)}
+```
+
+- `queue`必须是用`dispatch_queue_create `创建的并发队列，若是串行或全局并发队列，那`dispatch_barrier_sync `的效果等同于`dispatch_sync `
+
+<br>
+ 
+### 0x2b. 苹果为什么要废弃`dispatch_get_current_queue` ？
+
+由于队列有层级关系，所以"检查当前队列是否是执行同步派发所有的队列"并不是总有效。如下依然会产生死锁
+
+```
+dispatch_queue_t queueA = dispatch_queue_create("A", NULL);
+dispatch_queue_t queueB = dispatch_queue_create("B", NULL);
+dispatch_sync(queueA, ^{
+    dispatch_sync(queueB, ^{
+        if (dispatch_get_current_queue() != queueA) {
+            dispatch_sync(queueA, ^{
+                printf("do something");
+            });
+        }
+    });
+});
+```
+
+参考：《Effective Objective-C 2.0 》
+
+<br>
+
+### 0x2c. 以下代码运行结果如何？
+
+```
+- (void)viewDidLoad
+{
+    [super viewDidLoad];
+    NSLog(@"1");
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        NSLog(@"2");
+    });
+    NSLog(@"3");
+}
+```
+
+主线程死锁，只会打印 1
+
+
+<br>
+
+### 0x2d. `addObserver:forKeyPath:options:context:`各个参数的作用分别是什么，observer 中需要实现哪个方法才能获得 KVO 回调？
+
+> 参数作用
+
+```
+// 添加键值观察
+/*
+1 观察者，负责处理监听事件的对象
+2 观察的属性
+3 观察的选项
+4 上下文
+*/
+[self.person addObserver:self forKeyPath:@"name" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:@"Person Name"];
+```
+
+> observer 中需要实现哪个方法才能获得 KVO 回调？
+
+```
+// 所有的 kvo 监听到事件，都会调用此方法
+/*
+ 1. 观察的属性
+ 2. 观察的对象
+ 3. change 属性变化字典（新／旧）
+ 4. 上下文，与监听的时候传递的一致
+ */
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context;
+```
+
+<br>
+
+### 0x2e. 如何手动触发一个 value 的 KVO ?
+
+**KVO 本质**
+
+- 用`runtime`动态生成一个子类，并让示例对象的`isa`指正指向这个子类
+
+- 在子类中重写`setxxx:`方法，并在其内部调用`Foundation`框架下的`_NSSetXXXValueAndNotify()`函数
+
+- 在`_NSSetXXXValueAndNotify()`内部
+	
+	-  调用`willChangeValueForKey:`
+	
+	- 调用父类的`setxxx:`方法，设置新值
+
+	- 调用`didChangeValueForKey:`方法
+
+	- 在`didChangeValueForKey:`方法中触发监听器的`observeValueForKeyPath:ofObject:change:context:`方法
+
+
+**如何手动触发 KVO**
+
+- 手动调用`willChangeValueForKey:`和`didChangeValueForKey:`方法就可手动触发`KVO`
+
+
+
+<br>
+
+### 0x2f. 若一个类有实例变量`NSString *_foo`，调用`setValue:forKey:`时，可以以`foo `还是`_foo `作为`key` ？
+
+
+`setValue:forKey:`原理
+
+![](../../Images/KVC本质/kvc_image1.png)
+
+<br>
+
+### 0x30.  KVC 的`keyPath`中的集合运算符如何使用？
+
+其实没懂题目啥意思。。
+
+- 必须用在集合对象上或普通对象的集合属性上
+
+- 简单集合运算符有@avg， @count ， @max ， @min ，@sum，
+
+- 格式 @"@sum.age"或 @"集合属性.@max.age"
+
+
+<br>
+
+### 0x31. KVC 和 KVO 的`keyPath`一定是属性么？
+
+KVC 支持实例变量，KVO 只能[手动支持手动设定实例变量的KVO实现监听](https://yq.aliyun.com/articles/30483)
+
+<br>
+
+### 0x32. 如何关闭默认的 KVO 的默认实现，并进入自定义的 KVO 实现？
+
+总结一句话：修改实例对象的 isa,让其指向`NSKVONotifing_XXX`(`NSKVONotifing_XXX`继承自XXX)
+
+- [如何自己动手实现 KVO](https://tech.glowing.com/cn/implement-kvo/)
+
+- [KVO for manually implemented properties](https://stackoverflow.com/questions/10042588/kvo-for-manually-implemented-properties/10042641#10042641)
+
+
+<br>
+
+### 0x33. apple 用什么方式实现对一个对象的 KVO？
+
+[Apple文档](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueObserving/Articles/KVOImplementation.html)对 KVO 实现的描述：
+
+> Automatic key-value observing is implemented using a technique called isa-swizzling.
+
+> The isa pointer, as the name suggests, points to the object's class which maintains a dispatch table. This dispatch table essentially contains pointers to the methods the class implements, among other data.
+
+> When an observer is registered for an attribute of an object the isa pointer of the observed object is modified, pointing to an intermediate class rather than at the true class. As a result the value of the isa pointer does not necessarily reflect the actual class of the instance.
+
+> You should never rely on the isa pointer to determine class membership. Instead, you should use the class method to determine the class of an object instance.
+
+
+
+Apple 使用了 isa 混写（isa-swizzling）来实现 KVO 。
+
+- 用`runtime`动态生成一个子类，并让示例对象的`isa`指正指向这个子类
+
+- 在子类中重写`setxxx:`方法，并在其内部调用`Foundation`框架下的`_NSSetXXXValueAndNotify()`函数
+
+- 在`_NSSetXXXValueAndNotify()`内部
+	
+	-  调用`willChangeValueForKey:`
+	
+	- 调用父类的`setxxx:`方法，设置新值
+
+	- 调用`didChangeValueForKey:`方法
+
+	- 在`didChangeValueForKey:`方法中触发监听器的`observeValueForKeyPath:ofObject:change:context:`方法
+
+
+
+<br>
+
+### 0x34. `IBOutlet`连出来的视图属性为什么可以被设置成 weak?
+
+- 因为既然有外链那么视图在 xib 或者 storyboard 中肯定存在，视图已经对它有一个强引用了，所以可以用 weak
+
+- 使用 storyboard（xib不行）创建的vc，会有一个叫`_topLevelObjectsToKeepAliveFromStoryboard`的私有数组强引用所有`top level`的对象，所以这时即便 outlet 声明成 weak 没关系。
+
+[Should IBOutlets be strong or weak under ARC?](https://stackoverflow.com/questions/7678469/should-iboutlets-be-strong-or-weak-under-arc)
+
+<br>
+
+### 0x35. IB中`User Defined Runtime Attributes`如何使用？
+
+它能够通过KVC的方式配置一些你在`interface builder` 中不能配置的属性。当你希望在IB中作尽可能多得事情，这个特性能够帮助你编写更加轻量级的`viewcontroller`。如设置圆角、切掉超出父试图的部分等。
+
+
+<br>
+
+### 0x36. 如何调试 BAD_ACCESS 错误
+
+- 重写 object 的`respondsToSelector`方法，现实出现`EXEC_BAD_ACCESS`前访问的最后一个 object
+
+- 通过 Project -> Edit Scheme -> Run -> Diagnosticts -> Zombie Objects
+
+- 设置全局断点快速定位问题代码所在行
+
+<br>
+
+### 0x37. lldb（gdb）常用的调试命令？
+
+- [The LLDB Debugger](https://lldb.llvm.org/use/map.html)
+
+- [苹果官方文档： iOS Debugging Magic ](https://developer.apple.com/library/archive/technotes/tn2239/_index.html)
+
+
+<br>
+
+
+<br>
+
+
