@@ -22,7 +22,7 @@ Notes:
 
 ### Python
 
-- 第一思路
+- 第一思路 用list当做栈
 
 ```
 class MyQueue:
@@ -30,45 +30,91 @@ class MyQueue:
     def __init__(self):
     	self.myStack = []
     	self.stack_top = -1
-    	self.empty = []
-    	self.empty_top = -1
+    	self.out = []
+    	self.out_top = -1
+    	self.front = None
 
     def push(self, x: int) -> None:
+    	if self.stack_top == -1:
+    		self.front = x
     	self.myStack.append(x)
     	self.stack_top += 1
 
     def pop(self) -> int:
-    	while self.stack_top >= 0:
-    		a = self.myStack.pop()
-    		self.stack_top -= 1
-    		self.empty.append(a)
-    		self.empty_top += 1
-
-    	result = self.empty.pop()
-    	self.empty_top -= 1
-    	while self.empty_top >= 0:
-    		b = self.empty.pop()
-    		self.empty_top -= 1
-    		self.myStack.append(b)
-    		self.stack_top += 1
+    	if self.out_top == -1:
+    		while self.stack_top >= 0:
+    			self.out.append(self.myStack.pop())
+    			self.stack_top -= 1
+    			self.out_top += 1
+    	result = self.out.pop()
+    	self.out_top -= 1
     	return result
         
 
     def peek(self) -> int:
-        while self.stack_top >= 0:
-        	a = self.myStack.pop()
-        	self.stack_top -= 1
-        	self.empty.append(a)
-        	self.empty_top += 1
-        result = self.empty[self.empty_top]
-        while self.empty_top >= 0:
-        	a = self.empty.pop()
-        	self.empty_top -= 1
-        	self.myStack.append(a)
-        	self.stack_top += 1
-        return result
+        if self.out_top >= 0:
+        	print(self.out)
+        	return self.out[-1]
+        return self.front if self.stack_top >= 0 else None
         
 
-    def empty_(self) -> bool:
-    	return self.stack_top < 0
+    def empty(self) -> bool:
+    	return self.stack_top < 0 and self.out_top < 0
+```
+
+
+- 第一思路 先实现栈 在实现队列
+
+```
+class MyStack:
+	def __init__(self):
+		self.list = []
+		self.top = -1
+
+	def push(self, x:int) -> None:
+		self.list.append(x)
+		self.top += 1
+
+	def pop(self) -> int:
+		if self.top == -1: return None
+		result = self.list.pop()
+		self.top -= 1
+		return result
+
+	def peek(self) -> int:
+		if self.top == -1: return None
+		return self.list[self.top]
+
+	def empty(self) -> bool:
+		return self.top == -1
+
+
+class MyQueue_myStack:
+
+    def __init__(self):
+    	self.front = 0
+    	self.inStack = MyStack()
+    	self.outStack = MyStack()
+
+    def push(self, x: int) -> None:
+    	if self.inStack.empty():
+    		self.front = x
+    	self.inStack.push(x)
+        
+
+    def pop(self) -> int:
+    	if self.outStack.empty():
+    		while not self.inStack.empty():
+    			self.outStack.push(self.inStack.pop())
+    	return self.outStack.pop()
+        
+
+    def peek(self) -> int:
+    	if not self.outStack.empty():
+    		return self.outStack.peek()
+    	return self.front if not self.inStack.empty() else None
+        
+
+    def empty(self) -> bool:
+        return self.inStack.empty() and self.outStack.empty()
 ```
