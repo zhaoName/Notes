@@ -31,7 +31,7 @@ killall: Mach-O executable arm
 
 - 修改`main.m`文件返回值`return 0;`
 
-![输入图片说明](https://images.gitee.com/uploads/images/2018/1225/193456_846964df_1355277.png "Snip20181225_1.png")
+![](../Images/iOS命令行工具/CommandLine_image1.png)
 
 
 ### 0x02 使用
@@ -42,23 +42,24 @@ killall: Mach-O executable arm
 
 - `ssh`登录到手机并赋予其可执行权限
 
-    ```
-    iPhone:~ root# chmod +x /usr/bin/TestCommandLine
-    ```
+```
+iPhone:~ root# chmod +x /usr/bin/TestCommandLine
+```
+
 - 执行命令(就是你创建iOS工程时起的名字)
 
-    ```
-    # 获取手机中安装的所有App名字和bundleId
-    iPhone:~ root# TestCommandLine
+```
+# 获取手机中安装的所有App名字和bundleId
+iPhone:~ root# TestCommandLine
 
-    yalu                   ca.yalu.g2
-    个人所得税               cn.gov.tax.its
-    Cydia                  com.saurik.Cydia
-    Ximalaya               com.gemd.iting
-    咖咖播放器               com.kka.video
-    CTMediatorDemo         zhao.CTMediatorDemo
-    触动精灵                com.touchsprite.ios
-    ```
+yalu                   ca.yalu.g2
+个人所得税               cn.gov.tax.its
+Cydia                  com.saurik.Cydia
+Ximalaya               com.gemd.iting
+咖咖播放器               com.kka.video
+CTMediatorDemo         zhao.CTMediatorDemo
+触动精灵                com.touchsprite.ios
+```
 
 ### 0x02 main函数参数解释
 
@@ -85,7 +86,6 @@ nt main(int argc, char * argv[]) {
 
 在终端执行命令`TestCommandLine -l -d`
 
-
 ```
 iPhone:~ root# TestCommandLine -l -d
 参数个数：3
@@ -93,6 +93,7 @@ iPhone:~ root# TestCommandLine -l -d
  -l
  -d
 ```
+
 那我们就可以判断当`argc=1`的时候，实现类似`--help`的功能
 
 
@@ -108,25 +109,24 @@ iPhone:~ root# TestCommandLine -l -d
 
 - 查看`Command + B`编译的命令行原始权限
 
-    ```
-    # 会在当前目录生成t.entitlements文件
-    $ ldid -e TestCommandLine > t.entitlements
-    ```
+```
+# 会在当前目录生成 t.entitlements 文件
+$ ldid -e TestCommandLine > t.entitlements
+```
 
-    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0113/144225_873471d8_1355277.png "Snip20190113_9.png")
+![](../Images/iOS命令行工具/CommandLine_image2.png)
 
 
 - 在手机`/System/Library/CoreServices/`目录下找到`SpringBoard.app`文件夹，将其可执行文件复制到电脑，查看其权限，部分截图如下
 
-    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0113/144911_579561ba_1355277.png "Snip20190113_10.png")
+![](../Images/iOS命令行工具/CommandLine_image3.png)
 
 
 - 将`SpringBoard`的权限重签给编译好的命令行
 
-
-    ```
-    $ ldid -Ss.entitlements TestCommandLine 
-    ```
+```
+$ ldid -Ss.entitlements TestCommandLine 
+```
 
 这样对命令行重签名之后，其权限就很高了，可以访问任意App。
 
@@ -138,61 +138,61 @@ iPhone:~ root# TestCommandLine -l -d
 
 - 创建Makefile
 
-	```
-	# Config
-	ARCH = arm64
-	IOS_VERSION = 8.0
-	EXECUTABLE_NAME = TestCommandLine
+```
+# Config
+ARCH = arm64
+IOS_VERSION = 8.0
+EXECUTABLE_NAME = TestCommandLine
 
-	# 生成命令行的路径
-	RELEASE_DIR = Release
-	# 工程目录
-	PROJECT_DIR = TestCommandLine
-	# 命令行名字
-	EXECUTABLE_FILE = $(RELEASE_DIR)/$(EXECUTABLE_NAME)
-
-
-	# 头文件路径
-	HEADER_DIR1 = $(PROJECT_DIR)
-	HEADER_DIR2 = $(PROJECT_DIR)/AppInfo
+# 生成命令行的路径
+RELEASE_DIR = Release
+# 工程目录
+PROJECT_DIR = TestCommandLine
+# 命令行名字
+EXECUTABLE_FILE = $(RELEASE_DIR)/$(EXECUTABLE_NAME)
 
 
-	# Source Files 
-	SOURCE_FILES = $(PROJECT_DIR)/*.m
-	SOURCE_FILES += $(HEADER_DIR2)/*.m
+# 头文件路径
+HEADER_DIR1 = $(PROJECT_DIR)
+HEADER_DIR2 = $(PROJECT_DIR)/AppInfo
 
 
-	# 签名所用权限文件Entitlements
-	ENTITLEMENTS_FILE = $(RELEASE_DIR)/TestCL.entitlements
+# Source Files 
+SOURCE_FILES = $(PROJECT_DIR)/*.m
+SOURCE_FILES += $(HEADER_DIR2)/*.m
 
 
-	# 签名
-	codesign: compile
-		@codesign -fs- --entitlements $(ENTITLEMENTS_FILE) $(EXECUTABLE_FILE)
+# 签名所用权限文件Entitlements
+ENTITLEMENTS_FILE = $(RELEASE_DIR)/TestCL.entitlements
 
-	# 编译
-	compile: 
-		@xcrun -sdk iphoneos \
-			clang -arch $(ARCH) \
-			-mios-version-min=$(IOS_VERSION) \
-			-fobjc-arc \
-			-framework Foundation \
-			-framework UIKit \
-			-framework MobileCoreServices \
-			-Os \
-			-I $(HEADER_DIR1) \
-			-I $(HEADER_DIR2) \
-			$(SOURCE_FILES) \
-			-o $(EXECUTABLE_FILE)
-	```
+
+# 签名
+codesign: compile
+	@codesign -fs- --entitlements $(ENTITLEMENTS_FILE) $(EXECUTABLE_FILE)
+
+# 编译
+compile: 
+	@xcrun -sdk iphoneos \
+		clang -arch $(ARCH) \
+		-mios-version-min=$(IOS_VERSION) \
+		-fobjc-arc \
+		-framework Foundation \
+		-framework UIKit \
+		-framework MobileCoreServices \
+		-Os \
+		-I $(HEADER_DIR1) \
+		-I $(HEADER_DIR2) \
+		$(SOURCE_FILES) \
+		-o $(EXECUTABLE_FILE)
+```
 
 - 在Xcode的`your project > target > Build Phases`中添加`Run Script`
 
-    ![输入图片说明](https://images.gitee.com/uploads/images/2018/1226/220015_55f6c90e_1355277.png "Snip20181226_2.png")
+![](../Images/iOS命令行工具/CommandLine_image4.png)
 
 - `Command+B`编译Xcode或用Terminal进入到当前目录执行`make`,就会在`TestCommandLine/Release/`下生成命令行
 
-    ![输入图片说明](https://images.gitee.com/uploads/images/2018/1226/220331_3fe11ca0_1355277.png "Snip20181226_3.png")
+![](../Images/iOS命令行工具/CommandLine_image5.png)
 
 <br>
 
@@ -225,6 +225,7 @@ iPhone:~ root# TestCommandLine
 
 Killed: 9
 ```
+
 **解决方法**:给命令行加入新权限`platform-application`
 
 ```
