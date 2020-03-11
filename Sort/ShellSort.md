@@ -16,7 +16,7 @@
 
 ### 图片展示
 
-![](https://images.gitee.com/uploads/images/2019/0819/145218_ac131140_1355277.png "shellsort.png")
+![](../Images/Sort/shellsort.png)
 
 
 ### 性能分析

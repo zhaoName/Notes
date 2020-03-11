@@ -2,6 +2,8 @@
 # 排序
 
 <br>
+![](../Images/Sort/sort_time_space_stability.png)
+
 
 
 ## 稳定性
@@ -17,7 +19,7 @@
 稳定排序算法可以保持金额相同的两个对象，在排序之后的前后顺序不变。第一次排序之后，所有的订单按照下单时间从早到晚有序了。在第二次排序中，我们用的是稳定的排序算法，所以经过第二次排序之后，相同金额的订单仍然保持下单时间从早到晚有序。
 
 
-![](https://images.gitee.com/uploads/images/2019/0905/180818_40ab5fc8_1355277.png "stability.png")
+![](../Images/Sort/stability.png)
 
 
 ## 时间复杂度

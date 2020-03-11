@@ -18,12 +18,12 @@
 堆是具有以下性质的完全二叉树：每个结点的值都大于或等于其左右孩子结点的值，称为大顶堆；或者每个结点的值都小于或等于其左右孩子结点的值，称为小顶堆。
 
 
-![](https://images.gitee.com/uploads/images/2019/0823/115038_fb92067e_1355277.png "heapsort_image01.png")
+![](../Images/Sort/heapsort_image01.png)
 
 
 同时，我们对堆中的结点按层进行编号，将这种逻辑结构映射到数组中就是下面这个样子:
 
-![](https://images.gitee.com/uploads/images/2019/0823/115056_011d3730_1355277.png "heapsort_image02.png")
+![](../Images/Sort/heapsort_image02.png)
 
 该数组从逻辑上讲就是一个堆结构，我们用简单的公式来描述一下堆的定义就是：
 
@@ -48,7 +48,7 @@
 
 ### 动画展示
 
-![](https://images.gitee.com/uploads/images/2019/0823/120223_8a558cba_1355277.gif "heapSort.gif")
+![](../Images/Sort/heapSort.gif)
 
 
 ### OC 代码实现
@@ -97,7 +97,7 @@
     if (largest != i) {
         // 找到较大值 交换位置
         [arr exchangeObjectAtIndex:i withObjectAtIndex:largest];
-        // 递归查找其父节点 是否有较大值
+        // 递归查找其子节点 是否有较大值
         [self heapify:arr i:largest len:len];
     }
 }
