@@ -4,8 +4,8 @@
 ## 题目
 
 ```
-Given an array of size n, find the majority element. The majority element is the element that appears more than ⌊ n/2 ⌋ times.
-
+Given an array of size n, find the majority element. 
+The majority element is the element that appears more than ⌊ n/2 ⌋ times.
 You may assume that the array is non-empty and the majority element always exist in the array.
 ```
 
@@ -14,6 +14,8 @@ You may assume that the array is non-empty and the majority element always exist
 
 
 ### Python
+
+- 第一思路
 
 ```
 # 时间复杂度 O(n)  空间复杂度 最坏 O(n/2) 最好O(1)
@@ -36,4 +38,22 @@ def majorityElement(self, nums) -> int:
 			result = key
 	print(result)
 	return result
+```
+
+
+- 借鉴思路
+
+```
+## Time Cpmplexity:O(n)  Space Complexity:O(1)
+## Boyer Moore算法 majorityElement的数量肯定比其它元素数量要多 所以count比大于0
+def majorityElement_BoyerMoore(self, nums: list) -> int:
+    candidate, count = 0, 0
+    for a in nums:
+        if count == 0:
+            candidate = a
+        if candidate == a:
+            count += 1
+        else:
+            count -= 1
+    return candidate
 ```
