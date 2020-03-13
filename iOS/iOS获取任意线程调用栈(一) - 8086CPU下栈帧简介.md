@@ -221,6 +221,7 @@ start:
     push, 5566h
     push, 7788h
     call sum2
+    ; 恢复栈平衡
     add sp, 4
     
     mov bx, 0000h
@@ -268,12 +269,14 @@ sum1:
 	mov bp, sp
 	mov ax, ss:[bp+2]
 	add ax, ss:[bp+4]
+	; 返回并恢复栈平衡
 	ret 4
 
 sum2:
 	mov bp, sp
 	mov ax, ss:[bp+2]
 	add ax, ss:[bp+4]
+	; 返回并恢复栈平衡
 	ret 4
 
     ; 退出
@@ -313,7 +316,7 @@ sum_stack:
 	mov bp, sp
 	; 预留10个字节的空间给局部变量
 	sub sp, 10
-	
+		
 	; 定义两个局部变量
 	; int c = 3
 	mov word ptr ss:[bp-2], 3
@@ -323,21 +326,21 @@ sum_stack:
 	mov cx, ss:[bp-2]
 	add cx, ss:[bp-4]
 	mov ss:[bp-6], cx
-	
+		
 	; 取出两个参数
 	mov ax, ss:[bp+2]
 	; a + b
 	add ax, ss:[bp+4]
 	; a + b + e
 	add ax, ss:[bp-6]
-	
+		
 	; 恢复 sp(也可以认为是释放局部变量内存空间)
 	mov sp, bp
 	ret 
-
-    ; 退出
-    mov ax, 4c00h
-    int 21h
+	
+	; 退出
+	mov ax, 4c00h
+	int 21h
 code ends
 end start
 ```
@@ -369,7 +372,6 @@ int sum_stack(int a, int b)
 
 ```
 ...
-
 ; 代码段
 code segment
 start:
@@ -385,7 +387,7 @@ sum_stack:
 	mov bp, sp
 	; 预留10个字节的空间给局部变量
 	sub sp, 10
-	
+		
 	; 定义两个局部变量
 	; int c = 3
 	mov word ptr ss:[bp-2], 3
@@ -395,11 +397,14 @@ sum_stack:
 	mov cx, ss:[bp-2]
 	add cx, ss:[bp-4]
 	mov ss:[bp-6], cx
-	
+		
+	; sum_bp 参数
 	push 5
 	push 6
+	; sum_stack 内部调用 sum_bp
 	call sum_bp
-	
+	add, sp, 4
+		
 	; 取出两个参数
 	mov ax, ss:[bp+2]
 	; a + b
@@ -409,24 +414,225 @@ sum_stack:
 	
 sum_bp:
 	mov bp, sp
-	sub sp, 10
-	
+	; 预留栈空间给局部变量
+	sub sp, 5
+		
 	...
+	; 释放局部变量空间
 	mov sp, bp
 	ret 
-
-    ; 退出
-    mov ax, 4c00h
-    int 21h
+	
+	; 退出
+	mov ax, 4c00h
+	int 21h
 code ends
 end start
 ```
 
 这样调用会出问题，我们来看下栈空间布局就知道是什么问题了
 
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0107.png)
 
+从上图可以看到当我们执行完 `sum_bp` 函数时，bp 寄存器依旧停留在 `sum_bp` 函数的栈空间，那我们继续执行 `sum_stack` 函数，做`a + b + e`的计算结果就会出错。
+
+所以在函数调用函数时要保存 bp 的值，以便被调用函数执行结束后恢复 bp, 仍然能正确访问调用函数的栈空间。
+
+我们对上面的 `sum_bp` 函数做出改动就可以
+
+```
+...
+
+; 代码段
+code segment
+start:
+    ... 
+	
+sum_bp:
+	; 保护 bp
+	push bp
+	mov bp, sp
+	sub sp, 5
+	
+	...
+	; 释放局部变量空间
+	mov sp, bp
+	; 恢复 bp
+	pop bp
+	ret 
+	
+	; 退出
+	mov ax, 4c00h
+	int 21h
+code ends
+end start
+```
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0108.png)
+
+这样 `sum_bp` 执行结束，bp 还能指向 `sum_stack` 函数的栈空间。也就能正确访问 `sum_stack` 函数的参数和局部变量。也同时保证了栈平衡。
+
+
+## 五、完整函数调用
+
+### 0x01 保护可能要用到寄存器
+
+在函数调用过程中会对寄存器操作，若 caller 函数中的部分值存储在寄存器中，而 callee 函数没有保存寄存器以前的值，那就寄存器以前的值有可能会被覆盖。当执行完 callee 函数，继续执行 caller 函数就可能会反生不可预知的错误。所以我们要保存可能用到的寄存器
+
+```
+...
+
+; 代码段
+code segment
+start:
+    ... 
+	
+sum_bp:
+	; 保护 bp
+	push bp
+	mov bp, sp
+	; 预留空间给局部变量
+	sub sp, 5
+	; 保护要用到的寄存器
+	push ax
+	push bx
+	
+	; 业务逻辑
+	...
+	
+	; 恢复寄存器的值 注意栈先进后出
+	pop bx 
+	pop ax
+	; 释放局部变量空间
+	mov sp, bp
+	; 恢复 bp
+	pop bp
+	ret 
+	
+	; 退出
+	mov ax, 4c00h
+	int 21h
+code ends
+end start
+```
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0109.png)
+
+
+### 0x02 保护局部变量空间
+
+我们在预留空间给局部变量时，预留空间可能存在垃圾数据。这样我们在读取局部变量时，不小心读取到垃圾数据可能会导致未知错误。所以我们需要保护局部变量空间。
+
+8086 保护局部变量空间的常用的方法时给局部变量空间填充`CC`也就是中断(`int 3`)。
+
+```
+...
+
+; 代码段
+code segment
+start:
+    ... 
+	
+sum_bp:
+	; 保护 bp
+	push bp
+	mov bp, sp
+	; 预留空间给局部变量
+	sub sp, 10
+	
+	; 保护要用到的寄存器
+	push ax
+	push bx
+	
+	; 给局部变量空间填充 CC 也就是中断(int 3)
+	mov ax, 0cccch
+	mov bx, ss
+	mov es, bx
+	; 让 di 指向局部变量地址的最小区域
+	mov di, bp
+	sub di, 10
+	; cx 决定 stosw 的执行次数
+	mov cx, 5
+	; rep作用: 重复执行某个指令 执行次数有 cx 决定
+	; storw作用: 将 ax 的值拷贝到 es:di 中，同时 di 的值 +2
+	rep storw
+	
+	; 业务逻辑
+	...
+	
+	; 恢复寄存器的值 注意栈先进后出
+	pop bx 
+	pop ax
+	
+	; 释放局部变量空间
+	mov sp, bp
+	; 恢复 bp
+	pop bp
+	ret 
+	
+	; 退出
+	mov ax, 4c00h
+	int 21h
+code ends
+end start
+```
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0110.png)
+
+
+至此再加上你自己的业务逻辑汇编代码，就能构成一个完整的函数。
+
+### 0x03 完整的函数流程
+
+- push 参数
+
+- push 函数的返回值(上一个函数下条指令的地址) (call fun_name)
+
+- 保护 bp  函数执行结束后，方便恢复 (push bp)
+
+- 拉伸栈空间  用于存储局部变量 (sub sp, 10)
+
+- 保护可能要用到的寄存器的值 (push bx)
+
+- 给局部变量空间填充 `cc`(相当于中断指令 `int 3`)
+
+- ============ 自己的业务逻辑代码 ============
+
+- 恢复寄存器之前的值 (pop bx)
+
+- 释放局部变量空间 (mov sp, bp)
+
+- 恢复 bp (pop bp)
+
+- 返回调用函数 (ret)
+
+- 参数出站 恢复栈平衡 (add sp, 4)
+
+<br>
+
+## 六、栈帧
+
+从逻辑上讲，栈帧就是一个函数执行的环境：包括函数参数、函数的局部变量、函数执行完后返回到哪里等等。
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0111.png)
+
+从上图可知 callee 函数的参数(`ebp + 4、ebp + 8`)在 caller 函数的栈帧中，执行完 callee 函数要返回的地址也在 caller 函数的栈帧中。
+
+那也就是说一个非叶子函数的栈帧包括：bp之前的值、本函数局部变量、寄存器、下个函数的参数、返回地址(本函数的下条执行的地址)
+
+由上面写的汇编代码可知参数入栈和返回地址都是在 caller 函数中做的事。之后的流程才是在 callee 函数中实现的。callee 函数结束后，若是外平栈，参数的栈平衡也是在 caller 中实现的。把 callee 函数的参数、返回地址算在 caller 的栈帧中也能解释的通。
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0112.png)
 
 
 <br>
+
+**最后总结 来一张函数调用函数前后栈平衡**
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0113.png)
+
+
+<br>
+
+写于 2020-03-13
 
 <br>
