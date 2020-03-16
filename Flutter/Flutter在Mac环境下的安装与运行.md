@@ -1,10 +1,12 @@
-
+`
 # Flutter 在 Mac 环境下的安装与运行
 
 
 <br>
 
 本篇文章旨在记录安装 Flutter 过程中遇到的坑，具体安装细节也可参考文章最下面的官方文档。
+
+本文运行环境 macOS Mojave 10.14.6、Xcode 11.0、iOS 真机: iOS 12.4.1、iOS 模拟器: iPhone 11 Pro Max、Android Stduio 3.6.1、Android 真机: Android 9、 `flutter_macos_v1.12.13+hotfix.8`
 
 <br>
 
@@ -267,9 +269,9 @@ Doctor summary (to see all details, run flutter doctor -v):
 
 <br>
 
-## 二、创建第一个 Flutter 程序
+## 二、运行
 
-### 0x01 创建
+### 0x01 创建第一个 Flutter 程序
 
 flutter 的创建很简单
 
@@ -420,7 +422,7 @@ For a more detailed help message, press "h". To detach, press "d"; to quit, pres
 也有可能在这步会运行报错
 
 ```
-$ flutter run -d 04ee59be188a7f40d2daa0c0d0500def2ef0a1a2
+$ flutter run -d 04ee59be188
  
 Launching lib/main.dart on Zz in debug mode...
  
@@ -449,7 +451,7 @@ Try replacing 'com.example' with your signing id in Xcode:
 Error launching application on Zz.
 ```
 
-像这种`Try replacing 'com.example' with your signing`错误基本都是 bundleId (android 中交 package name) 重复。修改 bundleId 就好。
+像这种`Try replacing 'com.example' with your signing`错误基本都是 bundleId (android 中叫 package name) 重复。修改 bundleId 就好。
 
 
 ![](../Images/Flutter/Flutter在Mac环境下的安装/InstallOnMac_images0113.png)
@@ -457,7 +459,44 @@ Error launching application on Zz.
 
 #### 0x03 在 Android 环境下中运行
 
+- 在 Android 真机设备上运行
 
+在 设置 -> 开发者选项 -> 启用 USB 调试, 具体可参考[Google 文档](https://developer.android.com/studio/run/device)。设备用 USB 连上电脑会给3个提示，选择传输文件或传输图片都可以。
+
+然后终端运行`flutter devices`来验证 Flutter 识别您连接的 Android 设备。
+
+```
+$ flutter devices                                        
+1 connected device:
+
+RMX1901 • ***** • android-arm64 • Android 9 (API 28)
+```
+
+终端执行`flutter run`运行程序
+
+```
+$ flutter run
+
+Launching lib/main.dart on RMX1901 in debug mode...
+Running Gradle task 'assembleDebug'...                                  
+Running Gradle task 'assembleDebug'... Done                         3.1s
+✓ Built build/app/outputs/apk/debug/app-debug.apk.
+D/FlutterActivity( 7784): Using the launch theme as normal theme.
+D/FlutterActivityAndFragmentDelegate( 7784): Setting up FlutterEngine.
+D/FlutterActivityAndFragmentDelegate( 7784): No preferred FlutterEngine was provided. Creating a new FlutterEngine for this FlutterFragment.
+D/FlutterActivityAndFragmentDelegate( 7784): Attaching FlutterEngine to the Activity that owns this Fragment.
+D/FlutterView( 7784): Attaching to a FlutterEngine: io.flutter.embedding.engine.FlutterEngine@a60bbb9
+D/FlutterActivityAndFragmentDelegate( 7784): Executing Dart entrypoint: main, and sending initial route: /
+Syncing files to device RMX1901...                                      
+ 7,962ms (!)                                       
+
+🔥  To hot reload changes while running, press "r". To hot restart (and rebuild state), press "R".
+An Observatory debugger and profiler on RMX1901 is available at: http://127.0.0.1:57670/5yGyffOcz84=/
+For a more detailed help message, press "h". To detach, press "d"; to quit, press "q".
+```
+
+
+Android 模拟器上的调试这里就不尝试了(听说卡的丫批)。
 
 <br>
 
@@ -476,3 +515,4 @@ Error launching application on Zz.
 
 <br>
 
+`
