@@ -899,11 +899,6 @@ void weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
 - 运行时创建的类是可以添加实例变量，调用 `class_addIvar` 函数。但是得在调用 `objc_allocateClassPair` 之后，`objc_registerClassPair` 之前，原因同上。
 
 
-**自己答案**
-
-- 类的底层结构式 `objc_class ` 结构体，而成员变量存储在`objc_class ` 结构体中的`struct class_rw_t`结构体中，`class_rw_t `是只读属性。所以在编译后得到的类不能再添加成员变量。
-
-
 <br>
 
 ### 0x1b. runloop 和线程有什么关系？
