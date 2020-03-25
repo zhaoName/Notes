@@ -278,7 +278,7 @@ ZZStackFrame`-[ViewController add:b:c:d:e:f:g:h:i:]:
 
 ### 0x03 总结
 
-- ARM64 环境下函数的参数最少有 2 个(receiver、cmd)，而且固定存放 x0 x1 寄存器中。
+- ARM64 环境下 OC 函数的参数最少有 2 个(receiver、cmd)，而且固定存放 x0 x1 寄存器中。
 
 - ARM64 环境下函数的参数不超过 8 个，将优先存储在寄存器中(x0 ~ x7)
 
@@ -410,7 +410,7 @@ ZZStackFrame`-[ViewController testA:b:]:
 
 局部变量在参数之后入栈。非叶子函数中还会调用其他函数，所以要保存 lr 和 fp,防止其被其他函数的 lr 和 fp 覆盖。
 
-Xcode -> Debug -> Debug Workflow -> View Memory 查看栈空间内存
+Xcode -> Debug -> Debug Workflow -> View Memory 查看栈空间内存(和上面图片一致)
 
 ![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0210.png)
 
@@ -418,17 +418,173 @@ Xcode -> Debug -> Debug Workflow -> View Memory 查看栈空间内存
 
 ## 五、调用栈
 
+### 0x01 正序
+
+从 `viewDidLoad `方法开始一路跟踪下去，看看调用栈结构
+
+```
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [self testA];
+}
+
+- (void)testA
+{
+    int a = 1;
+   [self testB];
+}
+
+
+- (void)testB
+{
+    int b = 2;
+    [self testC];
+}
+
+- (void)testC
+{
+    int c = 3;
+    [self testD];
+}
+
+- (void)testD
+{
+    int d = 4;
+}
+```
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0211.png)
+
+- callee 函数栈空间保存的 lr fp, 都是 caller 函数中的。 callee 函数的 fp 与 sp 有关
+
+- 叶子函数不保存 lr fp
+
+
+### 0x02 恢复函数调用栈
+
+
+在实际开发中，或者说是当线上 App 出现崩溃、卡顿等情况，我们想将崩溃时函数调用栈上传到服务器，以便解决问题、优化 App。那我们该怎么获取当前函数调用栈呢？
+
+假如崩溃在叶子函数也就是上述 `testD`函数中，那我们能获取当前线程信息，继而获取到寄存器信息(怎么获取的后面文章会介绍)
+
+- sp: 指向当前栈顶
+
+- pc: 当前函数正要执行指令的地址
+
+- lr: 返回地址，也就是 caller 函数的下条指令的地址
+
+- fp: 叶子函数没用到fp, fp还在 caller 函数的栈空间
+
+- x0 ~ x28: 对恢复调用栈来说用处不大
+
+若崩溃到非叶子函数
+
+- sp: 指向当前栈顶
+
+- pc: callee 函数正要执行指令的地址
+
+- lr: 返回地址，caller 函数的下条指令的地址
+
+- fp: 非叶子函数会先将 fp 入栈，然后修改 fp 指向入栈位置。**也就是 fp 的地址是在 callee 函数栈空间，但 fp 指针的值(存储的值)在 caller 函数的栈空间**
+
+- x0 ~ x28: 对恢复调用栈来说用处不大
+
+
+无论崩溃的函数是叶子函数还是非叶子函数，都能获取到当前函数的寄存器信息，但是要恢复函数调用栈，只有当前的寄存器的信息是不行的。这时候 fp 就成了救命稻草！！
+
+以上述函数调用为例，假设崩在`testD`函数中。线上崩溃我们也不知道崩的具体函数，但我们能获取到寄存器 pc 的值，pc 为当前函数正要执行指令的地址。那我们就能根据 pc 指针的值在 Mach-O 文件中的位置，找到具体对应的函数(怎么找的下篇文章会说，现在只需知道有这回事)。
+
+那我们该怎么找到是哪个函数调用了`testD`呢？有人可能会说利用 lr，lr 是 caller 函数某条指令的地址。这样就能找到是`testC`调用的`testD`。这样是可以，但再往上呢？怎么找到哪个函数调用了`testC `？
+
+上面说到 **callee 函数栈中存储的 fp 指针的值在 caller 函数的栈空间,** 而且 ARM64 环境下将 fp 入栈还会将 lr 一起入栈，fp lr所处栈空间地址是连续的(`stp x29, x30, [sp, #0x20]`)放在当前函数栈空间的栈底。那意思就是说我们将 callee 函数中 fp 指针的值加 0x8 就是 lr 的内存地址。lr 指针的值是 caller 函数某条指令的地址。这样我们就找到是谁调用了`testD `。以此类推我们就知道整个函数调用栈。
+
+
+![](../Images/iOS/iOSGetArbitraryThreadCallStack/ThreadCallStack_image0212.png)
+
+结合图说下恢复函数调用栈(假设从`testD`开始)
+
+- 首先根据 pc 指针的值在 Mach-O 文件中的位置，找到具体对应的函数 `testD`
+
+- lr 为上个函数某条指令的地址，可以根据 lr 在 Mach-O 文件中的位置，找到具体对应的函数 `testC`。
+
+- 此时 fp 指针的地址为 0x40，0x40+0x8 为 lr，也就是调用`testC `函数的函数某条指令的地址。我们拿到`testC `栈中存储的 lr 就能在 Mach-O 文件中找到具体对应的函数 `testB`。
+
+- fp 中存储的值是0x70，也就是`testB`函数中 fp 所在栈空间的地址。0x70 + 0x8 为调用`testB`函数的函数某条指令的地址 lr。那这样就能找到`testA`。
+
+- 0x70 内存中 fp 指针的值为 0xa0。那 0xa0 + 0x8 就是调用`testA`函数的函数中某条指令的地址。这样就能找到`viewDidLoad`.
+
+- 那 0xa0 内存中 fp 指针的值加0x8 就是调用`viewDidLoad `函数的函数的某条指令的地址，以此类推一直找到最开始的调用函数。
+
+### 0x03 为什么不用 x1 
+
+我们知道 OC 方法调用会固定传两个参数`receiver`、`cmd`, 且分别固定放在寄存器 x0、x1中。看上面汇编代码 x0、x1 会紧跟 fp 、lr入栈。也就是说 fp - 0x10 就是 x1 在栈空间的地址，这样不就找到了函数名了吗！这不比在 Mach-O 中找方法速度要快很多吗！！
+
+对这样是快很多，但这只是 OC 方法会固定传两个参数`receiver`、`cmd`。若是 C 函数或 C++ 函数，是没有`cmd`的。
+
+
+```
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    test_c1();
+}
+
+void test_c1(void)
+{
+    int e = 0;
+    test_c2();
+}
+
+void test_c2(void)
+{
+    int e = 0;
+}
+```
+
+转化为汇编
+
+```
+ZZStackFrame`-[ViewController viewDidLoad]:
+    0x104d7dcbc <+0>:  sub    sp, sp, #0x30             ; =0x30 
+    0x104d7dcc0 <+4>:  stp    x29, x30, [sp, #0x20]
+    0x104d7dcc4 <+8>:  add    x29, sp, #0x20            ; =0x20 
+    ...
+    ; 调用[super viewDidLoad] 
+    0x104d7dcf0 <+52>: ldr    x1, [x8]
+    0x104d7dcf4 <+56>: mov    x0, sp
+    0x104d7dcf8 <+60>: bl     0x104d7e594               ; symbol stub for: objc_msgSendSuper2
+    ; 调用 test_c1()
+    ; 可以看到 并没有想调用[super viewDidLoad]那样准备 x0 x1
+->  0x104d7dcfc <+64>: bl     0x104d7dd0c               ; test_c1 at ViewController.m:29
+    0x104d7dd00 <+68>: ldp    x29, x30, [sp, #0x20]
+    0x104d7dd04 <+72>: add    sp, sp, #0x30             ; =0x30 
+    0x104d7dd08 <+76>: ret 
+    
+    
+ZZStackFrame`test_c1:
+    0x104d7dd0c <+0>:  sub    sp, sp, #0x20             ; =0x20 
+    0x104d7dd10 <+4>:  stp    x29, x30, [sp, #0x10]
+    0x104d7dd14 <+8>:  add    x29, sp, #0x10            ; =0x10 
+->  0x104d7dd18 <+12>: stur   wzr, [x29, #-0x4]
+	; 调用 test_c2() 也没有用到 x0 x1
+    0x104d7dd1c <+16>: bl     0x104d7dd2c               ; test_c2 at ViewController.m:35
+    0x104d7dd20 <+20>: ldp    x29, x30, [sp, #0x10]
+    0x104d7dd24 <+24>: add    sp, sp, #0x20             ; =0x20 
+    0x104d7dd28 <+28>: ret  
+    
+
+ZZStackFrame`test_c2:
+    0x104d7dd2c <+0>:  sub    sp, sp, #0x10             ; =0x10 
+->  0x104d7dd30 <+4>:  str    wzr, [sp, #0xc]
+    0x104d7dd34 <+8>:  add    sp, sp, #0x10             ; =0x10 
+    0x104d7dd38 <+12>: ret  
+```
+
+想想 OC 是基于 C 的，OC 中的动态共享缓存库中到底有多少是 C 的函数我们也不知道。或者我们用的三方库中有多少是 C 的函数我们也不知道。那我们要想获取完整的函数调用栈，就只能用 fp,而不能用 x1。
 
 
 <br>
 
 <br>
-
-<br>
-
-
-<br>
-
 
 <br>
 
