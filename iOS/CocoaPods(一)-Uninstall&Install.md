@@ -330,6 +330,8 @@ CDN: trunk URL couldn't be downloaded: https://raw.githubusercontent.com/CocoaPo
 
 CocoaPods 1.8.x 提供了使用 git 或 CDN 的功能。 CDN 是默认设置，但是对于那些不起作用的用户，您可以通过在 Podfile 中添加`source 'https://github.com/CocoaPods/Specs.git'`来回退到以前的基于 git 的实现。
 
+然后再执行`$ pod repo remove trunk`，就能正常使用 CocoaPods。
+
 <br>
 
 **参考：**
