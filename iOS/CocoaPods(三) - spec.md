@@ -17,7 +17,7 @@
 所有公开的`spec`都在`https://github.com/CocoaPods/Specs`中，当我们使用`CocoaPods`时他会被`clone`到`~/.cocoapods/repos/`目录下。
 
 
-![](https://images.gitee.com/uploads/images/2019/0918/180436_55cc7b99_1355277.png "spec_image01.png")
+![](../Images/CocoaPods/spec_image01.png)
 
 
 ## 二、spec
@@ -310,6 +310,24 @@ spec.prefix_header_contents = '#import <UIKit/UIKit.h>'
 ```
 
 
+### 0x02 `requires_arc`
+
+> `requires_arc` allows you to specify which `source_files` use ARC. This can either be the files which support ARC, or true to indicate all of the `source_files` use ARC.
+
+> Files which do not use ARC will have the -fno-objc-arc compiler flag.
+
+> The default value of this attribute is true
+
+默认情况下`source_files` 都是支持 ARC 的。若我们需要个别文件需要 MRC 环境可采取如下办法。
+
+先将 `requires_arc `置位 false , 然后在指定需要 ARC 环境的文件，这样文指定的文件都会带有`-fno-objc-arc`编译标志。
+
+```
+s.requires_arc = false
+s.requires_arc = 'ZZTestPublicPod/Classes/arc/*'
+```
+
+![](../Images/CocoaPods/spec_image02.png)
 
 
 <br>

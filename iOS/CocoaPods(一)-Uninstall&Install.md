@@ -27,7 +27,7 @@ cocoapods-try (1.1.0)
 -  卸载所有`cocoapods-*`
 
 ```
-$ gem uninstall cocoapods-core
+$ sudo gem uninstall cocoapods-core
 
 Select gem to uninstall:
  1. cocoapods-core-1.5.0
@@ -177,7 +177,7 @@ cocoapods-try (1.1.0)
 ```
 $ git clone https://git.coding.net/CocoaPods/Specs.git  ~/.cocoapods/repos/master 
 
-Cloning into '/Users/chuangqi/.cocoapods/repos/master'...
+Cloning into '~/.cocoapods/repos/master'...
 remote: Enumerating objects: 1130099, done.
 remote: Total 1130099 (delta 0), reused 0 (delta 0)iB | 3.54 MiB/s   
 Receiving objects: 100% (1130099/1130099), 408.72 MiB | 4.50 MiB/s, done.
@@ -191,7 +191,7 @@ Checking out files: 100% (141834/141834), done.
 $ pod setup                   
 
 Setting up CocoaPods master repo
-  $ /usr/bin/git -C /Users/chuangqi/.cocoapods/repos/master fetch origin --progress
+  $ /usr/bin/git -C ~/.cocoapods/repos/master fetch origin --progress
   remote: Enumerating objects: 185, done.        
   remote: Counting objects: 100% (185/185), done.        
   remote: Compressing objects: 100% (130/130), done.        
@@ -200,9 +200,9 @@ Setting up CocoaPods master repo
   Resolving deltas: 100% (86/86), completed with 45 local objects.
   From https://github.com/CocoaPods/Specs
      b8605f7895b..5133b4ee80d  master     -> origin/master
-  $ /usr/bin/git -C /Users/chuangqi/.cocoapods/repos/master rev-parse --abbrev-ref HEAD
+  $ /usr/bin/git -C ~/.cocoapods/repos/master rev-parse --abbrev-ref HEAD
   master
-  $ /usr/bin/git -C /Users/chuangqi/.cocoapods/repos/master reset --hard origin/master
+  $ /usr/bin/git -C ~/.cocoapods/repos/master reset --hard origin/master
   HEAD is now at 5133b4ee80d [Add] qrh 1.0.1
 
 CocoaPods 1.8.0.beta.2 is available.
@@ -309,6 +309,27 @@ https://gems.ruby-china.com added to sources
 
 以前添加的是`https://ruby.taobao.org/`，但后来淘宝由于域名的问题停止更新了。
 
+
+### 0x02 `CDN: trunk URL couldn't be downloaded:`
+
+使用 cocoapods 在 1.8.x 之后的版本，可能会出现如下错误
+
+```
+$ pod search afnetworking
+
+...
+CDN: trunk URL couldn't be downloaded: https://raw.githubusercontent.com/CocoaPods/Specs/master/Specs/a/7/5/AFNetworking/3.1.0/AFNetworking.podspec.json Response: Couldn't connect to server
+CDN: trunk URL couldn't be downloaded: https://raw.githubusercontent.com/CocoaPods/Specs/master/Specs/a/7/5/AFNetworking/3.2.0/AFNetworking.podspec.json Response: Couldn't connect to server
+CDN: trunk URL couldn't be downloaded: https://raw.githubusercontent.com/CocoaPods/Specs/master/Specs/a/7/5/AFNetworking/3.2.1/AFNetworking.podspec.json Response: Couldn't connect to server
+CDN: trunk URL couldn't be downloaded: https://raw.githubusercontent.com/CocoaPods/Specs/master/Specs/a/7/5/AFNetworking/4.0.0/AFNetworking.podspec.json Response: Couldn't connect to server
+```
+
+解决办法[在这](https://github.com/CocoaPods/CocoaPods/issues/9319)
+
+> CocoaPods 1.8.x offers the ability to use either git or CDN. CDN is the default but for those who it doesn't work you can always fallback to the previous git based implementation by adding `source 'https://github.com/CocoaPods/Specs.git'` to your Podfile.
+
+CocoaPods 1.8.x 提供了使用 git 或 CDN 的功能。 CDN 是默认设置，但是对于那些不起作用的用户，您可以通过在 Podfile 中添加`source 'https://github.com/CocoaPods/Specs.git'`来回退到以前的基于 git 的实现。
+
 <br>
 
 **参考：**
@@ -318,7 +339,6 @@ https://gems.ruby-china.com added to sources
 - [Getting Started](https://guides.cocoapods.org/using/getting-started.html)
 
 - [Using CocoaPods](https://guides.cocoapods.org/using/using-cocoapods.html)
-
 
 <br>
 
