@@ -334,6 +334,84 @@ CocoaPods 1.8.x 提供了使用 git 或 CDN 的功能。 CDN 是默认设置，�
 
 <br>
 
+### 0x03 `Failed to connect to GitHub to update the CocoaPods/Specs specs repo`
+
+
+在 `pod update` 时可能会报错
+
+```
+ $ pod update               
+ 
+Update all pods
+Updating local specs repositories
+[!] Failed to connect to GitHub to update the CocoaPods/Specs specs repo - Please check if you are offline, or that GitHub is down
+```
+
+[解决办法](https://stackoverflow.com/questions/38993527/cocoapods-failed-to-connect-to-github-to-update-the-cocoapods-specs-specs-repo)
+
+```
+$ which openssl
+/usr/bin/openssl
+
+$ openssl version
+OpenSSL 0.9.8zh 14 Jan 2016
+
+$ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+
+$ brew update
+
+$ brew install openssl
+
+$ brew upgrade openssl
+
+`` If you need to have this software first in your PATH run: echo 'export PATH="/usr/local/opt/openssl/bin:$PATH"' >> ~/.bash_profile
+
+$ echo 'export PATH="/usr/local/opt/openssl/bin:$PATH"' >> ~/.bash_profile
+$ source ~/.bash_profile
+
+$ which openssl
+/usr/local/opt/openssl/bin/openssl
+
+$ openssl version
+OpenSSL 1.0.2n  7 Dec 2017
+
+$ brew install rbenv ruby-build
+
+$ echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
+$ echo 'if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi' >> ~/.bash_profile
+$ source ~/.bash_profile
+
+$ rbenv install --list
+
+Available versions:
+2.7.0-rc1
+2.7.0-rc2
+2.7.0
+2.7.1
+2.8.0-dev
+:
+
+$ rbenv install 2.7.1
+
+$ rbenv versions
+* system (set by /Users/username/.rbenv/version)
+  2.7.1
+
+$ ruby --version
+ruby 2.0.0p648 (2015-12-16 revision 53162) [universal.x86_64-darwin16]
+
+$ rbenv global 2.7.1
+
+$ rbenv versions
+  system
+* 2.7.1 (set by /Users/username/.rbenv/version)
+
+$ ruby --version
+ruby 2.7.1p57 (2018-03-29 revision 63029) [x86_64-darwin16]
+```
+
+<br>
+
 **参考：**
 
 - [How to fully uninstall the Cocoapods from the Mac Machine?](https://superuser.com/questions/686317/how-to-fully-uninstall-the-cocoapods-from-the-mac-machine)

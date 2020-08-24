@@ -244,16 +244,16 @@ $ pod search ZZTestPublicPod
 $ pod update ZZTestPublicPod
 
 Updating local specs repositories
-  $ /usr/bin/git -C /Users/zhaosongbo/.cocoapods/repos/cocoapods fetch origin --progress
+  $ /usr/bin/git -C ~/.cocoapods/repos/cocoapods fetch origin --progress
   remote: Enumerating objects: 91, done.        
   remote: Counting objects: 100% (91/91), done.        
   remote: Compressing objects: 100% (61/61), done.        
   remote: Total 63 (delta 40), reused 0 (delta 0), pack-reused 0        
   From https://github.com/CocoaPods/Specs
      7bb4d7d9230..c618300a13b  master     -> origin/master
-  $ /usr/bin/git -C /Users/zhaosongbo/.cocoapods/repos/cocoapods rev-parse --abbrev-ref HEAD
+  $ /usr/bin/git -C ~/.cocoapods/repos/cocoapods rev-parse --abbrev-ref HEAD
   master
-  $ /usr/bin/git -C /Users/zhaosongbo/.cocoapods/repos/cocoapods reset --hard origin/master
+  $ /usr/bin/git -C ~/.cocoapods/repos/cocoapods reset --hard origin/master
   HEAD is now at c618300a13b [Add] ZZTestPublicPod 0.0.4
 ...
 ```
