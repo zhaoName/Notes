@@ -18,7 +18,7 @@
 
 ### 0x02 安装 VMware FusionGNS3 VM 
 
-首先安装 VMware Fusion, 安装过程中若出现如下错误，需到 Mac 上的 `系统偏好设置 -> 安全性与隐私 -> 通用` 输入管理员密码统一安装。
+首先安装 VMware Fusion, 安装过程中若出现如下错误，需到 Mac 上的 `系统偏好设置 -> 安全性与隐私 -> 通用` 输入管理员密码同意安装。
 
 ![](../../Images/Tools/GNS3/install/GNS3_install_image02.png)
 
