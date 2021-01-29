@@ -52,7 +52,7 @@
 
 ![](../../Images/Tools/GNS3/install/GNS3_install_image08.png)
 
-点击下一步然后选择下载好的 Cisco 路由器 IOS 镜像。然后一路向下，到选择solts时选C7200-IO-2FE即2个千兆口，以防测试时口不够用，出现这个错误（Can't create the link the destination port is not free），也可后续修改模板。
+点击下一步然后选择下载好的 Cisco 路由器 IOS 镜像。然后一路向下，到选择 solts 时选 C7200-IO-2FE（快速以太网口用于连接交换机）和 PA-8T（串行出口用于和其他路由器相连接），也可后续在偏好设置中修改。
 
 ![](../../Images/Tools/GNS3/install/GNS3_install_image09.png)
 
