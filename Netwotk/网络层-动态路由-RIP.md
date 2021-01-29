@@ -107,7 +107,139 @@ RIP v2：
 
 ## 三、RIP 动态路由实验
 
+搭建如下图配置的实验环境
 
+![](../Images/Network/RIP/RIP_image09.png)
+
+### 0x01 配置电脑和路由的 IP 地址
+
+- 设置电脑 PC1 
+
+```
+// 设置 ip 子网掩码 网关
+PC1> ip 192.168.0.2 255.255.255.0 192.168.0.1
+Checking for duplicate address...
+PC1 : 192.168.0.2 255.255.255.0 gateway 192.168.0.1
+
+// 保存
+PC1> save
+Saving startup configuration to startup.vpc
+.  done
+
+// 查看配置
+PC1> show ip  
+NAME        : PC1[1]
+IP/MASK     : 192.168.0.2/24
+GATEWAY     : 192.168.0.1
+DNS         : 
+MAC         : 00:50:79:66:68:00
+LPORT       : 10008
+RHOST:PORT  : 127.0.0.1:10009
+MTU:        : 1500
+```
+
+- 设置路由器 R1
+
+```
+// 进入配置状态
+R1# configure terminal
+
+// 配置端口
+R1(config)# interface fastEthernet 0/0
+// 配置 IP 地址和子网掩码
+R1(config-if)# ip address 192.168.0.1 255.255.255.0
+// 启动端口
+R1(config-if)#no shutdown 
+*Jan 29 15:01:28.371: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+*Jan 29 15:01:29.371: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to up
+
+// 配置 serial 2/0
+R1(config-if)# exit
+R1(config)# interface serial 2/0
+R1(config-if)# ip address 192.168.1.1 255.255.255.0
+R1(config-if)# no shutdown 
+
+// 配置 serial 2/1
+R1(config-if)# exit
+R1(config)# interface serial 2/1
+R1(config-if)# ip address 192.168.4.1 255.255.255.0
+R1(config-if)# no shutdown 
+
+// 查看所有端口的配置信息
+R1# show ip interface brief 
+Interface                  IP-Address      OK? Method Status                Protocol
+FastEthernet0/0            192.168.0.1     YES manual up                    up      
+FastEthernet0/1            unassigned      YES unset  administratively down down    
+GigabitEthernet1/0         unassigned      YES unset  administratively down down    
+Serial2/0                  192.168.1.1     YES manual up                    down    
+Serial2/1                  192.168.4.1     YES manual up                    down    
+Serial2/2                  unassigned      YES unset  administratively down down    
+Serial2/3                  unassigned      YES unset  administratively down down    
+Serial2/4                  unassigned      YES unset  administratively down down    
+Serial2/5                  unassigned      YES unset  administratively down down    
+Serial2/6                  unassigned      YES unset  administratively down down    
+Serial2/7                  unassigned      YES unset  administratively down down  
+```
+
+同理可配置其他路由器和电脑的 IP 地址。
+
+### 0x02 检查同网段下是否能通信
+
+- R1 `ping `自己直连的三个网段
+
+```
+R1# ping 192.168.0.2 
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.0.2, timeout is 2 seconds:
+.!!!!
+Success rate is 80 percent (4/5), round-trip min/avg/max = 24/274/964 ms
+
+R1# ping 192.168.1.2
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.1.2, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 8/30/92 ms
+
+R1# ping 192.168.4.2
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.4.2, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 16/34/100 ms
+```
+
+- R3 `ping `自己直连的三个网段
+
+```
+R3# ping 192.168.3.2
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.3.2, timeout is 2 seconds:
+.....
+Success rate is 0 percent (0/5)
+
+R3# ping 192.168.2.1
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.2.1, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 28/121/452 ms
+
+R3# ping 192.168.6.1
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.6.1, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 16/40/116 ms
+```
+
+- R4 只需`ping `和 R5 直连的网段
+
+```
+R4# ping 192.168.5.2
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 192.168.5.2, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 16/35/100 ms
+```
+
+### 0x03 
 
 <br>
 
