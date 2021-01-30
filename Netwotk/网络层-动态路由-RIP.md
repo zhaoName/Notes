@@ -296,6 +296,7 @@ Routing Protocol is "rip"
   Invalid after 180 seconds, hold down 180, flushed after 240
   Redistributing: rip
   Default version control: send version 1, receive any version
+    // 发送支持 RIP v1，发送 v1 v2 都支持
     Interface             Send  Recv  Triggered RIP  Key-chain
     FastEthernet0/0       1     1 2                                  
     Serial2/0             1     1 2                                  
@@ -338,7 +339,7 @@ L        192.168.1.2/32 is directly connected, Serial2/1
       192.168.2.0/24 is variably subnetted, 2 subnets, 2 masks
 C        192.168.2.0/24 is directly connected, Serial2/0
 L        192.168.2.1/32 is directly connected, Serial2/0
-// 包括上面的 192.168.0.0/24 都是学习到的路有信息
+// 包括上面的 192.168.0.0/24 已下都是学习到的路有信息
 R     192.168.3.0/24 [120/1] via 192.168.2.2, 00:00:07, Serial2/0
 R     192.168.4.0/24 [120/1] via 192.168.1.1, 00:00:11, Serial2/1
 // 到 192.168.5.0/24 有两条路径可供选择
@@ -651,14 +652,79 @@ R3#
 
 ## 四、RIP 协议数据包格式
 
-### 0x01 wireshark 抓包
+### 0x01 格式
+
+![](../Images/Network/RIP/RIP_image11.png)
+
+- 首部占 4 字节
+	- 命令：指出报文的意义。如 1 表示请求路由的信息，2 表示对请求路由信息的相应或未被请求而发出的路由报文更新。
+	- 版本： 指明当前 RIP 协议的版本。
+	- 必为0：为了 4 字节对齐
+
+- 路由部分：由若干路由信息组成，每个路由信息需要 20 字节
+	- 地址族标志符：用来标志所使用的协议地址，如 IP 地址就把这个字段的值设为 2
+	- 路由标记填入自治系统号 ASN，这是为了考虑使用 RIP 有可能收到本自治系统之外的路由选择信息
+	- 网络地址、子网掩码、下一跳路由、到此网络距离
+
+一个 RIP 报文最多可以包括 25 个路由信息，因此 RIP 报文的最大长度为 4 + 20 * 25 = 504 字节。若超出则需要另外一个 RIP 报文来传送。
+
+### 0x02 wireshark 抓包
+
+安装 GNS3 会自动关联到 wireshark(若本地有安装)。选中连接路由的线，右键然后选择 Start capture
+
+![](../Images/Network/RIP/RIP_image12.png)
+
+然后选择 HDLC 格式，点击 OK 就会启动 wireshark。
+
+![](../Images/Network/RIP/RIP_image13.png)
+
+然后就可以看到 RIP v1 格式的数据包。
+
+![](../Images/Network/RIP/RIP_image14.png)
+
+### 0x03 RIP v2
+
+将 RIP 协议从 v1 改成 v2，以 R1 为例
+
+```
+R1# configure terminal
+R1(config)# router rip 
+// 修改为 v2 版本
+R1(config-router)#version 2
+
+// 查看
+R1# show ip protocols 
+*** IP Routing is NSF aware ***
+
+Routing Protocol is "rip"
+  Outgoing update filter list for all interfaces is not set
+  Incoming update filter list for all interfaces is not set
+  Sending updates every 30 seconds, next due in 29 seconds
+  Invalid after 180 seconds, hold down 180, flushed after 240
+  Redistributing: rip
+  Default version control: send version 2, receive version 2
+    // 收发都是 v2 版本
+    Interface             Send  Recv  Triggered RIP  Key-chain
+    FastEthernet0/0       2     2                                    
+    Serial2/0             2     2                                    
+    Serial2/1             2     2                                    
+  Automatic network summarization is in effect
+  Maximum path: 4
+  Routing for Networks:
+    192.168.0.0
+    192.168.1.0
+    192.168.4.0
+  Routing Information Sources:
+    Gateway         Distance      Last Update
+    192.168.1.2          120      00:01:00
+    192.168.4.2          120      00:01:10
+  Distance: (default is 120)
+```
+
+同样将 R2、R3、R4、R5 的 RIP 协议都修改为 v2版本，然后在查看 wireshark 抓包结果
 
 
-
-### 0x02 v1
-
-### 0x03 v2
-
+![](../Images/Network/RIP/RIP_image15.png)
 
 <br>
 
