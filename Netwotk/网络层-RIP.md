@@ -1,4 +1,4 @@
-# 网络层: 动态路由 - RIP
+# 网络层 - RIP
 
 <br>
 
@@ -737,5 +737,7 @@ Routing Protocol is "rip"
 - [静态路由，动态路由 RIP](https://www.cnblogs.com/michael9/p/13376928.html)
 
 - [常见动态路由协议之———RIP动态路由实验](https://blog.51cto.com/14464303/2436512)
+
+- [CISCO学习笔记（七）动态路由协议-RIP](https://blog.csdn.net/u012402276/article/details/49096637)
 
 <br>
