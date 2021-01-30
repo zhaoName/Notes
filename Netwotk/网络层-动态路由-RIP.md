@@ -213,8 +213,8 @@ Success rate is 100 percent (5/5), round-trip min/avg/max = 16/34/100 ms
 R3# ping 192.168.3.2
 Type escape sequence to abort.
 Sending 5, 100-byte ICMP Echos to 192.168.3.2, timeout is 2 seconds:
-.....
-Success rate is 0 percent (0/5)
+.!!!!
+Success rate is 80 percent (4/5), round-trip min/avg/max = 8/36/88 ms
 
 R3# ping 192.168.2.1
 Type escape sequence to abort.
@@ -239,7 +239,428 @@ Sending 5, 100-byte ICMP Echos to 192.168.5.2, timeout is 2 seconds:
 Success rate is 100 percent (5/5), round-trip min/avg/max = 16/35/100 ms
 ```
 
-### 0x03 
+- 保存路由器配置，以便下次使用
+
+```
+R1# copy running-config startup-config
+Destination filename [startup-config]? 
+Warning: Attempting to overwrite an NVRAM configuration previously written
+by a different version of the system image.
+Overwrite the previous NVRAM configuration?[confirm]
+Building configuration...
+[OK]
+```
+
+### 0x03 配置 RIP 
+
+- 路由器启动 RIP 并宣告自己的直连网段，以 R1 为例
+
+```
+R1# configure terminal 
+Enter configuration commands, one per line.  End with CNTL/Z.
+
+// 查看路由器支持哪些动态路由协议
+R1(config)# router ?
+  bgp       Border Gateway Protocol (BGP)
+  eigrp     Enhanced Interior Gateway Routing Protocol (EIGRP)
+  isis      ISO IS-IS
+  iso-igrp  IGRP for OSI networks
+  lisp      Locator/ID Separation Protocol
+  mobile    Mobile routes
+  odr       On Demand stub Routes
+  ospf      Open Shortest Path First (OSPF)
+  ospfv3    OSPFv3
+  rip       Routing Information Protocol (RIP)
+
+// 启动 RIP（默认是 RIP v1）
+R1(config)# router rip
+
+// 宣告直连网段
+R1(config-router)# network 192.168.0.0
+R1(config-router)# network 192.168.1.0
+R1(config-router)# network 192.168.4.0
+```
+
+- 配置好了，我们也可以查看
+
+```
+// 查看被配置在路由器上的所有动态路由协议
+R1# show ip protocols 
+*** IP Routing is NSF aware ***
+
+Routing Protocol is "rip"
+  Outgoing update filter list for all interfaces is not set
+  Incoming update filter list for all interfaces is not set
+  Sending updates every 30 seconds, next due in 17 seconds
+  // 无效计时器180s、抑制计时器30s、刷新计数器240s
+  Invalid after 180 seconds, hold down 180, flushed after 240
+  Redistributing: rip
+  Default version control: send version 1, receive any version
+    Interface             Send  Recv  Triggered RIP  Key-chain
+    FastEthernet0/0       1     1 2                                  
+    Serial2/0             1     1 2                                  
+    Serial2/1             1     1 2 
+  // 边界路由汇总生效中                                
+  Automatic network summarization is in effect
+  // 到达某个网段的跳数一样时，最多支持4条路径
+  Maximum path: 4
+  Routing for Networks:
+    192.168.0.0
+    192.168.1.0
+    192.168.4.0
+  Routing Information Sources:
+    Gateway         Distance      Last Update
+    192.168.1.2          120      00:00:11
+    192.168.4.2          120      00:00:10
+  Distance: (default is 120)
+```
+
+- 当 R2、R3、R4、R5 都配置好 RIP 时，可以查看通过 RIP 学到的路由信息，以 R2 为例
+
+```
+// 查看路由表
+R2# show ip route 
+Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
+       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area 
+       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
+       E1 - OSPF external type 1, E2 - OSPF external type 2
+       i - IS-IS, su - IS-IS summary, L1 - IS-IS level-1, L2 - IS-IS level-2
+       ia - IS-IS inter area, * - candidate default, U - per-user static route
+       o - ODR, P - periodic downloaded static route, H - NHRP, l - LISP
+       + - replicated route, % - next hop override
+
+Gateway of last resort is not set
+
+R     192.168.0.0/24 [120/1] via 192.168.1.1, 00:00:11, Serial2/1
+      192.168.1.0/24 is variably subnetted, 2 subnets, 2 masks
+C        192.168.1.0/24 is directly connected, Serial2/1
+L        192.168.1.2/32 is directly connected, Serial2/1
+      192.168.2.0/24 is variably subnetted, 2 subnets, 2 masks
+C        192.168.2.0/24 is directly connected, Serial2/0
+L        192.168.2.1/32 is directly connected, Serial2/0
+// 包括上面的 192.168.0.0/24 都是学习到的路有信息
+R     192.168.3.0/24 [120/1] via 192.168.2.2, 00:00:07, Serial2/0
+R     192.168.4.0/24 [120/1] via 192.168.1.1, 00:00:11, Serial2/1
+// 到 192.168.5.0/24 有两条路径可供选择
+R     192.168.5.0/24 [120/2] via 192.168.2.2, 00:00:07, Serial2/0
+                     [120/2] via 192.168.1.1, 00:00:11, Serial2/1
+R     192.168.6.0/24 [120/1] via 192.168.2.2, 00:00:07, Serial2/0
+```
+
+- 然后我们让两台计算机相互通信
+
+```
+PC1> ping 192.168.3.2
+192.168.3.2 icmp_seq=1 timeout
+192.168.3.2 icmp_seq=2 timeout
+84 bytes from 192.168.3.2 icmp_seq=3 ttl=61 time=60.982 ms
+84 bytes from 192.168.3.2 icmp_seq=4 ttl=61 time=47.074 ms
+84 bytes from 192.168.3.2 icmp_seq=5 ttl=61 time=55.709 ms
+```
+
+### 0x04 `network`
+
+`network `的作用是宣告直连网段，如 `network 192.168.1.0`。它根据 IP 地址是哪一类(A类、B类、C类)选择默认的子网掩码。某些情况下可以汇总
+
+如 R1 的三个直连网段分别是 172.168.0.0/24、172.168.1.0/24、172.168.4.0/24，172开头的是 B 类地址，我们可以只宣告一次涵盖上述三个网段。
+
+```
+network 172.168.0.0
+```
+
+但 R1 的三个直连网段分别是 172.168.0.0/24、172.168.1.0/24、172.169.4.0/24，则不能汇总，因为 172.168.0.0 和 172.169.0.0 是两个不同的 B 类地址。需要宣告两次
+
+```
+network 172.168.0.0
+network 172.169.0.0
+```
+
+同样若 R1 直连的三个网段分别是 10.168.0.0/24、10.169.0.0/24、10.170.0.0/24，也可以汇总成一个 A 类地址。但不能汇总两个不同的 A 类地址。
+
+```
+network 10.0.0.0
+```
+
+## 四、RIP 协议的健壮性
+
+### 0x01 选择最佳路径
+
+在计算机 PC1 上 `ping 192.168.3.2`
+
+```
+PC1> ping 192.168.3.2
+84 bytes from 192.168.3.2 icmp_seq=1 ttl=60 time=71.830 ms
+84 bytes from 192.168.3.2 icmp_seq=2 ttl=60 time=97.867 ms
+84 bytes from 192.168.3.2 icmp_seq=3 ttl=60 time=101.391 ms
+84 bytes from 192.168.3.2 icmp_seq=4 ttl=60 time=101.838 ms
+84 bytes from 192.168.3.2 icmp_seq=5 ttl=60 time=94.137 ms
+```
+
+跟踪 PC1 上的数据包路径
+
+```
+PC1> tracer 192.168.3.2
+trace to 192.168.3.2, 8 hops max, press Ctrl+C to stop
+ 1   192.168.0.1   21.995 ms  9.858 ms  9.099 ms
+ 2   192.168.1.2   40.097 ms  30.148 ms  29.302 ms
+ 3   192.168.2.2   49.988 ms  50.261 ms  39.851 ms
+ 4   *192.168.3.2   60.163 ms (ICMP type:3, code:3, Destination port unreachable)
+```
+
+可以看到数据包路径： PC0 -> R1 (192.168.0.1) -> R2 (192.168.1.2) -> R3 (192.168.2.2) -> PC2 (192.168.3.2)。
+
+当 R2 和 R3 之间的连接断开时，PC0 再去`ping 192.168.3.2` 是不通的，过会路由器学习到别的路径又能`ping`通
+
+```
+PC1> ping 192.168.3.2  
+192.168.3.2 icmp_seq=1 timeout
+192.168.3.2 icmp_seq=2 timeout
+192.168.3.2 icmp_seq=3 timeout
+192.168.3.2 icmp_seq=4 timeout
+192.168.3.2 icmp_seq=5 timeout
+
+PC1> ping 192.168.3.2
+84 bytes from 192.168.3.2 icmp_seq=1 ttl=61 time=55.967 ms
+84 bytes from 192.168.3.2 icmp_seq=2 ttl=61 time=58.360 ms
+84 bytes from 192.168.3.2 icmp_seq=3 ttl=61 time=65.680 ms
+84 bytes from 192.168.3.2 icmp_seq=4 ttl=61 time=65.388 ms
+84 bytes from 192.168.3.2 icmp_seq=5 ttl=61 time=76.718 ms
+```
+
+此时再去跟踪数据包路径
+
+```
+PC1> tracer 192.168.3.2
+trace to 192.168.3.2, 8 hops max, press Ctrl+C to stop
+ 1   192.168.0.1   16.645 ms  9.405 ms  19.083 ms
+ 2   192.168.4.2   39.591 ms  39.749 ms  29.678 ms
+ 3   192.168.5.2   70.180 ms  51.523 ms  49.717 ms
+ 4   192.168.6.2   60.506 ms  69.755 ms  49.794 ms
+ 5   *192.168.3.2   70.595 ms (ICMP type:3, code:3, Destination port unreachable)
+```
+
+![](../Images/Network/RIP/RIP_image10.png)
+
+可以看到数据包路径： PC0 -> R1 (192.168.0.1) -> R4 (192.168.4.2) -> R5 (192.168.5.2) -> R3 (192.168.6.2) -> PC2 (192.168.3.2)。
+
+
+### 0x02 192.168.3.0/24 网段 down 掉路由信息更新
+
+在 R2、R3 上查看路由更新信息，并将 192.168.3.0/24 网段 down 掉
+
+```
+// 跟踪 R2 RIP 协议路由更新信息
+R2# debug ip rip
+RIP protocol debugging is on
+R2#
+*Jan 30 09:13:47.099: RIP: sending v1 update to 255.255.255.255 via Serial2/0 (192.168.2.1)
+*Jan 30 09:13:47.099: RIP: build update entries
+*Jan 30 09:13:47.103: 	network 192.168.0.0 metric 2
+*Jan 30 09:13:47.103: 	network 192.168.1.0 metric 1
+*Jan 30 09:13:47.107: 	network 192.168.4.0 metric 2
+R2#
+*Jan 30 09:14:04.151: RIP: sending v1 update to 255.255.255.255 via Serial2/1 (192.168.1.2)
+*Jan 30 09:14:04.151: RIP: build update entries
+*Jan 30 09:14:04.155: 	network 192.168.2.0 metric 1
+*Jan 30 09:14:04.159: 	network 192.168.3.0 metric 2
+*Jan 30 09:14:04.159: 	network 192.168.6.0 metric 2
+R2#
+*Jan 30 09:14:07.067: RIP: received v1 update from 192.168.1.1 on Serial2/1
+*Jan 30 09:14:07.071:      192.168.0.0 in 1 hops
+*Jan 30 09:14:07.071:      192.168.4.0 in 1 hops
+*Jan 30 09:14:07.071:      192.168.5.0 in 2 hops
+R2#
+*Jan 30 09:14:08.519: RIP: received v1 update from 192.168.2.2 on Serial2/0
+*Jan 30 09:14:08.523:      192.168.3.0 in 1 hops
+*Jan 30 09:14:08.523:      192.168.5.0 in 2 hops
+*Jan 30 09:14:08.527:      192.168.6.0 in 1 hops
+
+// 跟踪 R3 RIP 协议路由更新信息
+R3# debug ip rip
+RIP protocol debugging is on
+R3#
+*Jan 30 09:14:32.527: RIP: sending v1 update to 255.255.255.255 via Serial2/0 (192.168.6.2)
+*Jan 30 09:14:32.527: RIP: build update entries
+*Jan 30 09:14:32.531: 	network 192.168.0.0 metric 3
+*Jan 30 09:14:32.531: 	network 192.168.1.0 metric 2
+*Jan 30 09:14:32.535: 	network 192.168.2.0 metric 1
+*Jan 30 09:14:32.535: 	network 192.168.3.0 metric 1
+*Jan 30 09:14:33.407: RIP: sending v1 update to 255.255.255.255 via Serial2/1 (192.168.2.2)
+*Jan 30 09:14:33.407: RIP: build update entries
+*Jan 30 09:14:33.407: 	network 192.168.3.0 metric 1
+*Jan 30 09:14:33.407: 	network 192.168.5.0 metric 2
+*Jan 30 09:14:33.407: 	network 192.168.6.0 metric 1
+R3#
+*Jan 30 09:14:35.419: RIP: sending v1 update to 255.255.255.255 via FastEthernet0/0 (192.168.3.1)
+*Jan 30 09:14:35.419: RIP: build update entries
+*Jan 30 09:14:35.423: 	network 192.168.0.0 metric 3
+*Jan 30 09:14:35.423: 	network 192.168.1.0 metric 2
+*Jan 30 09:14:35.427: 	network 192.168.2.0 metric 1
+*Jan 30 09:14:35.427: 	network 192.168.4.0 metric 3
+*Jan 30 09:14:35.431: 	network 192.168.5.0 metric 2
+*Jan 30 09:14:35.431: 	network 192.168.6.0 metric 1
+R3#
+*Jan 30 09:14:43.019: RIP: received v1 update from 192.168.2.1 on Serial2/1
+*Jan 30 09:14:43.019:      192.168.0.0 in 2 hops
+*Jan 30 09:14:43.023:      192.168.1.0 in 1 hops
+*Jan 30 09:14:43.023:      192.168.4.0 in 2 hops
+R3#
+*Jan 30 09:14:44.679: RIP: received v1 update from 192.168.6.1 on Serial2/0
+*Jan 30 09:14:44.683:      192.168.0.0 in 3 hops
+*Jan 30 09:14:44.683:      192.168.4.0 in 2 hops
+*Jan 30 09:14:44.687:      192.168.5.0 in 1 hops
+
+// 关掉 fastEthernet0/0 端口，即关掉 192.168.3.0/24 网段
+R3# configure terminal 
+R3(config)# interface fastEthernet0/0
+R3(config-if)# shutdown
+```
+
+当我们关掉 fastEthernet0/0 端口时可以马上看到如下更新信息
+
+- 当 down 掉 192.168.3.0/24 网段时，R3 会将 192.168.3.0/24  的 metric 设置为 16，并且马上触发刷新定时器，将 `network 192.168.3.0 metric 16` 从 192.168.2.2、192.168.6.2 广播出去。
+
+```
+R3#
+*Jan 30 09:15:58.031: RIP: sending v1 flash update to 255.255.255.255 via Serial2/1 (192.168.2.2)
+*Jan 30 09:15:58.031: RIP: build flash update entries
+*Jan 30 09:15:58.035: 	network 192.168.3.0 metric 16
+*Jan 30 09:15:58.039: RIP: sending v1 flash update to 255.255.255.255 via Serial2/0 (192.168.6.2)
+*Jan 30 09:15:58.039: RIP: build flash update entries
+*Jan 30 09:15:58.043: 	network 192.168.3.0 metric 16
+*Jan 30 09:15:58.911: RIP: sending v1 update to 255.255.255.255 via Serial2/0 (192.168.6.2)
+*Jan 30 09:15:58.911: RIP: build update entries
+*Jan 30 09:15:58.915: 	network 192.168.0.0 metric 3
+*Jan 30 09:15:58.915: 	network 192.168.1.0 metric 2
+*Jan 30 09:15:58.919: 	network 192.168.2.0 metric 1
+*Jan 30 09:15:58.919: 	network 192.168.3.0 metric 16
+```
+
+- R2 收到 192.168.3.0/24 为 16 跳(inaccessible)，也会触发刷新定时器将 `network 192.168.3.0 metric 16`的消息从自身直连的接口 192.168.1.2、192.168.2.1 广播出去。同理 R6 也会收到 192.168.3.0 down 掉的消息，并反馈出去。
+
+```
+R2#
+*Jan 30 09:16:28.331: RIP: received v1 update from 192.168.2.2 on Serial2/0
+*Jan 30 09:16:28.331:      192.168.3.0 in 16 hops (inaccessible)
+R2#
+*Jan 30 09:16:30.335: RIP: sending v1 flash update to 255.255.255.255 via Serial2/1 (192.168.1.2)
+*Jan 30 09:16:30.335: RIP: build flash update entries
+*Jan 30 09:16:30.335: 	network 192.168.3.0 metric 16
+*Jan 30 09:16:30.335: RIP: sending v1 flash update to 255.255.255.255 via Serial2/0 (192.168.2.1)
+*Jan 30 09:16:30.339: RIP: build flash update entries
+*Jan 30 09:16:30.339: 	network 192.168.3.0 metric 16
+```
+
+- R3 收到 R2、R6 反馈回来的确认消息后，广播路由信息时会将 192.168.3.0  设置为 `192.168.3.0 in 16 hops (inaccessible)` 广播出去。
+
+```
+*Jan 30 09:15:59.747: RIP: received v1 update from 192.168.6.1 on Serial2/0
+*Jan 30 09:15:59.747:      192.168.3.0 in 16 hops (inaccessible)
+*Jan 30 09:15:59.751: RIP: received v1 update from 192.168.2.1 on Serial2/1
+*Jan 30 09:15:59.751:      192.168.3.0 in 16 hops (inaccessible)
+R3)#
+*Jan 30 09:16:04.199: RIP: received v1 update from 192.168.2.1 on Serial2/1
+*Jan 30 09:16:04.199:      192.168.0.0 in 2 hops
+*Jan 30 09:16:04.203:      192.168.1.0 in 1 hops
+*Jan 30 09:16:04.203:      192.168.3.0 in 16 hops (inaccessible)
+*Jan 30 09:16:04.207:      192.168.4.0 in 2 hops
+```
+
+- 一段时间（180s）后 192.168.3.0  就会从路由表中删除。
+
+```
+R3#
+*Jan 30 09:17:44.739: RIP: sending v1 update to 255.255.255.255 via Serial2/0 (192.168.6.2)
+*Jan 30 09:17:44.739: RIP: build update entries
+*Jan 30 09:17:44.743: 	network 192.168.0.0 metric 3
+*Jan 30 09:17:44.743: 	network 192.168.1.0 metric 2
+*Jan 30 09:17:44.743: 	network 192.168.2.0 metric 1
+R3#
+*Jan 30 09:17:46.167: RIP: sending v1 update to 255.255.255.255 via Serial2/1 (192.168.2.2)
+*Jan 30 09:17:46.167: RIP: build update entries
+*Jan 30 09:17:46.171: 	network 192.168.5.0 metric 2
+*Jan 30 09:17:46.171: 	network 192.168.6.0 metric 1
+```
+
+
+### 0x03 重启 192.168.3.0/24 网段路由信息更新
+
+```
+// 重启 fastEthernet0/0 端口
+R3# configure terminal 
+R3(config)# interface fastEthernet0/0
+R3(config-if)# no shutdown
+```
+
+- 当重启  fastEthernet0/0 端口时，R3 会将 192.168.3.0/24  的 metric 设置为 1，并且触发刷新定时器将 `network 192.168.3.0 metric 1` 从 192.168.2.2、192.168.6.2 广播出去。
+
+```
+R3#
+*Jan 30 10:04:11.019: %LINK-3-UPDOWN: Interface FastEthernet0/0, changed state to up
+*Jan 30 10:04:12.019: %LINEPROTO-5-UPDOWN: Line protocol on Interface FastEthernet0/0, changed state to up
+*Jan 30 10:04:12.031: RIP: sending request on FastEthernet0/0 to 255.255.255.255
+R3#
+*Jan 30 10:04:14.047: RIP: sending v1 flash update to 255.255.255.255 via Serial2/1 (192.168.2.2)
+*Jan 30 10:04:14.047: RIP: build flash update entries
+*Jan 30 10:04:14.051: 	network 192.168.3.0 metric 1
+*Jan 30 10:04:14.051: RIP: sending v1 flash update to 255.255.255.255 via Serial2/0 (192.168.6.2)
+*Jan 30 10:04:14.055: RIP: build flash update entries
+*Jan 30 10:04:14.055: 	network 192.168.3.0 metric 1
+*Jan 30 10:04:14.055: RIP: sending v1 flash update to 255.255.255.255 via FastEthernet0/0 (192.168.3.1)
+*Jan 30 10:04:14.055: RIP: build flash update entries - suppressing null update
+```
+
+- R3 的邻居路由器收到`192.168.3.0 in 1 hops` 时也会触发定时间器将新的路由信息 1`network 192.168.3.0 metric 2`广播给自己邻居路由器
+
+```
+R2#
+*Jan 30 10:05:04.107: RIP: received v1 update from 192.168.2.2 on Serial2/0
+*Jan 30 10:05:04.107:      192.168.3.0 in 1 hops
+R2#
+*Jan 30 10:05:06.111: RIP: sending v1 flash update to 255.255.255.255 via Serial2/1 (192.168.1.2)
+*Jan 30 10:05:06.111: RIP: build flash update entries
+*Jan 30 10:05:06.115: 	network 192.168.3.0 metric 2
+*Jan 30 10:05:06.115: RIP: sending v1 flash update to 255.255.255.255 via Serial2/0 (192.168.2.1)
+*Jan 30 10:05:06.115: RIP: build flash update entries - suppressing null update
+*Jan 30 10:05:06.159: RIP: sending v1 update to 255.255.255.255 via Serial2/0 (192.168.2.1)
+*Jan 30 10:05:06.159: RIP: build update entries
+*Jan 30 10:05:06.163: 	network 192.168.0.0 metric 2
+*Jan 30 10:05:06.163: 	network 192.168.1.0 metric 1
+```
+
+- R3 每次广播自身的路由表时，就会带着 192.168.3.0
+
+```
+R3#
+*Jan 30 10:05:25.947: RIP: sending v1 update to 255.255.255.255 via Serial2/1 (192.168.2.2)
+*Jan 30 10:05:25.947: RIP: build update entries
+*Jan 30 10:05:25.947: 	network 192.168.3.0 metric 1
+*Jan 30 10:05:25.947: 	network 192.168.5.0 metric 2
+*Jan 30 10:05:25.947: 	network 192.168.6.0 metric 1
+R3#
+*Jan 30 10:05:29.439: RIP: sending v1 update to 255.255.255.255 via Serial2/0 (192.168.6.2)
+*Jan 30 10:05:29.439: RIP: build update entries
+*Jan 30 10:05:29.443: 	network 192.168.0.0 metric 3
+*Jan 30 10:05:29.443: 	network 192.168.1.0 metric 2
+*Jan 30 10:05:29.447: 	network 192.168.2.0 metric 1
+*Jan 30 10:05:29.447: 	network 192.168.3.0 metric 1
+```
+
+<br>
+
+
+## 四、RIP 协议数据包格式
+
+### 0x01 wireshark 抓包
+
+
+
+### 0x02 v1
+
+### 0x03 v2
+
+
+<br>
 
 <br>
 
