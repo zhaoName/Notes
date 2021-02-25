@@ -9,11 +9,13 @@ ICMP（Internet Control Message Protocol）Internet控制报文协议。它是 T
 
 ### 0x01 ICMP 报文格式
 
-ICMP 报文格式
+ICMP 报文包含在 IP 数据报中，IP 首部在 ICMP 报文的最前面。一个 ICMP 报文包括 IP 首部（至少 20 字节）、ICMP报头（至少 8 字节）和 ICMP 报文的数据部分。当 IP 首部中的协议字段值为 1 时，就说明这是一个 ICMP 报文。ICMP 报文格式如下
+
+![](../Images/Network/ICMP&ARP/ICMP&ARP_images00.png)
 
 ![](../Images/Network/ICMP&ARP/ICMP&ARP_images01.png)
 
-ICMP 报文类型和代码
+常用 ICMP 报文类型和代码
 
 ![](../Images/Network/ICMP&ARP/ICMP&ARP_images04.png)
 
@@ -24,6 +26,18 @@ ICMP 报文类型和代码
 ### 0x02 ICMP 差错报告报文格式
 
 ![](../Images/Network/ICMP&ARP/ICMP&ARP_images03.png)
+
+- TTL 耗尽
+
+```
+$ ping baidu.com -m 2
+PING baidu.com (39.156.69.79): 56 data bytes
+92 bytes from 192.168.1.1 (192.168.1.1): Time to live exceeded
+Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst
+ 4  5  00 5400 da0e   0 0000  01  01 b19c 192.168.0.107  39.156.69.79
+```
+
+![](../Images/Network/ICMP&ARP/ICMP&ARP_images05.png)
 
 <br>
 
