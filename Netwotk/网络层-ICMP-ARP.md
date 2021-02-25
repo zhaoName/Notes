@@ -39,6 +39,11 @@ Vr HL TOS  Len   ID Flg  off TTL Pro  cks      Src      Dst
 
 ![](../Images/Network/ICMP&ARP/ICMP&ARP_images05.png)
 
+
+不仅是 `ping` 命令可以使用 ICMP 协议。当我们在浏览器中输入一个不可访问的 IP 地址，也能得到一个 ICMP 差错报告。如访问 192.168.20.20， 192.168.0.1 网关返回 192.168.20.20 不可到达
+
+![](../Images/Network/ICMP&ARP/ICMP&ARP_images06.png)
+
 <br>
 
 ## 二、 ARP
