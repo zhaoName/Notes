@@ -129,7 +129,7 @@ int main() {
 
 开始的想法是`hook``stringWithFormat:`和`initWithFormat:`这两个方法。但在`logos`语法中会报错
 
-![](https://images.gitee.com/uploads/images/2019/0621/231053_1b9bf89c_1355277.png "hookArgs_image01.png")
+![](../Images/iOSReverse/Hook可变参数/hookArgs_image01.png)
 
 又在[这里](http://iosre.com/t/hook-stringwithformat/5195/18)看到`stringWithFormat:`内部会调用`initWithFormat:locale:arguments:`方法。但是`hook`下面两个方法后，并没有什么用。。。
 

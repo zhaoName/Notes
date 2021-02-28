@@ -34,8 +34,7 @@ wget安装完成执行以下命令
 
 如下图说明成功
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181106212520130.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
-
+![](../Images/iOSReverse/dsc_extractor/dsc_extractor_image1.png)
 
 ### 三、dsc_extractor.patch
 
@@ -127,11 +126,11 @@ Hunk #4 FAILED at 484.
 
 然后就可以找到UIKit的可执行文件，这里注意若UIKit没有可执行权限，可用`chmod +x UIkit` 修改其权限。
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181106214851759.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/dsc_extractor/dsc_extractor_image2.png)
 
 将可执行文件拖到ida64中可查看反编译代码
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181106215202582.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/dsc_extractor/dsc_extractor_image3.png)
 
 
 ### 六、坑
@@ -152,9 +151,9 @@ Or, even better, submit a PR to fix it!
 
 **本文参考：**
 
-http://iosre.com/t/when-dyld-decache-fails-on-dyld-shared-cache-arm64-dsc-extractor-saves-our-days/1974
+- [When dyld_decache fails on dyld_shared_cache_arm64, dsc_extractor saves our days](http://iosre.com/t/when-dyld-decache-fails-on-dyld-shared-cache-arm64-dsc-extractor-saves-our-days/1974)
 
-https://09jianfeng.github.io/2015/04/05/dyld_decache%20%E5%AF%BC%E5%87%BA%E7%B3%BB%E7%BB%9F%E5%BA%93%E7%9A%84%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6/
+- [dyld_decache 导出系统库的可执行文件](https://09jianfeng.github.io/2015/04/05/dyld_decache%20%E5%AF%BC%E5%87%BA%E7%B3%BB%E7%BB%9F%E5%BA%93%E7%9A%84%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6/)
 
 -
 **写于2018-11-07**
@@ -167,7 +166,7 @@ https://09jianfeng.github.io/2015/04/05/dyld_decache%20%E5%AF%BC%E5%87%BA%E7%B3%
 - 删除`if 0`之前的代码，再删除`#endif`
 - `cd`到`dsc_extractor.cpp`所以目录
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181216143515749.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/dsc_extractor/dsc_extractor_image4.png)
 
 - 导出
 

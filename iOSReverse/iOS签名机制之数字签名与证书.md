@@ -16,7 +16,7 @@
 
 对于很大的数据来说，要对比数据是否被篡改是很麻烦的事，但用单向散列函数算出散列值再去对比，就很easy。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0108/195214_e79db2ee_1355277.png "Snip20190108_10.png")
+![](../Images/iOSReverse/iOS签名机制之数字签名与证书/certificate_image1.png)
 
 
 问题: 单向散列函数算出的散列值虽然能用作验证数据是否被篡改，但消息通信时不可能直接将散列值发送过去（由散列值不能反推出消息内容），也不可能将消息明文和消息算出的散列值一起发送过去（会被拦截到，更改消息内容再发送）。那咋办呢？往下看。。。
@@ -36,7 +36,7 @@
 
 ### 0x01 数字签名过程
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0110/211232_7e4c768a_1355277.png "Snip20190110_1.png")
+![](../Images/iOSReverse/iOS签名机制之数字签名与证书/certificate_image2.png)
 
 - 当消息发送者发送消息时，先用自己的私钥将消息加密，生成签名
 
@@ -53,7 +53,7 @@
 
 ### 0x02 数字签名优化
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0110/215716_9a0faeba_1355277.png "Snip20190110_3.png")
+![](../Images/iOSReverse/iOS签名机制之数字签名与证书/certificate_image3.png)
 
 - 消息发送者生成一对密钥，并将公钥发送给消息接收者；
 
@@ -81,7 +81,7 @@
 
 1.用非对称加密发送消息机制(详情参考[iOS签名机制之非对称加密](https://gitee.com/zhaoName0x01/Notes/blob/master/iOSReverse/iOS签名机制之非对称加密.md))解释中间人攻击
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0110/221216_63a2f756_1355277.png "Snip20190110_5.png")
+![](../Images/iOSReverse/iOS签名机制之数字签名与证书/certificate_image4.png)
 
 
 - 公钥和私钥由消息接受者生成，消息发送者向接收者要公钥，但被中间人窃听
@@ -99,7 +99,7 @@
 
 2.数字签名被中间人攻击
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0110/223716_831fef3c_1355277.png "Snip20190110_7.png")
+![](../Images/iOSReverse/iOS签名机制之数字签名与证书/certificate_image5.png)
 
 
 同样在数字签名时，若被中间人攻击 拿到消息发送者的公钥并保存来，也能伪造数据。使数字签名失效。
@@ -122,7 +122,7 @@
 ### 0x01 证书的使用
 
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0110/224509_16b24da7_1355277.png "Snip20190110_8.png")
+![](../Images/iOSReverse/iOS签名机制之数字签名与证书/certificate_image6.png)
 
 
 - 消息接收者生成私钥和公钥；

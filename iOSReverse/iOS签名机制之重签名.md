@@ -40,7 +40,7 @@
 	
 	- 可以通过Xcode自动生成，在编译后的App包内找到
 
-		![输入图片说明](https://images.gitee.com/uploads/images/2019/0118/111805_debde842_1355277.png "Snip20190117_10.png")
+		![](../Images/iOSReverse/iOS签名机制之重签名/resign_image1.png)
 	
 	- 到[苹果开发者后台](https://developer.apple.com/account/ios/profile/)生成,下载
 	
@@ -56,7 +56,7 @@
 	$ /usr/libexec/PlistBuddy -x -c 'Print :Entitlements' temp.plist > entitlements.plist
 	```
 	
-	![entitlements](https://images.gitee.com/uploads/images/2019/0118/112034_459d44e4_1355277.png "Snip20190117_12.png")
+	![](../Images/iOSReverse/iOS签名机制之重签名/resign_image2.png)
 	
 	一般都是对别人的App重签名，假如是微信，那`application-identifier`值应改为`your account teamId.com.tencent.xin`。
 
@@ -102,7 +102,7 @@
 　　当我们用`Theos`开发好一些好玩的插件(如微信抢红包)，会将其分享给我们的小伙伴。这时你可能兴冲冲的跑到手机`/Library/MobileSubstrate/DynamicLibraries/`下找到自己编写的`xxx.dylib`, 复制到App包内。然后用上述方法对其重签名 安装到手机会发现，然并卵 编写好的插件效果一个都没有。
 
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/173718_e0463823_1355277.png "Snip20190120_2.png")
+![](../Images/iOSReverse/iOS签名机制之重签名/resign_image3.png)
 
 　　如上图，可以看到App启动后，弹框并没有出现！那这是为什么呢？动态库`Tweak_Test.dylib`已经在App包内，重签名也是好的，App也能正常运行，插件的效果呢？会不会是App的可执行文件根本就没执行动态库呢！
 
@@ -122,7 +122,7 @@
 
 - 通过 MachOView 查看
 
-	![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/173810_748f5e06_1355277.png "Snip20190120_3.png")
+	![](../Images/iOSReverse/iOS签名机制之重签名/resign_image4.png)
 
 　　通过上面两种方式都能看到Mach-O文件并没有加载我们所写的`Tweak_Test.dylib`动态库，所以也就不会出现动态库中的弹框。
 　　
@@ -180,7 +180,7 @@
 
 　　我们自己用`Theos`编写的`.dylib`文件都会依赖非系统的动态库`CydiaSubstrate`。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/173948_b567b738_1355277.png "Snip20190120_5.png")
+![](../Images/iOSReverse/iOS签名机制之重签名/resign_image5.png)
 
 　　从上图可以看出`Tweak_Test.dylib`依赖于`CydiaSubstrate`，那如果我们将注入了`Tweak_Test.dylib`的App装入到非越狱机上就会闪退。因为非越狱机上是没有`/Library/Frameworks/CydiaSubstrate.framework`这个目录，更没有`CydiaSubstrate`这个动态库的。
 
@@ -194,12 +194,12 @@
 	$ install_name_tool -change /Library/Frameworks/CydiaSubstrate.framework/CydiaSubstrate @loader_path/CydiaSubstrate Tweak_Test.dylib 
 	```
 	
-	![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/174036_0af30b3d_1355277.png "Snip20190120_6.png")
+	![](../Images/iOSReverse/iOS签名机制之重签名/resign_image6.png)
 	
 <br>	
 最后再对动态库和App重签名，安装到手机就能看到自己编写的插件
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0120/174109_6bf184ae_1355277.png "Snip20190120_7.png")
+![](../Images/iOSReverse/iOS签名机制之重签名/resign_image7.png)
 
 
 

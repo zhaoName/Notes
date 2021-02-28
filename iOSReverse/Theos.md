@@ -43,7 +43,7 @@ $ git clone --recursive https://github.com/theos/theos.git $THEOS
 
 `Tweak`默认会在执行`nic.pl`命令的目录下生成，那你先`cd`到你常用的目录，执行`nic.pl`选择 11 创建`Tweak`
 
-![](https://img-blog.csdnimg.cn/20181220213307573.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/Theos/theos_image1.png)
 
 - [Choose a Template]：选择你创建`theos`的类型(必填项)
 	
@@ -91,7 +91,7 @@ $ make install
 
 在我们编写Tweak程序中可能会用到图片资源，这时要在工程中根目录下创建一个`layout`文件夹，工程安装到手机时`layout`文件夹相当于手机的根目录。
 	
-![](https://img-blog.csdnimg.cn/20181220223458871.png)
+![](../Images/iOSReverse/Theos/theos_image2.png)
    
 安装之后就可以在手机的`/Library/Caches/`下找到工程中的图片,使用`UIImage`的方法获取图片
 

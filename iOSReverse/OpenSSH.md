@@ -21,11 +21,11 @@
 
 对于iOS8和iOS9的设备需要在`Cydia`中添加软件源`http://apt.saurik.com`，然后搜索并安装`OpenSSH`。
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181212224503664.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image1.png)
 
 对于 iOS10.0 ~ iOS10.2 的设备，则不用手动安装`OpenSSH`。因为`yalu`内置了一个轻量级的`OpenSSH`服务`dropbear`。在Cydia中添加软件源`http://cydia.ichitaso.com/test`，然后搜索并安装`dropbear`。
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181212224748525.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image2.png)
 
 
 ## 三、通过Wifi登录到iPhone
@@ -43,7 +43,7 @@ $ exit (或快捷键command + d)
 $ passwd
 ```
 		 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215155714823.png)
+![](../Images/iOSReverse/OpenSSH/openssh_image3.png)
 
 要想使用`OpenSSH`通信必须保证客户端和服务端的`SSH`的版本一致。 查看`SSH`版本也就是查看配置文件的Protocol字段值。
 
@@ -57,21 +57,21 @@ $ passwd
 	 
 当客户端向服务端发送连接请求时，服务端会将自己的公钥等信息发送给客户端，来确保所连接的服务端是没被更改过的。客服端在`~/.ssh/known_hosts`中保存服务端的公钥信息。
 
-![](https://img-blog.csdnimg.cn/20181213222146912.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image4.png)
 
 如果客户端并无服务器端的公钥信息，就会询问是否连接此服务器(如下图)。如果客户端已保存服务端的公钥信息并和发送过来的公钥信息一致，则直接连接。
 	
-![](https://img-blog.csdnimg.cn/20181213221705760.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image5.png)
 
 - 验证服务端是否将公钥发送给客户端，且客户端保存在`~/.ssh/known_hosts`。
 	
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215144605174.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image6.png)
 
 **注意：** iOS9设备的服务端公钥路径在`/etc/.ssh/ssh_host_key.pub`
 
 - 当出现如下错误时，提醒你服务端的身份信息发生改变(同一个ip但公钥信息不一样)，可能会被中间人攻击。
 
-![](https://img-blog.csdnimg.cn/20181215150053193.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image7.png)
 
 这时可以判断指纹信息是否是你想要链接的服务器，如果是且想要继续登录到iPhone 则有以下办法
 
@@ -85,17 +85,17 @@ SSH-2提供了基于密码的客户端验证(账号密码登录)和基于秘钥�
 
 - 流程
 	
-![](https://img-blog.csdnimg.cn/20181215152057105.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image8.png)
 
 首先客户端会生成一对公钥和私钥，然后将公钥信息拷贝到授权文件尾部。最后用私钥进行登录认证
 
 - 具体实现
 	
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215153439237.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image9.png)
 
 - 验证是否追加到尾部
 	
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215154542381.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxMjQ0NTk2,size_16,color_FFFFFF,t_70)
+![](../Images/iOSReverse/OpenSSH/openssh_image10.png)
 
 ## 四、通过USB登录到iPhone
 
@@ -105,7 +105,7 @@ Mac上有个服务程序`usbmuxd`（它会开机自动启动），可以将 Mac 
 
 客户端先登录到10010端口，这样客户端每次先往10010端口写数据，然后`usbmuxd`会将10010端口的数据通过USB转到22端口。
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215160705282.png)
+![](../Images/iOSReverse/OpenSSH/openssh_image11.png)
 
 ### 0x01 `usbmuxd`使用
 
@@ -120,7 +120,7 @@ $ cd ~/您保存usbmuxd路径/usbmuxd-1.0.8/python-client
 $ python tcprelay.py -t 22:2222
 ```		
 		
-![](https://img-blog.csdnimg.cn/20181215162556202.png)
+![](../Images/iOSReverse/OpenSSH/openssh_image12.png)
 
 **注意：** 要想保持端口映射状态，不能终止此命令行（如果要执行其他终端命令行，请新开一个终端界面）
 
@@ -130,7 +130,7 @@ $ python tcprelay.py -t 22:2222
 $ ssh root@localhost -p 2222
 ```
 
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20181215162522745.png)
+![](../Images/iOSReverse/OpenSSH/openssh_image13.png)
 
 
 ## 五、通过iproxy登录到iPhone

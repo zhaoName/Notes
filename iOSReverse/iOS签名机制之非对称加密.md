@@ -11,7 +11,7 @@
 
 信息的加密、解密使用同一个密钥的加密方式称为对称加密。常用的对称加密有`DES`、`3DES`、`AES`。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0107/153343_b89337b0_1355277.png "Snip20190107_1.png")
+![](../Images/iOSReverse/iOS签名机制之非对称加密/AsymmetricEncryption_image1.png)
 
 
 ### 0x01 DES
@@ -24,14 +24,14 @@
 
 - `DES`加密强度不够，能够被暴力破解，现在已很少使用。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0107/154034_40d7e9f3_1355277.png "Snip20190107_2.png")
+![](../Images/iOSReverse/iOS签名机制之非对称加密/AsymmetricEncryption_image2.png)
 
 
 ### 0x02 3DES
 
 - `3DES`和`DES`几乎一样，不同的是`3DES`使用了三个密钥，对数据进行三次`DES`加密。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0107/154611_7373fb06_1355277.png "Snip20190107_4.png")
+![](../Images/iOSReverse/iOS签名机制之非对称加密/AsymmetricEncryption_image3.png)
 
 
 - **注意** 若三个密钥是同一个，则`3DES`就变成了普通的`DES`。
@@ -61,7 +61,7 @@
 
 非对称加密(Asymmetric Cryptography): 信息的加密、解密使用不同密钥的加密方式, 也称为公钥加密(Public-key Cryptography)。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0107/162737_e40d0d1c_1355277.png "Snip20190107_5.png")
+![](../Images/iOSReverse/iOS签名机制之非对称加密/AsymmetricEncryption_image4.png)
 
 - 非对称加密的公钥和私钥一一对应，成对生成。
 
@@ -74,7 +74,7 @@
 
 ### 0x01 解决对称加密中密钥配送问题
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0107/211302_15381faa_1355277.png "Snip20190107_6.png")
+![](../Images/iOSReverse/iOS签名机制之非对称加密/AsymmetricEncryption_image5.png)
 
 
 1. 消息接受者生成公钥、私钥，并把公钥发送给消息发送者；
@@ -94,7 +94,7 @@
 
 - 混合密钥系统加密流程
 
-    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0107/214547_003c5afc_1355277.png "Snip20190107111.png")
+![](../Images/iOSReverse/iOS签名机制之非对称加密/AsymmetricEncryption_image6.png)
 
 
 1. 消息发送者要拥有消息接收者的公钥；
@@ -111,7 +111,7 @@
 
 - 混合密钥系统解密流程
 
-    ![输入图片说明](https://images.gitee.com/uploads/images/2019/0107/214654_fc0da9ae_1355277.png "Snip20190107_8.png")
+![](../Images/iOSReverse/iOS签名机制之非对称加密/AsymmetricEncryption_image7.png)
 
 
 1. 消息接收者先将加密后的会话密钥和加密后的消息分离；

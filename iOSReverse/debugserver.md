@@ -4,7 +4,7 @@
 
 `Xcode`内置调试器`lldb`将输入的指令通过`debugserver`传输给App，App执行指令后将反馈信息再通过`debugserver`传送给`lldb`。
 　　
-![](https://user-gold-cdn.xitu.io/2018/12/23/167da061cf611ade?w=777&h=255&f=png&s=35416)
+![](../Images/iOSReverse/debugserver/debugserver_image1.png)
 
 - 关于GCC、LLVM、GDB、LLDB
 
@@ -89,7 +89,7 @@ $ codesign -d --entitlements - debugserver
 
 - 将上面获取的原始权限保存到`debugserver.entitlements`中，并添加两个调试相关权限
 
-![](https://user-gold-cdn.xitu.io/2018/12/23/167da43164974a5b?w=503&h=336&f=png&s=71338)
+![](../Images/iOSReverse/debugserver/debugserver_image2.png)
 
 ### 0x03 对debugserver重签名
 

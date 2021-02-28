@@ -31,7 +31,7 @@ killall: Mach-O executable arm
 
 - 修改`main.m`文件返回值`return 0;`
 
-![](../Images/iOS命令行工具/CommandLine_image1.png)
+![](../Images/iOSReverse/iOS命令行工具/CommandLine_image1.png)
 
 
 ### 0x02 使用
@@ -114,12 +114,12 @@ iPhone:~ root# TestCommandLine -l -d
 $ ldid -e TestCommandLine > t.entitlements
 ```
 
-![](../Images/iOS命令行工具/CommandLine_image2.png)
+![](../Images/iOSReverse/iOS命令行工具/CommandLine_image2.png)
 
 
 - 在手机`/System/Library/CoreServices/`目录下找到`SpringBoard.app`文件夹，将其可执行文件复制到电脑，查看其权限，部分截图如下
 
-![](../Images/iOS命令行工具/CommandLine_image3.png)
+![](../Images/iOSReverse/iOS命令行工具/CommandLine_image3.png)
 
 
 - 将`SpringBoard`的权限重签给编译好的命令行
@@ -188,11 +188,11 @@ compile:
 
 - 在Xcode的`your project > target > Build Phases`中添加`Run Script`
 
-![](../Images/iOS命令行工具/CommandLine_image4.png)
+![](../Images/iOSReverse/iOS命令行工具/CommandLine_image4.png)
 
 - `Command+B`编译Xcode或用Terminal进入到当前目录执行`make`,就会在`TestCommandLine/Release/`下生成命令行
 
-![](../Images/iOS命令行工具/CommandLine_image5.png)
+![](../Images/iOSReverse/iOS命令行工具/CommandLine_image5.png)
 
 <br>
 

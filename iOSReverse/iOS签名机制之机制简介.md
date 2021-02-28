@@ -13,7 +13,7 @@
 
 苹果官方会生成一对公私钥，私钥自己保存，公钥在每台iPhone设备上。当我们上传App到AppStore时, 苹果会用私钥对其进行签名。用户下载App到手机上，iPhone设备上自带的公钥就会对App签名进行验证，若验证成功则保证此App是经过苹果后台验证的，数据没有被修改，App能正常安装到手机上。
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0117/094542_60a65256_1355277.png "Snip20190116_3.png")
+![](../Images/iOSReverse/iOS签名机制之机制简介/sign_image1.png)
 
 这样就到达了苹果的要求:保证安装的每一个App都是经过苹果官方允许的。
 
@@ -27,7 +27,7 @@
 
 在开发过程中，我们要随时安装App到手机，以便查看。但每次安装都要上传到App Store是不现实的。苹果又要保证对安装到手机上的App有绝对控制权，只凭上述方法显然是不行的。为解决这个问题，苹果提出**双重认证**解决方案，具体流程如下
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0117/162329_25c5b5eb_1355277.png "Snip20190117_4.png")
+![](../Images/iOSReverse/iOS签名机制之机制简介/sign_image2.png)
 
 - Mac电脑上生成一对公私钥，苹果后台生成一对公私钥并自己保存私钥，公钥保存在每台iPhone设备上；
 
@@ -47,7 +47,7 @@
 
 ### 0x03 最终流程
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0117/170111_15184dd7_1355277.png "Snip20190117_5.png")
+![](../Images/iOSReverse/iOS签名机制之机制简介/sign_image3.png)
 
 
 - Mac电脑上生成一对公私钥，苹果后台生成一对公私钥并自己保存私钥，公钥保存在每台iPhone设备上；
@@ -65,12 +65,11 @@
 
 ### 0x04 流程解释
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0117/175450_86012552_1355277.png "Snip20190117_8.png")
+![](../Images/iOSReverse/iOS签名机制之机制简介/sign_image4.png)
 
 - 官方安全机制
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0117/174709_76bf6cf1_1355277.png "Snip20190117_7.png")
-
+![](../Images/iOSReverse/iOS签名机制之机制简介/sign_image5.png)
 <br>
 
 参考: [iOS App签名的原理](http://blog.cnbang.net/tech/3386/)

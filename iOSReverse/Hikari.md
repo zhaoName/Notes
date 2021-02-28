@@ -104,7 +104,7 @@ void hikari_bcf(void){};
 
 	- strenc　　　字符串加密 (String Encryption)
 
-![输入图片说明](https://images.gitee.com/uploads/images/2019/0416/192816_ad625b0a_1355277.png "Screen Shot 2019-04-16 at 5.54.59 PM.png")
+![](../Images/iOSReverse/Hikari/Hikari_image1.png)
 
 ## 三、AppStore
 
@@ -115,7 +115,7 @@ void hikari_bcf(void){};
 
 - 使用`Hikari`编译器`archive`后，找到生成的`.xcarchive`文件，右键`show Package Contents`,里面的`info.plsit`中有`DefaultToolchainOverrideInfo`,删掉它，再上传
 
-![](https://images.gitee.com/uploads/images/2019/0416/192730_34ca6741_1355277.png "Snip20190416_1.png")
+![](../Images/iOSReverse/Hikari/Hikari_image2.png)
 
 <br>
 
