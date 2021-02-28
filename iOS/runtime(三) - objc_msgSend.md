@@ -577,7 +577,7 @@ int __forwarding__(void *frameStackPointer, int isStret) {
 2019-07-02 23:43:38.813649 runtime-isa[1271:481872] ----testPerson-----
 ```
 
-![](https://images.gitee.com/uploads/images/2019/0703/094811_98866de2_1355277.png "msgSend.png")
+![](../Images/iOS/runtime(三)-objc_msgSend/objcMsgSend_image0301.png)
 
 
 <br>

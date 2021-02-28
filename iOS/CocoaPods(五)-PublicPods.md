@@ -10,7 +10,7 @@
 
 在 GitHub 上以 ZZTestPublicPod 为例创建仓库
 
-![](../Images/CocoaPods/PublicPods_Images01.png)
+![](../Images/iOS/CocoaPods/PublicPods_Images01.png)
 
 使用 `pod lib create` 创建模板
 
@@ -91,7 +91,7 @@ end
 
 将你想要开源的代码放到 `./ZZTestPublicPod/Classes/` 目录下，然后执行 `$ pod install`
 
-![](../Images/CocoaPods/PublicPods_Images02.png)
+![](../Images/iOS/CocoaPods/PublicPods_Images02.png)
 
 这里只是测试，就随意放了两个文件。
 
@@ -293,7 +293,7 @@ Mangling symbols
 Building mangled framework
 ```
 
-![](../Images/CocoaPods/PublicPods_Images03.png)
+![](../Images/iOS/CocoaPods/PublicPods_Images03.png)
 
 如果你想要 .a 的静态库
 
@@ -311,15 +311,15 @@ pod package ZZTestPublicPod.podspec --library --force
 
 设置为静态库
 
-![](../Images/CocoaPods/PublicPods_Images04.png)
+![](../Images/iOS/CocoaPods/PublicPods_Images04.png)
 
 修改需要暴露的头文件
 
-![](../Images/CocoaPods/PublicPods_Images05.png)
+![](../Images/iOS/CocoaPods/PublicPods_Images05.png)
 
 Command + B 编译代码 然后将 ZZTestPublicPod.framework 放到`./ZZTestPublicPod/` 下
 
-![](../Images/CocoaPods/PublicPods_Images06.png)
+![](../Images/iOS/CocoaPods/PublicPods_Images06.png)
 
 修改`.podspec` 文件
 
@@ -340,7 +340,7 @@ end
 
 发布之后试用
 
-![](../Images/CocoaPods/PublicPods_Images07.png)
+![](../Images/iOS/CocoaPods/PublicPods_Images07.png)
 
 <br>
 

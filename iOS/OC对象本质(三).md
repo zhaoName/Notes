@@ -9,7 +9,7 @@
 
 `objc4`源码中`struct objc_class`的定义太复杂，我们需要的信息大概是这些
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0425/180815_3b90d2df_1355277.png "Snip20190425_6.png")
+![](../Images/iOS/OC对象本质/Object_image7.png)
 
 
 定义一个类似`struct objc_class`的结构体
@@ -217,11 +217,11 @@ int main(int argc, const char * argv[]) {
 
 - `class`对象中的`class_rw_t`信息
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0425/180241_9823a128_1355277.png "Snip20190425_4.png")
+![](../Images/iOS/OC对象本质/Object_image8.png)
 
 - `meta-class`对象中的`class_rw_t`信息
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0425/180311_d42c693b_1355277.png "Snip20190425_5.png")
+![](../Images/iOS/OC对象本质/Object_image9.png)
 
 
 **这样也就证明了`OC`中的属性信息、实例方法信息、协议信息、成员变量信息存储在`class`对象中；类方法存储在`meta-class`对象中。**

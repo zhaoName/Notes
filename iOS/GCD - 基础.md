@@ -250,7 +250,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
 
 异步 主队列不会开启新线程。
 
-![](https://images.gitee.com/uploads/images/2019/0718/140724_f4a5f9d9_1355277.png "GCD_images0101.png")
+![](../Images/iOS/GCD-Basic/GCD_images0101.png)
 
 ## 三、死锁
 
@@ -260,7 +260,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
 
 意思是：使用`dispatch_sync `函数往当前串行队列中添加任务，会卡住当前的串行队列也就是会产生死锁。
 
-![](https://images.gitee.com/uploads/images/2019/0718/140644_5db1d701_1355277.png "GCD_images0101.png")
+![](../Images/iOS/GCD-Basic/GCD_images0102.png)
 
 <br>
 

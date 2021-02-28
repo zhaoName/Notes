@@ -236,7 +236,7 @@ struct {
 
 - 成员变量都是有类型的，这个类型限制了成员变量的最大位宽，`:`后面的数字不能超过这个长度。
 
-![](https://images.gitee.com/uploads/images/2019/0624/005530_d334ea16_1355277.png "runtime_image0101.png")
+![](../Images/iOS/runtime(一)-isa/runtime_image0101.png)
 
 ### 0x02 位域成员的类型
 
@@ -270,7 +270,7 @@ NSLog(@"========%d", sizeof(test));
 2019-06-23 22:19:43.110143+0800 runtime-isa[2496:173094] ========2
 ```
 
-![](https://images.gitee.com/uploads/images/2019/0624/005620_871c733e_1355277.png "runtime_image0102.png")
+![](../Images/iOS/runtime(一)-isa/runtime_image0102.png)
 
 
 - 若位域结构所有成员的位宽之和 大于最大成员的类型长度时，位域结构的大小等于该类型长度的倍数。
@@ -295,7 +295,7 @@ NSLog(@"========%d", sizeof(test));
 
 `x1``x2``x3``x4`的位宽之和为`2+4+8+6 = 20`，大于`short`类型的长度16。所以在存储`x4`的时候会新开辟两个字节长度。 
 
-![](https://images.gitee.com/uploads/images/2019/0624/005653_66361168_1355277.png "runtime_image0103.png")
+![](../Images/iOS/runtime(一)-isa/runtime_image0103.png)
 
 
 ### 0x04 使用

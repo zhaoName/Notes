@@ -34,7 +34,7 @@ $ file Mach-O_file_name
 
 上一张网络上经典图
 
-![](../Images/iOS/Mach-O/mach-o_images0101.png)
+![](../Images/iOSReverse/Mach-O/mach-o_images0101.png)
 
 - `Headers`：头部 存储 Mach-O 元信息，如架构、CPU类型等
 
@@ -64,7 +64,7 @@ MH_MAGIC_64   ARM64        ALL  0x00     EXECUTE    40       4872   NOUNDEFS DYL
 
 MachOView 是一个分析 Mach-O 文件的图形界面工具,你可以自己去`GitHub`上搜索
 
-![](../Images/iOS/Mach-O/mach-o_images0102.png)
+![](../Images/iOSReverse/Mach-O/mach-o_images0102.png)
 
 
 ### 0x02 `mach_header_64 ` 结构

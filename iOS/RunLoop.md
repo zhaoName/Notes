@@ -144,7 +144,7 @@ CFRunLoopRef CFRunLoopGetCurrent(void) {
 
 其中`CFRunLoopModeRef`类并没有对外暴露，只是通过`CFRunLoopRef`的接口进行了封装。他们的关系如下:
 
-![](https://images.gitee.com/uploads/images/2019/0710/172810_bbb6752a_1355277.png "RunLoop_image0101.png")
+![](../Images/iOS/RunLoop/RunLoop_image0101.png)
 
 一个`RunLoop` 包含若干个`Mode `，每个`Mode ` 又包含若干个`Source/Timer/Observer`。每次调用`RunLoop` 的主函数时，只能指定其中一个`Mode `，这个`Mode `被称作 `CurrentMode`。如果需要切换`Mode`，只能退出`Loop `，再重新指定一个`Mode ` 进入。这样做主要是为了分隔开不同组的`Source/Timer/Observer`，让其互不影响。
 
@@ -324,12 +324,12 @@ CFRelease(ob);
 
 根据苹果在[文档](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/RunLoopManagement/RunLoopManagement.html#//apple_ref/doc/uid/10000057i-CH16-SW23)里的说明，RunLoop 内部的逻辑大致如下:
 
-![](https://images.gitee.com/uploads/images/2019/0711/174251_856722fc_1355277.png "RunLoop_image0102.png")
+![](../Images/iOS/RunLoop/RunLoop_image0102.png)
 
 
 虽然我们可以在苹果开源的代码中查看`RunLoop`源码，但不知道该从哪入手。有个取巧的办法：在`viewDidLoad`中下断点，查看函数调用栈
 
-![](https://images.gitee.com/uploads/images/2019/0711/234556_f8b0f95e_1355277.png "RunLoop_image0103.png")
+![](../Images/iOS/RunLoop/RunLoop_image0103.png)
 
 
 可以看到`CoreFoundation`中`RunLoop`的入口函数是`CFRunLoopRunSpecific `。那我们就可以从这里入手查看其源码。

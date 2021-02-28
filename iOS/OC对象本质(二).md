@@ -84,7 +84,7 @@ NSLog(@"类对象:%p %p", obj1Class, cls);
 
 `OC`调用的方法仅限于本类时
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0424/100403_2e6f721f_1355277.png "Snip20190424_1.png")
+![](../Images/iOS/OC对象本质/Object_image2.png)
 
 - `instance`的`isa`指向`class`对象，`class `对象的`isa`指向`meta-class`对象
 
@@ -97,11 +97,11 @@ NSLog(@"类对象:%p %p", obj1Class, cls);
 
 `OC`调用父类方法时
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0424/102107_6fa60ad9_1355277.png "Snip20190424_6.png")
+![](../Images/iOS/OC对象本质/Object_image3.png)
 
 - 调用父类的对象方法时，先通过`Student`的`instance`对象的`isa`找到`Student`的`class`对象，再通过`Student`的`class`对象的`superclass`找到父类`Person`的`class`对象，调用对象方法。以此类推。
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0424/101246_e3a1b5f2_1355277.png "Snip20190424_5.png")
+![](../Images/iOS/OC对象本质/Object_image4.png)
 
 - 调用父类的类方法时，先通过`Student`的`class`对象的`isa`找到`Student`的`meta-class`对象，再通过`Student`的`meta-class`的`superclass`找到父类`Person`的`meta-class`对象，调用类方法。以此类推。
 
@@ -110,7 +110,7 @@ NSLog(@"类对象:%p %p", obj1Class, cls);
 
 上一张网上流传的很经典的图
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0424/100531_bf01a068_1355277.png "class.png")
+![](../Images/iOS/OC对象本质/Object_image5.png)
 
 - `instance`对象的`isa`指向`class`对象，`class `对象的`isa`指向`meta-class`对象，`meta-class`对象的`isa`指向基类的`meta-class`，基类的`meta-class`对象的`isa`指向它自己
 
@@ -314,7 +314,7 @@ NSLog(@"%p", [ZZPerson class]);
 
 语言总是苍白无力，解释起来有点绕人，上图
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0424/155049_16c5777f_1355277.png "Snip20190424_2.png")
+![](../Images/iOS/OC对象本质/Object_image6.png)
 
 
 **相关内容**

@@ -17,7 +17,7 @@
 所有公开的`spec`都在`https://github.com/CocoaPods/Specs`中，当我们使用`CocoaPods`时他会被`clone`到`~/.cocoapods/repos/`目录下。
 
 
-![](../Images/CocoaPods/spec_image01.png)
+![](../Images/iOS/CocoaPods/spec_image01.png)
 
 
 ## 二、spec
@@ -327,7 +327,7 @@ s.requires_arc = false
 s.requires_arc = 'ZZTestPublicPod/Classes/arc/*'
 ```
 
-![](../Images/CocoaPods/spec_image02.png)
+![](../Images/iOS/CocoaPods/spec_image02.png)
 
 
 <br>

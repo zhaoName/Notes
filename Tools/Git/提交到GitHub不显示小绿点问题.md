@@ -21,11 +21,11 @@ $ git config user.email
 
 你会看到终端上没有任何输出，这就说明你没配置。然后你提交到 GitHub 上的记录都是这样灰色的，没有显示你的 GitHub 账号对应的用户名和邮箱。
 
-![](../Images/Git/GreenDot/GreenDot_images01.png)
+![](../../Images/Tools/Git/GreenDot/GreenDot_images01.png)
 
 再用 git log 查看下 commit 记录,你会发现 commit 记录的用户名和邮箱是电脑默认的
 
-![](../Images/Git/GreenDot/GreenDot_images02.png)
+![](../../Images/Tools/Git/GreenDot/GreenDot_images02.png)
 
 
 <br>
@@ -88,7 +88,7 @@ Ref 'refs/heads/master' was rewritten
 
 然后你在去 git log 打印 commit 记录会发现用户名和邮箱已经修改过来
 
-![](../Images/Git/GreenDot/GreenDot_images03.png)
+![](../../Images/Tools/Git/GreenDot/GreenDot_images03.png)
 
 
 这样你只是把本地的 commit 记录的用户和邮箱修改过来了，但远程 GitHub 并没有修改。而且此时你有新 push 会报错
@@ -117,7 +117,7 @@ $ git push -u origin master -f
 
 修改后的效果：
 
-![](../Images/Git/GreenDot/GreenDot_images04.png)
+![](../../Images/Tools/Git/GreenDot/GreenDot_images04.png)
 
 
 - push 前先 pull
@@ -131,7 +131,7 @@ $ git push -u origin master
 
 修改后的效果：
 
-![](../Images/Git/GreenDot/GreenDot_images05.png)
+![](../../Images/Tools/Git/GreenDot/GreenDot_images05.png)
 
 
 <br>

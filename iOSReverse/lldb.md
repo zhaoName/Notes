@@ -89,7 +89,7 @@
 	(lldb) expression self.view.backgroundColor = [UIColor redColor]
 	``` 
 
-	![输入图片说明](https://images.gitee.com/uploads/images/2018/1227/212759_b8c974c4_1355277.png "Snip20181227_4.png")
+	![](../Images/iOSReverse/lldb/lldb_image1.png)
 
 
 ### thread

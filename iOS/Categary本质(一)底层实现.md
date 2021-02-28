@@ -60,11 +60,11 @@ void *memmove(void *dest, const void *source, size_t count)
 
 **下面只讨论"右复制",（"左复制"肯定不会出现数据覆盖的情况）**
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0428/115753_d2649005_1355277.png "Snip20190428_15.png")
+![](../Images/iOS/Categary本质(一)/AssociationObject_image0101.png)
 
 - `memcpy()`是从前往后一个一个复制内存数据，所以当出现区域重叠时，会导致本身数据更改，没有达到想要的效果
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0428/115807_0170a4e9_1355277.png "Snip20190428_16.png")
+![](../Images/iOS/Categary本质(一)/AssociationObject_image0102.png)
 
 - `memmove()`是从后往前一个一个复制内存数据，当出现区域重叠时，优先复制重叠区域的数据，不会出现数据覆盖的情况。
 
@@ -471,7 +471,7 @@ void attachLists(List* const * addedLists, uint32_t addedCount)
 
 文件编译顺序在下图位置中调整
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0428/135023_e1dd80cd_1355277.png "Snip20190428_17.png")
+![](../Images/iOS/Categary本质(一)/AssociationObject_image0103.png)
 
 
 **相关内容**

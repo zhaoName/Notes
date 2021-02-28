@@ -153,7 +153,7 @@ static void __main_block_dispose_0(struct __main_block_impl_0*src)
 
 那`__main_block_copy_0 `和`__main_block_dispose_0 `函数什么时候调用呢？
 
-![](../Images/Block本质(二)/block_image0201.png)
+![](../Images/iOS/Block本质(二)/block_image0201.png)
 
 
 **总结: 当`Block `内部访问了对象类型的`auto `变量时**
@@ -412,7 +412,7 @@ __Block_byref_age_0 age = {(void*)0,(__Block_byref_age_0 *)&age, 0, sizeof(__Blo
 
 可以看到`__block`修饰的变量会变成`__Block_byref_age_0 `类型的结构体，其内部也有个成员变量`age`。
 
-![](../Images/Block本质(二)/block_image0202.png)
+![](../Images/iOS/Block本质(二)/block_image0202.png)
 
 - 下面来解释下为什么能在`Block`内部修改带有`__block `修饰符的变量？
 
@@ -481,7 +481,7 @@ ZNBlock block_sec = &__main_block_impl_1(__main_block_func_1, &__main_block_desc
 
 若`Block`在栈上，当超出其作用域后，`Block`和`__block`变量都会被释放。
 
-![](../Images/Block本质(二)/block_image0203.png)
+![](../Images/iOS/Block本质(二)/block_image0203.png)
 
 - `Block`在堆上
 
@@ -513,11 +513,11 @@ static struct __main_block_desc_0 {
 
 当`Block`被拷贝到堆上时，会调用`__main_block_copy_0 `函数，`__main_block_copy_0 `函数内部调用`_Block_object_assign `函数对`__block`进行强引用。
 
-![](../Images/Block本质(二)/block_image0204.png)
+![](../Images/iOS/Block本质(二)/block_image0204.png)
 
 当`Block`从堆上销毁时，会调用`__main_block_dispose_0 `函数，`__main_block_dispose_0 `函数内部调用`_Block_object_dispose `函数，自动释放`__block`变量。
 
-![](../Images/Block本质(二)/block_image0205.png)
+![](../Images/iOS/Block本质(二)/block_image0205.png)
 
 
 - 捕获对象类型的`auto `变量和`__block `变量的区别
@@ -532,12 +532,12 @@ static struct __main_block_desc_0 {
 `__block`变量从栈上复制到堆上时，会将成员`__forwarding `的值替换成复制到目标堆上的`__block`变量的值。这样无论`__block`在栈上还是在堆上都能正确的访问该变量。
 
 
-![](../Images/Block本质(二)/block_image0206.png)
+![](../Images/iOS/Block本质(二)/block_image0206.png)
 
 
 在`MRC`环境下测试：
 
-![](../Images/Block本质(二)/block_image0207.png)
+![](../Images/iOS/Block本质(二)/block_image0207.png)
 
 
 
@@ -666,20 +666,20 @@ struct __Block_byref_per_0 {
 
 对`__block`修饰的对象类型的内存管理 大致如下图
 
-![](../Images/Block本质(二)/block_image0208.png)
+![](../Images/iOS/Block本质(二)/block_image0208.png)
 
 - 当强引用`per `时
 
-![](../Images/Block本质(二)/block_image0209.png)
+![](../Images/iOS/Block本质(二)/block_image0209.png)
 
 - 当弱引用`per `时
 
-![](../Images/Block本质(二)/block_image0210.png)
+![](../Images/iOS/Block本质(二)/block_image0210.png)
 
 
 但在`MRC`环境下，`Block`永远不会强引用`__block`修饰的对象类型变量。
 
-![](../Images/Block本质(二)/block_image0211.png)
+![](../Images/iOS/Block本质(二)/block_image0211.png)
 
 这也是在`MRC`环境下，`__block`能解决循环引用的原因！
 
@@ -731,7 +731,7 @@ int main(int argc, const char * argv[]) {
 
 `ZNBlock`是对象`per`的成员，被`per`持有。在`ZNBlock`中访问了成员变量`name`，由上篇文章可知，`ZNBlock`内部会捕获`self (per)`变量，并持有它。`per`持有`ZNBlock`， `ZNBlock`持有`per`就导致了循环引用。
 
-![](../Images/Block本质(二)/block_image0212.png)
+![](../Images/iOS/Block本质(二)/block_image0212.png)
 
 
 ### 0x01 `__weak ` 
@@ -794,11 +794,11 @@ int main(int argc, const char * argv[]) {
 
 当没有在`test`方法中执行`self.block();`时，`ZNPerson`对象持有`ZNBlock`， `ZNBlock`内部持有`__block`变量，`__block`变量又持有`ZNPerson`对象。这样就造成循环引用。
 
-![](../Images/Block本质(二)/block_image0213.png)
+![](../Images/iOS/Block本质(二)/block_image0213.png)
 
 当在`test`方法中执行`self.block();`时，`weakSelf = nil`， `__block`变量对`ZNPerson`对象的强引用失效。那就不会构成循环引用，`ZNPerson`就能正常释放。
 
-![](../Images/Block本质(二)/block_image0214.png)
+![](../Images/iOS/Block本质(二)/block_image0214.png)
 
 
 **总结**

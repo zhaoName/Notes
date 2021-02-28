@@ -9,7 +9,7 @@
 
 先在GitHub上创建一个仓库当做私有`Spec Repo`
 
-![](../Images/CocoaPods/PrivatePods_images01.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images01.png)
 
 
 ### 0x02 添加本地的私有 Spec Repo
@@ -54,7 +54,7 @@ ZZPrivateSpecs
 2 repos
 ```
 
-![](../Images/CocoaPods/PrivatePods_images02.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images02.png)
 
 ### 0x03 验证 repo
 
@@ -77,7 +77,7 @@ All the specs passed validation.
 
 在 GitHub 上以`ZZBase`为例创建仓库
 
-![](../Images/CocoaPods/PrivatePods_images03.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images03.png)
 
 
 ### 0x01 创建模板库
@@ -148,7 +148,7 @@ To learn more about creating a new pod, see `https://guides.cocoapods.org/making
 
 到此会自动打开`Xcode`，创建的模板库目录结构如下图
 
-![](../Images/CocoaPods/PrivatePods_images04.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images04.png)
 
 
 将`UIColor+Add`放入到`Classes`文件夹，在执行`pod install`
@@ -169,7 +169,7 @@ Pod installation complete! There is 1 dependency from the Podfile and 1 total po
 
 这样我们在`Classes`文件加入的代码就自动安装到`Example `工程的`Pods`中。
 
-![](../Images/CocoaPods/PrivatePods_images05.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images05.png)
 
 
 ### 0x02 修改`.podspec`文件
@@ -317,11 +317,11 @@ Pushing the `ZZPrivateSpecs' repo
 
 我们再到 GitHub 上查看`ZZPrivateSpecs`会发现多一个文件夹`ZZBase/0.1.0`。
 
-![](../Images/CocoaPods/PrivatePods_images06.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images06.png)
 
 同样在本地的私有`spec repo`中也能看到`ZZBase`索引库。
 
-![](../Images/CocoaPods/PrivatePods_images07.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images07.png)
 
 我们还可以`pod search`来测试下。
 
@@ -382,7 +382,7 @@ Pod installation complete! There is 1 dependency from the Podfile and 1 total po
 
 这样我们就成功的将`ZZBase`安装到`TestZZBase`工程中。
 
-![](../Images/CocoaPods/PrivatePods_images08.png)
+![](../Images/iOS/CocoaPods/PrivatePods_images08.png)
 
 ## 五、坑
 

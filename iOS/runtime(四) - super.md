@@ -33,7 +33,7 @@
 
 `OC`中方法调用默认有两个参数：方法调用者和方法名(`_cmd`)
 
-![](https://images.gitee.com/uploads/images/2019/0704/235659_f2684fb3_1355277.png "runtime_image0401.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0401.png)
 
 - 局部变量
 
@@ -44,7 +44,7 @@
 
 `a b c d`四个局部变量依次存储在连续的栈空间上，先声明的局部变量存储在高地址。
 
-![](https://images.gitee.com/uploads/images/2019/0705/002523_cec83433_1355277.png "runtime_image0402.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0402.png)
 
 
 ## 二、`super`调方法本质
@@ -188,7 +188,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 }
 ```
 
-![](https://images.gitee.com/uploads/images/2019/0704/175543_cf454f46_1355277.png "runtime_image0401.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0403.png)
 
 在`test`方法中只有`[super test]`方法调用，也就是截图上的`bl 0x100016afc`，但其后标记的是跳转到`objc_msgSendSuper2`，而不是`objc_msgSendSuper`。这是为啥呢？
 
@@ -196,7 +196,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 我们还可用另外一种方法验证`[super xxx]`底层实现调用的`objc_msgSendSuper2`函数，而不是`objc_msgSendSuper`函数。`Xcode`中选中要调成汇编模式的文件， `Product -> Perform Action -> Assemble "xxxx"`，将代码转成汇编
 
-![](https://images.gitee.com/uploads/images/2019/0705/102235_dcb3409a_1355277.png "runtime_image0404.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0404.png)
 
 ```
 ...
@@ -272,12 +272,12 @@ END_ENTRY _objc_msgSendSuper2
 
 局部变量`arg1`、`arg2`、`a`在栈上的内存分配大致如下
 
-![](https://images.gitee.com/uploads/images/2019/0705/100930_9a9c6dbd_1355277.png "runtime_image0405.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0405.png)
 
 
 在`NSLog`出下断点，用`lldb`查看三个局部变量的值
 
-![](https://images.gitee.com/uploads/images/2019/0705/101631_55e91342_1355277.png "runtime_image0406.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0406.png)
 
 这也就证明了`[super xxx]`在底层调用的是`objc_msgSendSuper2`。
 
@@ -411,11 +411,11 @@ struct ZNPerson_IMPL {
 
 方法调用是由`per`对象的`isa`指针找到对应的`class`对象，再找到存储在`class`对象中的实例方法`test`进行调用。而取成员变量的值，就是找`ZNPerson_IMPL`结构体的成员。如我们取`_name`的值，其实就是找紧跟着`isa`后的8个字节中存储的内容。
 
-![](https://images.gitee.com/uploads/images/2019/0705/163242_28002876_1355277.png "runtime_image0407.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0407.png)
 
 方法调用我们也可以认为只要找到`isa`指针就可以找到`class`对象，进行方法调用。方法调用和`_name`是没关系的。而`per`中存储的是结构体指针也就是`isa`的地址值，那上图我们可以简化下
 
-![](https://images.gitee.com/uploads/images/2019/0705/170157_fe7daac6_1355277.png "runtime_image0408.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0408.png)
 
 
 ### 0x02 为什么`[(__bridge id)obj test]`方法能调用成功 ？
@@ -427,7 +427,7 @@ id cls = [ZNPerson class];
 void *obj = &cls;
 ```
 
-![](https://images.gitee.com/uploads/images/2019/0705/171251_a85f56a1_1355277.png "runtime_image0409.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0409.png)
 
 通过`obj`(相当于`per`)找到了`cls`(相当于`isa`)进而找到了类对象，然后找到存储在类对象中的`test`方法。
 
@@ -437,7 +437,7 @@ void *obj = &cls;
 前面说过方法中的局部变量存储在连续的栈空间上，先声明的局部变量在高地址。
 
 
-![](https://images.gitee.com/uploads/images/2019/0705/172547_80050077_1355277.png "runtime_image0410.png")
+![](../Images/iOS/runtime(四)-super/runtime_image0410.png)
 
 
 `obj`相当于`per`，`cls`相当于`isa`。而`_name`和`isa`组成一个结构体，所以紧跟着`isa`后的8个字节就是`_name`。在这里我们可以认为紧跟着`cls`后的8个字节是`_name`。所以我们取`self.name`的值就是取紧跟着`cls`后的8个字节存储的值，也就是`reveiver`。这也就解释了为什么`self.name`的值是`<ViewController: 0x0100305810>`。

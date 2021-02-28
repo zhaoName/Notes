@@ -22,7 +22,7 @@ NSNumber *number = [NSNumber numberWithInt:10];
 
 它的内存结构大致如下： 
 
-![](https://images.gitee.com/uploads/images/2019/0724/154921_72f8c2ad_1355277.png "TaggedPointer_image0101.png")
+![](../Images/iOS/TaggedPointer/TaggedPointer_image0101.png)
 
 首先栈上有个局部变量`number `，它是指针类型占8个字节。`number `指向堆区的一块内存，是个 OC 对象，由以前知识可知一个 OC 对象最少占16个字节。也就是说将一个整形数字10，包装成`NSNumber`对象最少要用24个字节。再加上还要管理对象的声明周期，这样就很浪费内存和效率。
 
@@ -52,9 +52,9 @@ NSLog(@"%@ %@", str1.class, str3.class);
 
 那我们要怎么才能辨别一个指针是否是 Tagged Pointer 呢 ？WWDC2013 的演讲稿给出解释
 
-![](https://images.gitee.com/uploads/images/2019/0724/222824_0fb9c306_1355277.png "TaggedPointer_image0102.png")
+![](../Images/iOS/TaggedPointer/TaggedPointer_image0102.png)
 
-![](https://images.gitee.com/uploads/images/2019/0724/222838_b6fa98fd_1355277.png "TaggedPointer_image0103.png")
+![](../Images/iOS/TaggedPointer/TaggedPointer_image0103.png)
 
 
 但这是2013年的演讲稿，所以只能参考，最新的判断标准在`runtime`源码中给出答案。
@@ -106,7 +106,7 @@ for (int i=0; i<1000; i++) {
 
 运行结果是程序闪退，报错坏指针访问！这是为什么呢？
 
-![](https://images.gitee.com/uploads/images/2019/0724/232350_36085f8a_1355277.png "TaggedPointer_image0104.png")
+![](../Images/iOS/TaggedPointer/TaggedPointer_image0104.png)
 
 首先可以确定一点的是`[NSString stringWithFormat:@"abcsafojoefflwmflkwf"]`是一个普通的 OC 对象，且`self.name = xxx`等同于`[self setName:xxx]`。属性的`setter`方法在 MRC 环境下会转成如下代码。
 

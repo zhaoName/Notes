@@ -112,7 +112,7 @@ NSLog(@"malloc_size:%zd", malloc_size((__bridge const void *)(obj)));
 
 先让程序进入断点调试状态，然后使用Xcode自带工具`View Memory`查看内存，`Debug -> Debug Workflow -> View Memory`
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0429/091631_01e95c34_1355277.png "Object_image1.png")
+![](../Images/iOS/OC对象本质/Object_image1.png)
 
 **总结：**从上可知`NSObject`类在`alloc`时，系统会给其分配16个字节大小的内存空间，但实际只用到8个字节，即实例对象中`isa`指针所占用的内存。
 
@@ -155,8 +155,7 @@ struct Person2 {
 	
 - `OC`中`#pragma pack`的值默认是8
 
-![](https://images.gitee.com/uploads/images/2019/0623/142934_fc9c735e_1355277.png "Object_image_add1.png")
-
+![](../Images/iOS/OC对象本质/Object_image_add1.png)
 
 下面解释为啥同样的结构体，成员变放置的位置不同会导致其占用内存不一样。
 

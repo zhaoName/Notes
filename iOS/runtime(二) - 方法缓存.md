@@ -5,7 +5,7 @@
 
 在[OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)我们知道实例方法存储在`class`对象中，类方法存储在`meta-class`对象中。当调用实例方法时，先通过实例对象的`isa`找到`class`对象，再找到存储在`class`对象中的对象方法进行调用。若当前`class`对象中没找到对应的实例方法，会一层层遍历他的父类`class`对象(类方法也一样)。如下图
 
-![](https://gitee.com/uploads/images/2019/0424/100531_bf01a068_1355277.png "class.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0201.png)
 
 其实这样说有点问题，苹果为了提高方法调用速度在`struct objc_class`结构体中添加一个方法缓存成员`cache_t cache`。调用过的方法都会缓存在这个结构体中(结构体数组未扩容，扩容会清空缓存)，下次调用会优先查找缓存，若找到就直接调用，不会再去`class`对象中或父类的`class`对象中遍历查找方法调用。
 
@@ -17,15 +17,15 @@
 
 直接用[OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)中的图片展示`Class`的结构
 
-![](https://gitee.com/uploads/images/2019/0425/180815_3b90d2df_1355277.png "Snip20190425_6.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0202.png)
 
 `class_to_t`中的`baseMethodList`、`baseProtocols`、`ivars`、`baseProperties`是一维数组，是只读的，包含了类的初始内容。
 
-![](https://images.gitee.com/uploads/images/2019/0627/231604_b11bed08_1355277.png "runtime_image0203.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0203.png)
 
 `class_rw_t`中的`methods`、`properties`、`protocols`是二维数组，是可读可写的，包含了类的初始内容、分类的内容。
 
-![](https://images.gitee.com/uploads/images/2019/0627/231636_daac59bb_1355277.png "runtime_image0204.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0204.png)
 
 我们来从源码来看两者之间的关系
 
@@ -179,7 +179,7 @@ NSLog(@"testGirl方法地址：%p", meth->method_imp);
 
 在`ViewController `中的`testGirl`方法中下断点，在`Xcode`的`Debug -> Debug Workflow -> Always Show Disassembly`模式下查看方法的起始地址。
 
-![](https://images.gitee.com/uploads/images/2019/0627/231701_57f8aa5b_1355277.png "runtime_image0205.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0205.png)
 
 ## 三、`cache_t`
 
@@ -367,13 +367,13 @@ mj_objc_class *girlClass = (__bridge mj_objc_class *)[ZNGirlFriend class];
 [girl testGirlFriend];
 ```
 
-![](https://images.gitee.com/uploads/images/2019/0627/231952_a078bc13_1355277.png "runtime_image0206.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0206.png)
 
-![](https://images.gitee.com/uploads/images/2019/0627/232005_76d8a5d9_1355277.png "runtime_image0207.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0207.png)
 
-![](https://images.gitee.com/uploads/images/2019/0627/232019_622c2f9b_1355277.png "runtime_image0208.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0208.png)
 
-![](https://images.gitee.com/uploads/images/2019/0627/232030_91b1610e_1355277.png "runtime_image0209.png")
+![](../Images/iOS/runtime(二)-MethodCache/runtime_image0209.png)
 
 
 遍历`_buckets`，并用上面讲解的散列表算法取出特定的方法缓存

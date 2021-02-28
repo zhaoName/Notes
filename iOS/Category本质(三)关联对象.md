@@ -70,7 +70,7 @@ static const char *NameKey = "NameKey";
 
 `objc_AssociationPolicy`指的是使用什么策略关联对象。相当于声明属性时使用`strong`之类的修饰符。
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0428/095326_c30fb90c_1355277.png "Snip20190428_9.png")
+![](../Images/iOS/Category本质(三)/AssociationObject_image0301.png)
 
 ## 二、原理
 
@@ -151,7 +151,7 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 用一幅图来解释
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0428/095343_2168d977_1355277.png "Snip20190428_8.png")
+![](../Images/iOS/Category本质(三)/AssociationObject_image0302.png)
 
 
 - `AssociationsHashMap`和`ObjectAssociationMap`可以看做`OC`中的字典。
@@ -165,7 +165,7 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 关联对象没有`weak`效果，也就是说当关联对象的`value`所指向的内存被释放，不能将其置为`nil`，再去获取`value`的值就会造成坏内存访问(野指针)。
 
-![输入图片说明](https://gitee.com/uploads/images/2019/0428/104847_c59036c5_1355277.png "Snip20190428_11.png")
+![](../Images/iOS/Category本质(三)/AssociationObject_image0303.png)
 
 ## 总结
 

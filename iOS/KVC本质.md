@@ -44,6 +44,7 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 2019-04-17 23:08:00.993126+0800 KVC[41445:1582018] KVC改变属性值:100 123456
 ```
 
+<br>
 
 ## 二、KCV设置原理
 
@@ -62,22 +63,22 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 `setValue:forKey:`原理
 
-![](../Images/KVC本质/kvc_image1.png)
+![](../Images/iOS/KVC本质/kvc_image1.png)
 
 - 先通过`key`顺序查找`setKey:`和`_setKey:`方法
 
 优先查找`setKey:`方法
 
-![](../Images/KVC本质/kvc_image2.png)
+![](../Images/iOS/KVC本质/kvc_image2.png)
 
 `setKey:`方法找不到会`_setKey:`方法
 
-![](../Images/KVC本质/kvc_image3.png)
+![](../Images/iOS/KVC本质/kvc_image3.png)
 
 
 - 若`setKey:`和`_setKey:`都没找到,且`accessInstanceVariablesDirectly`返回为`NO`，则程序报`setValue:forUndefinedKey:`错误崩溃
 
-![](../Images/KVC本质/kvc_image4.png)
+![](../Images/iOS/KVC本质/kvc_image4.png)
 
 
 - 若`accessInstanceVariablesDirectly`返回为`YES`,则顺序查找`_key` `_isKey` `key` `isKey`四个成员变量
@@ -85,25 +86,27 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 `_age`成员
 
-![](../Images/KVC本质/kvc_image5.png)
+![](../Images/iOS/KVC本质/kvc_image5.png)
 
 
 `_isAge`成员
 
-![](../Images/KVC本质/kvc_image6.png)
+![](../Images/iOS/KVC本质/kvc_image6.png)
 
 
 `age`成员
 
-![](../Images/KVC本质/kvc_image7.png)
+![](../Images/iOS/KVC本质/kvc_image7.png)
 
 `isAge`成员
 
-![](../Images/KVC本质/kvc_image8.png)
+![](../Images/iOS/KVC本质/kvc_image8.png)
 
 - 若四个成员变量都没找到，则程序报`setValue:forUndefinedKey:`错误崩溃
 
-![](../Images/KVC本质/kvc_image9.png)
+![](../Images/iOS/KVC本质/kvc_image9.png)
+
+<br>
 
 ## 三、KVC取值原理
 
@@ -139,7 +142,7 @@ The default implementation of valueForKey:, given a key parameter as input, carr
 
 `valueForKey:`原理
 
-![](../Images/KVC本质/kvc_image10.png)
+![](../Images/iOS/KVC本质/kvc_image10.png)
 
 
 - 优先按照`getKey` `key` `isKey` `_key`顺序查找方法，设置新值
@@ -149,6 +152,8 @@ The default implementation of valueForKey:, given a key parameter as input, carr
 - 若`accessInstanceVariablesDirectly`的返回值为`YES`,则按顺序查找`_key` `_isKey` `key` `isKey`成员变量，找到直接取值
 
 - 若四个成员变量都没找到则调用`valueForUndefinedKey:`方法抛出异常
+
+<br>
 
 ## 四、面试题
 
