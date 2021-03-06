@@ -98,3 +98,11 @@ TCP 校验和与 IP 校验和的区别是：TCP 和 UDP 检验和覆盖首部和
 TCP 校验和和 UDP 校验和的区别是：TCP 的检验和是必需的，而 UDP 的检验和是可选的；TCP 伪首部中 Protocol 字段固定是 6， TCP 伪首部中 Protocol 字段固定是 17。 
 
 <br>
+
+参考:
+
+- [Transmission Control Protocol](https://en.wikipedia.org/wiki/Transmission_Control_Protocol)
+
+- 计算机网络第 7 版 - 谢希仁
+
+<br>
