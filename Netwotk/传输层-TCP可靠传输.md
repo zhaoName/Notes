@@ -127,13 +127,20 @@ A 发送分组 M1，发送完就暂停发送，等待 B 的确认。B 收到 M1 
 
 ![](../Images/Network/ReliableTransmission/ReliableTransmission_images08.png)
 
-![](../Images/Network/ReliableTransmission/ReliableTransmission_images09.png)
-
 ### 0x02 选择确认 SACK 
 
 TCP 通信时，如果发送序列中间某个数据包丢失，TCP 会通过重传最后确认的分组后续的分组，这样原先已经被正确传输的分组也可能重复发送，降低了 TCP 性能。为改善此情况发展处 SACK (Selective Acknowledgment) 技术，使 TCP 指重传发送丢失的包，不用发送后续的所有分组，而提供相应机制使接收方能告诉发送方哪些数据丢失，哪些数据提前收到。
 
-如上图中发送 5、6、7、8 四个分组时，接收方只收到 5、6、8三个分组，那接收方的确认中包含序号 601 和已经收到的第 8 个分组的边界信息。
+如上图中发送 5、6、7、8 四个分组时，接收方只收到 5、6、8 三个分组，那接收方的确认中包含序号 601 和已经收到的第 8 个分组的边界信息。
+
+![](../Images/Network/ReliableTransmission/ReliableTransmission_images09.png)
+
+- Kind：占 1 个字节，值为 5 表示 SACK 选项
+- Length：占一个字节，表明 SACK 选项一共占用多少字节
+- Left Edge：占 4 字节，左边界
+- Right Edge：占 4 字节，右边界
+
+抓包查看带有 SACK 选项的数据包格式
 
 ![](../Images/Network/ReliableTransmission/ReliableTransmission_images10.png)
 
