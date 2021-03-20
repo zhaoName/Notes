@@ -110,8 +110,9 @@ domain_name_server (ip_mult): {192.168.0.1}
 end (none):
 ```
 
+<br>
 
-### 0x02 DHCP 报文类型
+### 0x03 DHCP 报文类型
 
 | 报文类型 | 说明 |
 | ---- | ---- |
@@ -124,6 +125,7 @@ end (none):
 | Decline (0x04) | DHCP 客户端收到 DHCP 服务器 ACK 应答报文后，通过地址冲突检测发现服务器分配的地址冲突或者由于其他原因导致不能使用，则会向 DHCP 服务器发送 Decline 请求报文，通知服务器所分配的 IP 地址不可用，以期获得新的 IP 地址。 |
 | Inform (0x08) | DHCP 客户端如果需要从 DHCP 服务器端获取更为详细的配置信息，则向 DHCP 服务器发送 Inform 请求报文；DHCP 服务器在收到该报文后，将根据租约进行查找到相应的配置信息后，向 DHCP 客户端发送 ACK 应答报文。目前基本上不用了。 |
 
+<br>
 
 ### 0x04 DHCP 工作流程
 
@@ -159,9 +161,11 @@ DHCP 工作流程
 
 	![](../Images/Network/DHCP/DHCP_images06.png)
 
-### 0x04 更新租约
+<br>
 
-DHCP 服务器向 DHCP 客户机出租的 IP 地址一般都有一个租借期限，期满后 DHCP 服务器便会收回出租的IP地址。如果 DHCP 客户机要延长其 IP 租约，则必须更新其 IP 租约。
+### 0x05 更新租约
+
+DHCP 服务器向 DHCP 客户机出租的 IP 地址一般都有一个租借期限 (lease peirod)，期满后 DHCP 服务器便会收回出租的IP地址。如果 DHCP 客户机要延长其 IP 租约，则必须更新其 IP 租约。
 
 客户端会在租期过去 50% 的时候，直接向为其提供 IP 地址的 DHCP 服务器发送 DHCP request 消息包。如果客户端接收到该服务器回应的 DHCP ack 消息包，客户端就根据包中所提供的新的租期以及其它已经更新的 TCP/IP 参数，更新自己的配置，IP租用更新完成。如果没有收到该服务器的回复，则客户端继续使用现有的 IP 地址，因为当前租期还有50%。
 
@@ -172,13 +176,19 @@ DHCP 服务器向 DHCP 客户机出租的 IP 地址一般都有一个租借期�
 <br>
 
 
-
-<br>
-
+### 0x06 DHCP 跨网段分配 IP 地址
 
 
-<br>
+实际上我们并不会在每个网络上都设置一个 DHCP 服务器，因为这样 DHCP 服务器太多。我们在每个网络中至少设置一个 DHCP 中继代理 (DHCP Relay Agent，通常是路由器) ，它配置了 IP 地址信息。当中继代理收到主机以广播形式发送的 Discover 报文后，就以单播的方式直接向 DHCP 服务器转发此报文，并等待其回应。当收到 DHCP 服务器的响应后，DHCP 中继代理再把报文发回给主机
 
+![](../Images/Network/DHCP/DHCP_images07.png)
+
+```
+## 给路由器设置 DHCP 服务器 IP 地址
+R1 (config-if)# ip hepler-address 192.168.80.50
+```
+
+![](../Images/Network/DHCP/DHCP_images08.png)
 
 
 <br>
