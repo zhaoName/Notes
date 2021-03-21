@@ -29,6 +29,10 @@
 
 	- [DNS](https://github.com/zhaoName/Notes/blob/master/Netwotk/%E5%BA%94%E7%94%A8%E5%B1%82-DNS.md)
 
+	- [DHCP](https://github.com/zhaoName/Notes/blob/master/Netwotk/%E5%BA%94%E7%94%A8%E5%B1%82-DHCP.md)
+
+	
+
 <br>
 
 <br>
