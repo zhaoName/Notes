@@ -22,7 +22,9 @@
 
 ### 0x02 PPP 协议组成
 
-- 将 IP 数据封装到串行链路的方法
+![](../Images/Network/PPP/PPP_images00.png)
+
+- 将 IP 数据封装到串行链路的方法 (HDLC)
 
 - 用来建立、配置和测试数据链路连接的链路控制协议 LCP (Link Control Protocol)
 - 网络控制协议 NCP (Network Control Procotol)，其中每一个协议支持不同的网络层协议
@@ -90,7 +92,6 @@ PPP 帧的首部和尾部分别为四个字段和两个字段
 
  ![](../Images/Network/PPP/PPP_images05.png)
 
-
 当 PPP 协议使用同步传输时，采用零比特填充方式保证透明传输
 
 - PPP 协议的帧界定符 0x7E 写成二进制为 0111 1110，也就是说只要想办法在数据部分不出现连续的 6 个 1，就肯定不会出现帧界定符。
@@ -100,6 +101,23 @@ PPP 帧的首部和尾部分别为四个字段和两个字段
 
  ![](../Images/Network/PPP/PPP_images06.png)
 
+
+### 0x03 PPP 协议工作状态
+
+ ![](../Images/Network/PPP/PPP_images07.png)
+ 
+- 链路静止 (Link Dead)：PPP 链路的起始和终止状态，这时在个人主机和 ISP 的路由器之间并不存在物理层的连接
+
+- 链路建立 (Link Establish)：目的是建立链路层的 LCP 连接
+- LCP 配置协商，即发送 LCP 的配置请求 (Configure-Requesqt)
+	- 配置确认帧 (Configure-Ack)
+	- 配置否认帧 (Configure-Nak)
+	- 配置拒绝帧 (Configure-Reject)
+- 鉴别 (Authenticate) ：协商结束后双方建立 LCP 链路，接着进入 Authenticate 状态
+- 网络层状态：PPP 链路两端的网络控制协议 NCP 根据网络层的不同协议互相交换网络层特定的网络控制分组。
+- 链路打开 (Link Open)：链路的两个 PPP 端点可以彼此向对方发送分组，两个端点还可发送会送请求 LCP 分组 (Echo-Request) 和回送回答 LCP 分组 (Echo-Reply)，以检查链路的状态
+- 链路终止：数据传输结束后，可以由链路的一端发送终止请求 LCP 分组 (Terminate-Request)请求终止链路连接，在收到对方发来的终止确认 LCP 分组 (Terminate-Ack) 后 ，转到 "链路终止" 状态。
+
 <br>
 
 
@@ -108,5 +126,7 @@ PPP 帧的首部和尾部分别为四个字段和两个字段
 参考
 
 - [The Point-to-Point Protocol (PPP)](https://tools.ietf.org/html/rfc1661)
+
+- [PPP协议实例详解](https://www.qingsword.com/qing/661.html)
 
 <br>
