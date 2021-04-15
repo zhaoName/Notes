@@ -35,6 +35,15 @@
 - 网络层使用的中间设备叫路由器 (router)
 - 网络层以上使用的中间设备叫网关 (gateway)
 
+<br>
+
+<br>
+
+
+### 数据链路层
+
+- [概述](https://github.com/zhaoName/Notes/blob/master/Netwotk/%E6%95%B0%E6%8D%AE%E9%93%BE%E8%B7%AF%E5%B1%82-%E6%A6%82%E8%BF%B0.md)
+- [PPP](https://github.com/zhaoName/Notes/blob/master/Netwotk/%E6%95%B0%E6%8D%AE%E9%93%BE%E8%B7%AF%E5%B1%82-PPP.md)
 
 ### 网络层
 
