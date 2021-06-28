@@ -252,7 +252,7 @@ void _NSSetLongLongValueAndNotify()
 
 ### 0x01 KVO 本质
 
-- 用`runtime`动态生成一个子类，并让示例对象的`isa`指正指向这个子类
+- 用`runtime`动态生成一个子类，并让实例对象的`isa`指正指向这个子类
 
 - 在子类中重写`setxxx:`方法，并在其内部调用`Foundation`框架下的`_NSSetXXXValueAndNotify()`函数
 

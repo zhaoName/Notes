@@ -275,10 +275,10 @@ category 中使用 @property 声明属性，也是只有 setter getter 方法的
 
 ### 0x07. runtime 如何实现 weak 属性
 
-![](../../Images/内存管理/MemoryManage_image0403.png)
+![](../../Images/iOS/MemoryManage/MemoryManage_image0403.png)
 
 
-![](../../Images/内存管理/MemoryManage_image0404.png)
+![](../../Images/iOS/MemoryManage/MemoryManage_image0404.png)
 
 
 <br>
@@ -1139,7 +1139,7 @@ typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
 - `kCFRunLoopBeforeExit`事件，会调用`objc_autoreleasePoolPop()`
 
 
-![](../../Images/AutoReleasePool/AutoreleasePool_image0106.png)
+![](../../Images/iOS/AutoReleasePool/AutoreleasePool_image0106.png)
 
 
 当启动 RunLoop 时，也就是`kCFRunLoopEntry`即将进入 RunLoop，会调用`objc_autoreleasePoolPush()`方法，初始化`AutoreleasePoolPage `对象。
@@ -1296,7 +1296,7 @@ class AutoreleasePoolPage
 
 - 局部变量：block 内部捕获局部变量是值拷贝，需要用`__block`修饰 block 的外部变量，才能在其内部修改。
 
-- 静态局部变量：block 内部捕获静态局部变量是直接捕获惊天局部变量的地址，所以可以在 block 内部直接修改静态局部变量的值。
+- 静态局部变量：block 内部捕获静态局部变量是直接捕获静态局部变量的地址，所以可以在 block 内部直接修改静态局部变量的值。
 
 - 全局变量：全局变量放在数据段，大家都可以随意访问。block 不会捕获全局变量，但也可以在其内部修改全局变量。
 
