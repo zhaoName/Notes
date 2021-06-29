@@ -114,13 +114,72 @@ case .dateString(let str):
 
 ### 0x03 原始值 (Raw Values)
 
+枚举成员可以使用相同类型的默认值预填充，这个默认值叫原始值 (Raw Values)。原始值可以是字符串、字符，或者任意整型值或浮点型值。每个原始值在枚举声明中必须是唯一的。
 
+> NOTE
+> 
+> 原始值和关联值是不同的。原始值是在定义枚举时被预先填充的值，且始终不变。关联值是创建一个基于枚举成员的常量或变量时才设置的值，枚举成员的关联值可以变化。
+
+
+```
+enum CompassPoint: String {
+    case north = "north"
+    case south = "south"
+    case east = "east"
+    case west = "west"
+}
+
+// 返回值是可选类型  因为所传的参数并不一定能找到对应 CompassPoint 的值
+let south = CompassPoint(rawValue: "south")
+print(south)
+
+// Optional(swift_basic.CompassPoint.south)
+```
+
+
+### 0x04 隐式原始值 (Implicitly Assigned Raw Values)
+
+若枚举的原始值类型为 `Int` 或 `String` 时，不需要显式地为每一个枚举成员设置原始值，Swift 将会自动为你赋值。
+
+```
+enum CompassPoint: String {
+    case north = "north"
+    case south = "south"
+    case east = "east"
+    case west = "west"
+}
+
+enum ImplicitlyCompassPoint: String {
+    case north
+    case south
+    case east
+    case west
+}
+
+let south = CompassPoint(rawValue: "south")
+let implictSouth = ImplicitlyCompassPoint(rawValue: "south")
+    
+print("south---", south?.rawValue)
+print("implictSouth---", implictSouth?.rawValue)
+
+// south--- Optional("south")
+// implictSouth--- Optional("south")
+```
+
+当使用 `Int` 作为原始值时，隐式赋值的值依次递增 1。如果第一个枚举成员没有设置原始值，其原始值将为 0。
 
 
 <br>
 
 ## 二、内存
 
+
+### 0x01 
+
+
+
+
+### 0x02 
 
 <br>
 
