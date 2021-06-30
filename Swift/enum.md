@@ -171,15 +171,72 @@ print("implictSouth---", implictSouth?.rawValue)
 
 <br>
 
-## 二、内存
+## 二、内存布局
 
 
-### 0x01 
+### 0x01 没有原始值和关联值的枚举内存布局
+
+定义一个枚举 TestEnum，然后用 `MemoryLayout` 来查看其占用内存大小
+
+```
+enum TestEnum {
+    case test1, case test2, case test3
+}
+
+// TestEnum 实际占用的内存大小
+print(MemoryLayout<TestEnum>.size) // 1
+// 系统为 TestEnum 分配的内存大小
+print(MemoryLayout<TestEnum>.stride) // 1
+// 对齐
+print(MemoryLayout<TestEnum>.alignment) // 1
+```
 
 
 
 
-### 0x02 
+
+### 0x02 只有原始值的枚举内存布局
+
+
+若此枚举有原始值，再用 `MemoryLayout` 来查看其占用内存大小
+
+```
+enum TestEnum: Int {
+    case test1 = 10
+    case test2
+    case test3
+}
+
+// TestEnum 实际占用的内存大小
+print(MemoryLayout<TestEnum>.size) // 1
+// 系统为 TestEnum 分配的内存大小
+print(MemoryLayout<TestEnum>.stride) // 1
+// 对齐
+print(MemoryLayout<TestEnum>.alignment) // 1
+```
+
+
+
+### 0x03 有关联值的枚举内存布局
+
+```
+enum TestEnum {
+    case test1(Int, Int, Int)
+    case test2(Int, Int)
+    case test3(Int)
+    case test4(Bool)
+    case test5
+}
+
+// TestEnum 实际占用的内存大小
+print(MemoryLayout<TestEnum>.size)  // 25
+// 系统为 TestEnum 分配的内存大小
+print(MemoryLayout<TestEnum>.stride) //32
+// 对齐 
+print(MemoryLayout<TestEnum>.alignment) //8
+```
+
+
 
 <br>
 
