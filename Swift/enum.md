@@ -191,7 +191,32 @@ print(MemoryLayout<TestEnum>.stride) // 1
 print(MemoryLayout<TestEnum>.alignment) // 1
 ```
 
+可以看到没有原始值和关联值的枚举只占 1 个字节的内存，下面我们来看下这 1 个字节中存储的内容
 
+```
+var t = TestEnum.test1
+
+// 获取枚举变量的内存地址
+let pointer = withUnsafePointer(to: &t) {
+    UnsafePointer($0)
+}
+print(pointer)
+    
+t = TestEnum.test2
+t = TestEnum.test3
+
+print("-----------")
+```
+
+在 Xcode 的 `Debug -> Debug Workflow -> View Memory` 中输入枚举变量的内存地址，查看其存储的内容
+
+![](../Images/Swift/enum/enum_images01.png)
+
+![](../Images/Swift/enum/enum_images02.png)
+
+![](../Images/Swift/enum/enum_images03.png)
+
+可以看到没有原始值和关联值的枚举只用 1 个字节的内存空间来区分其对应的 `case`
 
 
 
@@ -215,7 +240,25 @@ print(MemoryLayout<TestEnum>.stride) // 1
 print(MemoryLayout<TestEnum>.alignment) // 1
 ```
 
+![](../Images/Swift/enum/enum_images04.png)
 
+![](../Images/Swift/enum/enum_images05.png)
+
+![](../Images/Swift/enum/enum_images06.png)
+
+可以看到若枚举变量只有原始值，其内存布局和没有原始值是一样的，都只占 1 个字节的内存空间，并用 `0 1 2 ...` 来区分不同的 `case`。
+
+这时可能有人会问：那枚举变量的原始值存在哪里了呢？通过前面的学习我们知道原始值是唯一且不变的，也就是说所有的枚举变量共用一份原始值。那这个原始值就没有必要存储在枚举的内存中，我们甚至可以猜测枚举源码中使用函数来实现对原始值的获取，伪代码如下
+
+```
+// 枚举中 rawValue 的伪代码
+func rawValue() -> Int {
+    if self == test1 {
+        return 10
+    }
+    ...
+}
+```
 
 ### 0x03 有关联值的枚举内存布局
 
@@ -236,6 +279,17 @@ print(MemoryLayout<TestEnum>.stride) //32
 print(MemoryLayout<TestEnum>.alignment) //8
 ```
 
+当枚举用关联值时，其
+
+![](../Images/Swift/enum/enum_images07.png)
+
+![](../Images/Swift/enum/enum_images08.png)
+
+![](../Images/Swift/enum/enum_images09.png)
+
+![](../Images/Swift/enum/enum_images10.png)
+
+![](../Images/Swift/enum/enum_images11.png)
 
 
 <br>
