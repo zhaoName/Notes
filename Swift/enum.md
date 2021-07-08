@@ -279,8 +279,6 @@ print(MemoryLayout<TestEnum>.stride) //32
 print(MemoryLayout<TestEnum>.alignment) //8
 ```
 
-当枚举用关联值时，其
-
 ![](../Images/Swift/enum/enum_images07.png)
 
 ![](../Images/Swift/enum/enum_images08.png)
@@ -291,13 +289,42 @@ print(MemoryLayout<TestEnum>.alignment) //8
 
 ![](../Images/Swift/enum/enum_images11.png)
 
+有关联值的枚举变量的内存大小 由占用内存最大的关联值和存储区分成员值(1 个字节)一起决定。如 `TestEnum` 其占用内存最大关联值所对应的 `case` 为 `test1`，一共占用 24 个字节。再加上用来区分不同`case`的 1 个字节，总共占用 25 个字节。系统为内存对齐，为其分配 32 个字节。
+
+
+### 0x04 特例
+
+若枚举只有一个 `case`，则枚举不会使用这 1 个字节的内存来区分不同 `case`
+
+```
+enum TestEnum {
+    case test
+}
+
+// TestEnum 实际占用的内存大小
+print(MemoryLayout<TestEnum>.size)  // 0
+// 系统为 TestEnum 分配的内存大小
+print(MemoryLayout<TestEnum>.stride) // 1
+// 对齐 
+print(MemoryLayout<TestEnum>.alignment) // 1  
+```
+
+但不影响关联值所占内存大小
+
+```
+enum TestEnum {
+    case test(Int)
+}
+
+// TestEnum 实际占用的内存大小
+print(MemoryLayout<TestEnum>.size)  // 8
+// 系统为 TestEnum 分配的内存大小
+print(MemoryLayout<TestEnum>.stride) // 8
+// 对齐 
+print(MemoryLayout<TestEnum>.alignment) // 8 
+```
 
 <br>
-
-
-
-<br>
-
 
 
 <br>
