@@ -54,7 +54,7 @@
 
 效率上讲自定义的初始化器和编译器帮我们生成的初始化器是一样的
 
-```
+```Swift
 // 编译器自动生成的初始化器
 struct TestStruct {
     var x: Int = 10
@@ -75,7 +75,7 @@ swift-basic-macos`init() in TestStruct #1 in test():
     0x100001856 <+38>: retq  
 ```
 
-```
+```Swift
 // 自定义的初始化器
 struct TestStruct {
     var x: Int
@@ -126,7 +126,7 @@ swift-basic-macos`init() in TestStruct #1 in test():
 
 如下定义一个 `Resolution ` 结构体，声明一个结构体实例 `hd` 并赋值给 `cinema` 。
 
-```
+```Swift
 struct Resolution {
     var width = 0
     var height = 0
@@ -199,7 +199,7 @@ swift-basic-macos`test():
 
 ### 0x03 枚举值类型
 
-```
+```Swift
 enum CompassPoint {
     case north, south, east, west
     mutating func turnNorth() {
@@ -229,7 +229,7 @@ print("The remembered direction is \(rememberedDirection)")
 
 引用类型是指在被赋予到一个变量、常量或者被传递到一个函数时，其值不会被拷贝。
 
-```
+```Swift
 class VideoMode {
     var interlaced = false
     var frameRate = 0.0
