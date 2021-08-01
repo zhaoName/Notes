@@ -264,3 +264,5 @@ print("The frameRate property of tenEighty is now \(tenEighty.frameRate)")
 - [Structures and Classes](https://docs.swift.org/swift-book/LanguageGuide/ClassesAndStructures.html)
 
 - [Choosing Between Structures and Classes](https://developer.apple.com/documentation/swift/choosing_between_structures_and_classes)
+
+- [Why Choose Struct Over Class?](https://stackoverflow.com/questions/24232799/why-choose-struct-over-class)

@@ -326,6 +326,7 @@ print(MemoryLayout<TestEnum>.alignment) // 8
 
 <br>
 
+？？？？ [Swift enum size when associated value is a reference type](https://stackoverflow.com/questions/62062590/swift-enum-size-when-associated-value-is-a-reference-type)
 
 <br>
 
