@@ -107,11 +107,11 @@ swift-basic-macos`init() in TestStruct #1 in test():
 
 ![](../Images/Swift/struct&class/struct&class_images04.png)
 
-若类的所有属性在定义的时候都指定了初始值，那编译器会自动帮我们生成无惨的初始化器。且成员的初始化都是在这个初始化器中完成的。
+若类的所有属性在定义的时候都指定了初始值，那编译器会自动帮我们生成无参的初始化器。且成员的初始化都是在这个初始化器中完成的。
 
 ![](../Images/Swift/struct&class/struct&class_images05.png)
 
-关于类的更多初始化方法可参考这里
+关于类的更多初始化方法可参考[这里](https://github.com/zhaoName/Notes/blob/master/Swift/Initialization.md)
 
 
 <br>
