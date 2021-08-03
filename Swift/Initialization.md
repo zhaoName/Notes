@@ -185,6 +185,96 @@ class Student: Person {
 
 <br>
 
+## 四、初始化器的继承和重写
+
+Swift 中的子类默认情况下不会继承父类的初始化器。Swift 的这种机制可以防止一个父类的简单初始化器被一个更精细的子类继承，而在用来创建子类时实例没有完全或错误被初始化。
+
+### 0x01 重写
+
+- 当重写父类的指定初始化器时，必须加上 `override`，
+
+```
+class Food {
+    var name: String
+    init(name: String) {
+        self.name = name
+    }
+
+    convenience init() {
+        self.init(name: "[Unnamed]")
+    }
+}
+
+class RecipeIngredient: Food {
+    var quantity: Int
+    
+    override init(name: String) {
+        self.quantity = 10
+        super.init(name: name)
+    }
+}
+```
+
+- 即使子类实现的是便捷初始化器，也必须加上`override `
+
+![](../Images/Swift/Initialization/Initialization_image08.png)
+
+- 若子类写了一个和父类便捷初始化器相匹配的初始化器，由于子类不能直接调用父类的便利初始化，所以不需要加 `override` 修饰符。(**严格来说子类无法重写父类的便捷初始化器**)
+
+```
+class RecipeIngredient: Food {
+    var quantity: Int
+    
+    // 子类的便捷初始化器和父类的便捷初始化器相匹配 不需要加 override
+    convenience init() {
+        self.init(name: "[Unnamed]", quantity: 10)
+    }
+    
+    init(name: String, quantity: Int) {
+        self.quantity = quantity
+        super.init(name: name)
+    }
+}
+```
+
+```
+class RecipeIngredient: Food {
+    var quantity: Int
+    
+    // 子类的指定初始化器和父类的便捷初始化器相匹配 不需要加 override
+    init() {
+        self.quantity = 10
+        super.init(name: "[Unnamed]")
+    }
+    
+    init(name: String, quantity: Int) {
+        self.quantity = quantity
+        super.init(name: name)
+    }
+}
+```
+
+### 0x02 自动继承
+
+- 如果子类没有定义任何指定初始化器，它将自动继承父类所有的指定初始化器。
+
+```
+
+```
+
+- 如果子类提供了所有父类指定初始化器的实现——无论是通过规则 1 继承过来的，还是提供了自定义实现——它将自动继承父类所有的便利初始化器。
+
+- 即使你在子类中添加了更多的便利初始化器，这两条规则仍然适用。
+
+- 子类可以将父类的指定初始化器实现为便利初始化器来满足规则 2。
+
+
+
+<br>
+
+
+<br>
+
 参考：
 
 - [Initialization](https://docs.swift.org/swift-book/LanguageGuide/Initialization.html)
