@@ -212,6 +212,11 @@ class RecipeIngredient: Food {
         self.quantity = 10
         super.init(name: name)
     }
+    
+    init(name: String, quantity: Int) {
+        self.quantity = quantity
+        super.init(name: name)
+    }
 }
 ```
 
@@ -219,7 +224,7 @@ class RecipeIngredient: Food {
 
 ![](../Images/Swift/Initialization/Initialization_image08.png)
 
-- 若子类写了一个和父类便捷初始化器相匹配的初始化器，由于子类不能直接调用父类的便利初始化，所以不需要加 `override` 修饰符。(**严格来说子类无法重写父类的便捷初始化器**)
+- 若子类写了一个和父类便捷初始化器相匹配的初始化器（指定或便捷），由于子类不能直接调用父类的便捷初始化，所以不需要加 `override` 修饰符。(**严格来说子类无法重写父类的便捷初始化器**)
 
 ```
 class RecipeIngredient: Food {
@@ -259,16 +264,79 @@ class RecipeIngredient: Food {
 - 如果子类没有定义任何指定初始化器，它将自动继承父类所有的指定初始化器。
 
 ```
+class ShoppingListItem: RecipeIngredient {
+    var purchased = false
+}
 
+//自动继承自 RecipeIngredient 的指定初始化器
+ShoppingListItem(name: "apple", quantity: 10)
 ```
 
 - 如果子类提供了所有父类指定初始化器的实现——无论是通过规则 1 继承过来的，还是提供了自定义实现——它将自动继承父类所有的便利初始化器。
 
+```
+class ShoppingListItem: RecipeIngredient {
+    var purchased = false
+    
+    // 子类手动实现所有父类指定初始化器，子类会自动继承父类所有的便利初始化器
+    override init(name: String, quantity: Int) {
+        super.init(name: name, quantity: 10)
+    }
+}
+
+// 自动继承自 Food 的便捷初始化器
+ShoppingListItem()
+// 自动继承自 RecipeIngredient 的便捷初始化器
+ShoppingListItem(name: "apple") 
+```
+
 - 即使你在子类中添加了更多的便利初始化器，这两条规则仍然适用。
+
+```
+class ShoppingListItem: RecipeIngredient {
+    var purchased = false
+    
+    convenience init(price: Int) {
+        self.init(name: "[Unnamed]", quantity: 10)
+    }
+}
+
+
+// 自动继承自 Food 的便捷初始化器
+ShoppingListItem()
+// 自动继承自 RecipeIngredient 的便捷初始化器
+ShoppingListItem(name: "apple") 
+//自动继承自 RecipeIngredient 的指定初始化器
+ShoppingListItem(name: "apple", quantity: 10)
+    
+// 本类中自定义的便捷初始化器
+ShoppingListItem(price: 6)
+```
 
 - 子类可以将父类的指定初始化器实现为便利初始化器来满足规则 2。
 
+```
+class RecipeIngredient: Food {
+    var quantity: Int
+    
+    // 子类可以将父类的指定初始化器实现为便利初始化器
+    convenience override init(name: String) {
+        self.init(name: name, quantity: 10)
+    }
+    
+    init(name: String, quantity: Int) {
+        self.quantity = quantity
+        super.init(name: name)
+    }
+}
 
+// 子类也会自动继承父类的便捷初始化器 convenience init()
+let food = RecipeIngredient()
+```
+
+总结为下图：
+
+![](../Images/Swift/Initialization/Initialization_image09.png)
 
 <br>
 
