@@ -7,7 +7,7 @@
 
 <br>
 
-## 一、初始化
+## 一、类的初始化
 
 ### 0x01 指定初始化和便捷初始化
 
@@ -339,6 +339,80 @@ let food = RecipeIngredient()
 ![](../Images/Swift/Initialization/Initialization_image09.png)
 
 <br>
+
+
+## 五、其他
+
+### 0x01 必要初始化器
+
+必要初始化器是指用 `required` 修饰的指定初始化器。表明所有该类的子类都必须实现该初始化器 (通过继承或重写)
+
+```
+class Food {
+    let name: String
+    
+    required init() {
+        name = ""
+    }
+    
+    init(name: String) {
+        self.name = name
+    }
+}
+
+class RecipeIngredient: Food {
+    
+}
+
+// 通过继承实现父类的指定初始化器
+RecipeIngredient()
+RecipeIngredient(name: "apple")
+```
+
+在子类重写父类的必要初始化器时，必须在子类的初始化器前也添加 required 修饰符，表明该初始化器要求也应用于继承链后面的子类。
+
+```
+class RecipeIngredient: Food {
+    required init() {
+        super.init()
+    }
+}
+
+// 通过继承实现父类的指定初始化器
+RecipeIngredient()
+```
+
+### 0x02 属性观察器
+
+父类的属性在它自己的初始化器中赋值不会触发属性观察器，但在子类的初始化器中赋值会触发
+
+```
+class Food {
+    var name: String {
+        willSet {
+            print("willSet:", newValue)
+        }
+        didSet {
+            print("didSet:", oldValue, name)
+        }
+    }
+    
+    required init() {
+        name = "apple"
+    }
+}
+
+class RecipeIngredient: Food {
+    required init() {
+        super.init()
+        self.name = "orange"
+    }
+}
+
+// 打印结果
+willSet: orange
+didSet: apple orange
+```
 
 
 <br>
