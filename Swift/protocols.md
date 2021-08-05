@@ -36,11 +36,228 @@ class SomeClass: SomeSuperClass, FirstProtocol, AnotherProtocol {
 
 ## 二、协议中的属性
 
+协议总是用 `var` 关键字来声明变量属性，在类型声明后加上 `{ set get }` 来表示属性是可读可写的，可读属性则用 `{ get } `来表示
 
+```
+protocol SomeProtocol {
+    var mustBeSettable: Int { get set }
+    var doesNotNeedToBeSettable: Int { get }
+}
+```
 
+实现协议的属性权限要不小于协议中定义的属性权限
+
+- 若协议中要求属性是可读可写的，那实现该属性不能是常量属性或只读的计算型属性，而需要用 `var ` 修饰的属性
+
+```
+class Person: SomeProtocol {
+    // 协议中要求属性是可读可写的，实现的时候必须用 var 修饰
+    var mustBeSettable: Int {
+        set { }
+        get {
+            return 1
+        }
+    }
+   ...
+}
+```
+
+- 若协议中的属性权限只是可读的，可以用任何属性实现
+
+```
+class Person: SomeProtocol {
+    // 协议中要求属性是可读可写的，实现的时候必须用 var 修饰
+    var mustBeSettable: Int = 1
+    
+    // 下面三个任选其一即可
+    // 计算属性实现协议中的「只读属性」
+    var doesNotNeedToBeSettable: Int {
+        return 0
+    }
+    
+    // 存储属性实现协议中的「只读属性」
+     let doesNotNeedToBeSettable: Int = 0
+    
+    // 可读可写的存储属性实现协议中的 「只读属性」
+    var doesNotNeedToBeSettable: Int = 0
+}
+```
+
+在协议中定义类型属性时，总是使用 `static` 关键字作为前缀。当类类型遵循协议时，除了 `static` 关键字，还可以使用 `class` 关键字来声明类型属性。
+
+```
+protocol SomeProtocol {
+    static var commonClassProperty: Int { get set }
+    
+    static var classPropety: Int { get set }
+}
+
+struct TestStruct: SomeProtocol {
+    static var commonClassProperty: Int = 0
+    
+    static var classPropety: Int = 0
+}
+
+class Person: SomeProtocol {
+    static var commonClassProperty: Int = 1
+    
+    // 类中可以用 class 关键字声明类型属性
+    class var classPropety: Int {
+        set {}
+        get { 1 }
+    }
+}
+```
 
 
 <br>
+
+## 三、协议中的方法
+
+### 0x01 协议中的类方法
+
+在协议中定义类方法的时候，必须 `static` 关键字作为前缀。在类实现协议时，类方法要求使用 `class` 或 `static` 作为关键字前缀。
+
+```
+protocol SomeProtocol {
+    static func testStaticMethod()
+}
+
+struct TestStruct: SomeProtocol {
+    static func testStaticMethod() {
+        
+    }
+}
+
+class Person: SomeProtocol {
+    static func testStaticMethod() {
+        
+    }
+}
+```
+
+
+### 0x02 mutating
+
+在值类型（即结构体和枚举）的实例方法中，将 `mutating` 关键字作为方法的前缀，写在 `func` 关键字之前，表示可以在该方法中修改它所属的实例以及实例的任意属性的值。
+
+实现协议中的 `mutating` 方法时，若是类类型，则不用写 `mutating` 关键字。而对于结构体和枚举，则必须写 `mutating` 关键字。
+
+```
+protocol SomeProtocol {
+    mutating func testMethod()
+}
+
+struct TestStruct: SomeProtocol {
+    var st: Int = 0
+    
+    // 结构体、枚举要修改遵守协议的示例 方法前必须要加 mutating
+    mutating func testMethod() {
+        st = 1
+    }   
+}
+
+class Person: SomeProtocol {
+    var age: Int = 0
+    
+    func testMethod() {
+        self.age = 10
+    }
+}
+```
+
+### 0x03 协议中的初始化器
+
+协议可以要求遵循协议的类型实现指定的构造器。
+
+```
+protocol SomeProtocol {
+    init(someParameter: Int)
+}
+```
+
+遵循协议的类中实现构造器，无论是作为指定构造器，还是作为便利构造器。都必须为构造器实现标上 `required` 修饰符。`final` 修饰的类除外，因为`final` 类没有子类。
+
+```
+class Person: SomeProtocol {
+    required init(someParameter: Int) {
+        
+    }
+}
+
+struct TestStruct: SomeProtocol {
+    // 结构体中没有 required 关键字
+    init(someParameter: Int) {
+        
+    }
+}
+```
+
+如果一个子类重写了父类的指定构造器，并且该构造器满足了某个协议的要求，那么该构造器的实现需要同时标注 `required` 和 `override` 修饰符
+
+```
+protocol SomeProtocol {
+    init()
+}
+
+class SomeSuperClass {
+    init() {
+        // 这里是构造器的实现部分
+    }
+}
+
+class SomeSubClass: SomeSuperClass, SomeProtocol {
+    // 因为遵循协议，需要加上 required
+    // 因为继承自父类，需要加上 override
+    required override init() {
+        // 这里是构造器的实现部分
+    }
+}
+```
+
+### 0x04 协议中的可失败初始化器
+
+协议中的 `init?()` 、`init!()`，可以用 `int()` 、`init?()` 、`init!()` 实现。
+
+```
+protocol SomeProtocol {
+    init!()
+}
+
+class Person: SomeProtocol {
+    // 三个任选其一都可
+//    required init() {
+//
+//    }
+    
+//    required init?() {
+//
+//    }
+    
+    required init!() {
+
+    }
+}
+```
+
+协议中的 `init()`，可以用 `int()` 、`init!()`。
+
+```
+protocol SomeProtocol {
+    init()
+}
+
+class Person: SomeProtocol {
+    // 两个任选其一都可
+//    required init() {
+//
+//    }
+    
+    required init!() {
+
+    }
+}
+```
 
 
 <br>
