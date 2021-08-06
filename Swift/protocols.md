@@ -143,7 +143,7 @@ class Person: SomeProtocol {
 
 实现协议中的 `mutating` 方法时，若是类类型，则不用写 `mutating` 关键字。而对于结构体和枚举，则必须写 `mutating` 关键字。
 
-```
+```swift
 protocol SomeProtocol {
     mutating func testMethod()
 }
@@ -170,7 +170,7 @@ class Person: SomeProtocol {
 
 协议可以要求遵循协议的类型实现指定的构造器。
 
-```
+```swift
 protocol SomeProtocol {
     init(someParameter: Int)
 }
@@ -178,7 +178,7 @@ protocol SomeProtocol {
 
 遵循协议的类中实现构造器，无论是作为指定构造器，还是作为便利构造器。都必须为构造器实现标上 `required` 修饰符。`final` 修饰的类除外，因为`final` 类没有子类。
 
-```
+```swift
 class Person: SomeProtocol {
     required init(someParameter: Int) {
         
@@ -195,7 +195,7 @@ struct TestStruct: SomeProtocol {
 
 如果一个子类重写了父类的指定构造器，并且该构造器满足了某个协议的要求，那么该构造器的实现需要同时标注 `required` 和 `override` 修饰符
 
-```
+```swift
 protocol SomeProtocol {
     init()
 }
@@ -219,7 +219,7 @@ class SomeSubClass: SomeSuperClass, SomeProtocol {
 
 协议中的 `init?()` 、`init!()`，可以用 `int()` 、`init?()` 、`init!()` 实现。
 
-```
+```swift
 protocol SomeProtocol {
     init!()
 }
@@ -240,9 +240,9 @@ class Person: SomeProtocol {
 }
 ```
 
-协议中的 `init()`，可以用 `int()` 、`init!()`。
+协议中的 `init()`，可以用 `int()` 、`init!()` 实现。
 
-```
+```swift
 protocol SomeProtocol {
     init()
 }
@@ -262,6 +262,119 @@ class Person: SomeProtocol {
 
 <br>
 
+## 四、其他
+
+### 0x01 协议的继承
+
+协议能够继承一个或多个其他协议，可以在继承的协议的基础上增加新的要求。协议的继承语法与类的继承相似，多个被继承的协议间用逗号分隔
+
+```swift
+protocol SomeProtocol {
+    func someMethod()
+}
+
+protocol SubProtocol: SomeProtocol {
+    func subMethod()
+}
+
+struct TestStruct: SubProtocol {
+    func subMethod() {
+        
+    }
+    
+    func someMethod() {
+        
+    }
+}
+```
+
+### 0x02 协议组合
+
+一个类型同时遵循多个协议，叫协议组合。多个协议之间用 `&` 符号分割起来。
+
+```swift
+protocol AnotherProtocol {
+    func another()
+}
+
+// 同时遵守 SomeProtocol 和 AnotherProtocol 协议
+class Person: SomeProtocol & AnotherProtocol {
+    func someMethod() {
+        
+    }
+    
+    func another() {
+        
+    }
+}
+```
+
+除了协议列表，协议组合也能包含类类型
+
+```swift
+
+// 同时遵守 SomeProtocol 和 AnotherProtocol 协议，并是 Person 的子类
+class Student: Person & SomeProtocol & AnotherProtocol {
+    func someMethod() {
+        
+    }
+    
+    func another() {
+        
+    }
+}
+```
+
+### 0x03 类的专属协议
+
+在协议后面写上 `AnyObject` ，表示只有类能遵守这个协议。若让结构体或枚举类型遵守这个协议，则在编译时报错
+
+```swift
+protocol AnyObjectProtocol: AnyObject {
+    func anyObjectProtocolMethod()
+}
+
+class Person: AnyObjectProtocol {
+    func anyObjectProtocolMethod() {
+        
+    }
+}
+```
+
+### 0x04 检查协议一致性
+
+`is` 用于判断是否为某种类型
+
+```swift
+let stu = Student()
+print("stu is Person: ", stu is Person)  // true
+print("stu is SomeProtocol: ", stu is SomeProtocol) // true
+```
+
+`as?` 用于做类型装换，也可判断某个示例是否遵守某个协议
+
+```swift
+stu as? SomeProtocol
+```
+
+### 0x05 默认实现
+
+协议可以通过扩展来为遵循协议的类型提供属性、方法以及下标的实现。通过这种方式，你可以基于协议本身来实现这些功能，而无需在每个遵循协议的类型中都重复同样的实现。
+
+```swift
+protocol AnyObjectProtocol: AnyObject {
+    func anyObjectProtocolMethod()
+}
+
+extension AnyObjectProtocol {
+    func anyObjectProtocolMethod() {}
+}
+
+class Person: AnyObjectProtocol {
+    // Person 类遵守 AnyObjectProtocol
+    // 但不是必须要实现 AnyObjectProtocol 协议中的方法
+}
+```
 
 
 <br>
