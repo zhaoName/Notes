@@ -81,12 +81,148 @@ p1.z = 1
 ![](../Images/Swift/property/property_images01.png)
 
 
-### 0x02 计算属性
+### 0x03 计算属性
+
+计算属性不直接存储值，而是提供一个 getter 和一个可选的 setter，来间接获取和设置其他属性或变量的值。
+
+定义计算属性必须用 `var` 声明，因为 `let` 表示常量，值时一成不变的。而计算属性的值是可能发生变化的。
+
+```
+struct Point {
+    var x = 0.0, y = 0.0
+}
+struct Size {
+    var width = 0.0, height = 0.0
+}
+struct Rect {
+    var origin = Point()
+    var size = Size()
+    var center: Point {
+        get {
+            let centerX = origin.x + (size.width / 2)
+            let centerY = origin.y + (size.height / 2)
+            return Point(x: centerX, y: centerY)
+        }
+        set(newCenter) {
+            origin.x = newCenter.x - (size.width / 2)
+            origin.y = newCenter.y - (size.height / 2)
+        }
+    }
+}
+```
+
+如果计算属性的 `setter` 没有定义表示新值的参数名，则可以使用默认名称 `newValue`。
+
+```
+struct AlternativeRect {
+    var origin = Point()
+    var size = Size()
+    var center: Point {
+        get {
+            let centerX = origin.x + (size.width / 2)
+            let centerY = origin.y + (size.height / 2)
+            return Point(x: centerX, y: centerY)
+        }
+        set {
+            origin.x = newValue.x - (size.width / 2)
+            origin.y = newValue.y - (size.height / 2)
+        }
+    }
+}
+```
+
+**只读计算属性**只有 `getter` 没有 `setter` 的计算属性叫只读计算属性。只读计算属性的声明可以去掉 `get` 关键字和花括号
+
+```
+struct Cuboid {
+    var width = 0.0, height = 0.0, depth = 0.0
+    var volume: Double {
+        return width * height * depth
+    }
+}
+```
 
 
 <br>
 
 ## 二、属性观察器
+
+### 0x01 存储属性观察器
+
+Swift 中可以为非 `lazy` 的 `var` 存储属性设置属性观察器。
+
+```
+class StepCounter {
+    var totalSteps: Int = 0 {
+        willSet(newTotalSteps) {
+            print("将 totalSteps 的值设置为 \(newTotalSteps)")
+        }
+        didSet {
+            if totalSteps > oldValue  {
+                print("增加了 \(totalSteps - oldValue) 步")
+            }
+        }
+    }
+}
+
+let stepCounter = StepCounter()
+stepCounter.totalSteps = 200
+
+// 打印结果
+将 totalSteps 的值设置为 200
+增加了 200 步
+```
+
+- `willSet` 会传递新值，默认叫`newValue`
+
+- `didSet` 会传递旧值，默认叫`oldValue`
+- 在初始化器中设置属性值不会触发 `willSet` 和 `didSet` 
+- 在存储属性定义时设置初始值也不会触发 `willSet` 和 `didSet` 
+
+
+### 0x02 全局变量、局部变量
+
+属性观察器对全局变量、局部变量同样有效
+
+```
+// 全局变量
+var year: Int = 2020{
+    willSet {
+        print("newValue: \(newValue)")
+    }
+    didSet {
+        print("oldValue: \(oldValue)")
+    }
+}
+
+year = 2021
+
+// 打印结果
+newValue: 2021
+oldValue: 2020
+```
+
+
+```
+func test11() {
+    var age: Int = 10 {
+        willSet {
+            print("newValue: \(newValue)")
+        }
+        didSet {
+            print("oldValue: \(oldValue)")
+        }
+    }
+    age = 100
+}
+
+// 打印结果
+newValue: 100
+oldValue: 10
+```
+
+
+
 
 <br>
 

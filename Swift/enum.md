@@ -248,16 +248,28 @@ print(MemoryLayout<TestEnum>.alignment) // 1
 
 可以看到若枚举变量只有原始值，其内存布局和没有原始值是一样的，都只占 1 个字节的内存空间，并用 `0 1 2 ...` 来区分不同的 `case`。
 
-这时可能有人会问：那枚举变量的原始值存在哪里了呢？通过前面的学习我们知道原始值是唯一且不变的，也就是说所有的枚举变量共用一份原始值。那这个原始值就没有必要存储在枚举的内存中，我们甚至可以猜测枚举源码中使用函数来实现对原始值的获取，伪代码如下
+这时可能有人会问：那枚举变量的原始值存在哪里了呢？通过前面的学习我们知道原始值是唯一且不变的，也就是说所有的枚举变量共用一份原始值。那这个原始值就没有必要存储在枚举的内存中，可以用计算属性的方式得到
 
 ```
-// 枚举中 rawValue 的伪代码
-func rawValue() -> Int {
-    if self == test1 {
-        return 10
+enum TestEnum: Int {
+    case test1 = 10
+    case test2
+    case test3
+    
+    var rawValue: Int {
+        switch self {
+        case .test1: return 100
+        case .test2: return 102
+        case .test3: return 103
+        }
     }
-    ...
 }
+
+let t = TestEnum(rawValue: 10)
+print(t?.rawValue)
+
+// 打印结果
+Optional(100)
 ```
 
 ### 0x03 有关联值的枚举内存布局
