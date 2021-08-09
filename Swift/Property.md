@@ -225,8 +225,6 @@ oldValue: 10
 
 ## 三、 `inout`
 
-`inout` 
-
 ```
 struct Shape {
     var width: Int
@@ -288,7 +286,7 @@ swift-basic-macos`main:
     0x1000059fb <+91>:  leaq   -0x18(%rbp), %rdi
 ```
 
-
+从汇编代码可以看出，当调用方法中有 `inout` 修饰的参数时，若传进去的实参是存储属性且没有设置属性观察器，会将存储属性的地址值传递进去。
 
 ### 0x02 传进去的参数是计算属性
 
@@ -302,6 +300,8 @@ call test11
 setGirth: 20
 ```
 
+转成相应的汇编代码
+
 ```
 swift-basic-macos`main:
     ...
@@ -311,9 +311,9 @@ swift-basic-macos`main:
     0x100005ac1 <+97>:  movq   %rax, -0x28(%rbp)
     ; 将 rbp-0x28 的地址值存放到 rdi (相当于将 girth 复制一份放到 rdi)
     0x100005ac5 <+101>: leaq   -0x28(%rbp), %rdi
-    ; 调用 test11 方法，传参 rdi
+    ; 调用 test11 方法，传参 rdi，将 rdi 的值修改为 20， 也就是将 rbp - 0x28 值 修改为 20
     0x100005ac9 <+105>: callq  0x1000066f0               ; swift_basic_macos.test11(num: inout Swift.Int) -> () at main.swift:40
-    ; test11 方法中会将传进来的值修改为20，也就是说 rbp - 0x28 中存储的值为20 
+    ; 为调用 setter 方法做准备参数 
     0x100005ace <+110>: movq   -0x28(%rbp), %rdi
     0x100005ad2 <+114>: leaq   0x37e7(%rip), %r13        ; swift_basic_macos.s : swift_basic_macos.Shape
     ; 调用 girth 的 setter 方法
@@ -321,12 +321,81 @@ swift-basic-macos`main:
 	...   
 ```
 
-从汇编就可以验证打印结果的方法调用顺序。
+从汇编就可以验证打印结果的方法调用顺序。当调用方法中有 `inout` 修饰的参数时，若传进去的实参是计算属性
+
+- 先调用计算属性的 `getter` 方法，并复制一份
+
+- 将复制的临时变量的内存地址传入到函数，然后在函数内部修改临时变量的值
+- 函数返回后，将修改后的临时变量的值覆盖到实参中(触发 `setter` 方法)
 
 ![](../Images/Swift/property/property_images02.png)
 
 ### 0x03 传进去的参数是存储属且设置属性观察器
 
+```
+var s = Shape(width: 10, side: 4)
+test11(num: &s.side)
+
+// 打印结果
+call test11
+willSetSide:20
+didSetSide:4 20
+```
+
+转成相应的汇编代码
+
+```
+swift-basic-macos`main:
+    ...
+    0x100005a19 <+73>:  callq  0x100006d3e               ; symbol stub for: swift_beginAccess
+    ; 去除 side (s + 8) 的地址值给 rax
+    0x100005a1e <+78>:  movq   0x38a3(%rip), %rax        ; swift_basic_macos.s : swift_basic_macos.Shape + 8
+    ; 将 rax 中存放的内容复制一份存放到 rbp-0x28
+    0x100005a25 <+85>:  movq   %rax, -0x28(%rbp)
+    ; 将 rbp-0x28 的地址值给 rdi
+    0x100005a29 <+89>:  leaq   -0x28(%rbp), %rdi
+    ; 调用 test11 函数 传参 rdi，将 rdi 值修改为20，rbp-0x28 中存储的值相应修改为 2-
+    0x100005a2d <+93>:  callq  0x1000066f0               ; swift_basic_macos.test11(num: inout Swift.Int) -> () at main.swift:40
+    ; 为调用 side 的 setter 方法做准备（参数）
+    0x100005a32 <+98>:  movq   -0x28(%rbp), %rdi
+    0x100005a36 <+102>: leaq   0x3883(%rip), %r13        ; swift_basic_macos.s : swift_basic_macos.Shape
+    ; 调用 setter 方法
+    0x100005a3d <+109>: callq  0x100005b80               ; swift_basic_macos.Shape.side.setter : Swift.Int at <compiler-generated>
+    ...
+
+
+; side 的 setter 方法内部会调用 willSet 和 didSet
+swift-basic-macos`Shape.side.setter:
+->  ...
+    0x100005bb5 <+53>: callq  0x100005be0               ; swift_basic_macos.Shape.side.willset : Swift.Int at main.swift:16
+    ...
+    0x100005bcd <+77>: callq  0x100005dc0               ; swift_basic_macos.Shape.side.didset : Swift.Int at main.swift:19
+    ...
+```
+
+从汇编就可以验证打印结果的方法调用顺序。当调用方法中有 `inout` 修饰的参数时，若传进去的参数是存储属且设置属性观察器
+
+- 先将实参复制一份，再将复制得到的临时变量的地址值传到 `test11` 函数中
+
+- 函数内部修改临时变量的值
+- 函数返回后，将修改后的临时变量的值覆盖到实参中(触发 `setter` 方法)
+
+
+### 0x04 总结
+
+从上面可以看出若传进去的实参是计算属性或是设置的属性观察器的存储属性，都会先将实参拷贝一份，再将拷贝后得到的副本的地址值传到函数中。这是为什么呢？
+
+因为若是将是计算属性的实参(带属性观察器的存储属性同理)的内存地址直接传到  `test11` 函数中，将只会修改是实参的值，而不会触发 `getter` 和 `setter ` 方法。
+
+
+- 若实参有物理内存地址，且没有设置属性观察器，直接将实参的内存地址传到函数中
+
+- 若实参是计算属性或是设置的属性观察器的存储属性，会采取 Copy In Copy Out 的做法
+
+	- 调用函数时，先复制实参，得到副本 (`getter`)
+	
+	- 将副本的内存地址传入函数，在函数内部修改副本的值
+	- 函数返回后，再将副本的值覆盖实参的值 (`setter`)
 
 <br>
 
