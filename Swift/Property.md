@@ -221,11 +221,111 @@ newValue: 100
 oldValue: 10
 ```
 
-
-
-
 <br>
 
+## 三、 `inout`
+
+`inout` 
+
+```
+struct Shape {
+    var width: Int
+    
+    var side: Int {
+        willSet {
+            print("willSetSide:\(newValue)")
+        }
+        didSet {
+            print("didSetSide:\(oldValue) \(side)")
+        }
+    }
+    
+    var girth: Int {
+        set {
+            width = newValue / side
+            print("setGirth:", newValue)
+        }
+        get {
+            print("getGirth")
+            return width * side
+        }
+    }
+    
+    func show() {
+        print("width=\(width), side=\(side), girth=\(girth)")
+    }
+}
+
+
+func test11(num: inout Int) {
+    print("call test11")
+    num = 20
+}
+```
+
+### 0x01 传进去的参数是存储属性且没有设置属性观察器
+
+```
+var s = Shape(width: 10, side: 4)
+test11(num: &s.width)
+s.show()
+
+// 打印结果
+call test11
+getGirth
+width=20, side=4, girth=80
+```
+
+部分汇编代码
+
+```
+swift-basic-macos`main:
+    ...
+    ; 将 width 的地址值给 rdi
+    0x1000059ef <+79>:  leaq   0x38ca(%rip), %rdi        ; swift_basic_macos.s : swift_basic_macos.Shape
+    ; 调用 test11() 方法，传参 rdi 也就是  width 的地址值
+    0x1000059f6 <+86>:  callq  0x1000066f0               ; swift_basic_macos.test11(num: inout Swift.Int) -> () at main.swift:40
+    0x1000059fb <+91>:  leaq   -0x18(%rbp), %rdi
+```
+
+
+
+### 0x02 传进去的参数是计算属性
+
+```
+var s = Shape(width: 10, side: 4)
+test11(num: &s.girth)
+
+// 打印结果
+getGirth
+call test11
+setGirth: 20
+```
+
+```
+swift-basic-macos`main:
+    ...
+    ; 先调用 girth 的 getter 方法，返回值放到 rax
+    0x100005abc <+92>:  callq  0x100006060               ; swift_basic_macos.Shape.girth.getter : Swift.Int at main.swift:29
+    ; 将 rax 中存储的地址值放到 rbp-0x28
+    0x100005ac1 <+97>:  movq   %rax, -0x28(%rbp)
+    ; 将 rbp-0x28 的地址值存放到 rdi (相当于将 girth 复制一份放到 rdi)
+    0x100005ac5 <+101>: leaq   -0x28(%rbp), %rdi
+    ; 调用 test11 方法，传参 rdi
+    0x100005ac9 <+105>: callq  0x1000066f0               ; swift_basic_macos.test11(num: inout Swift.Int) -> () at main.swift:40
+    ; test11 方法中会将传进来的值修改为20，也就是说 rbp - 0x28 中存储的值为20 
+    0x100005ace <+110>: movq   -0x28(%rbp), %rdi
+    0x100005ad2 <+114>: leaq   0x37e7(%rip), %r13        ; swift_basic_macos.s : swift_basic_macos.Shape
+    ; 调用 girth 的 setter 方法
+    0x100005ad9 <+121>: callq  0x1000061b0               ; swift_basic_macos.Shape.girth.setter : Swift.Int at main.swift:25
+	...   
+```
+
+从汇编就可以验证打印结果的方法调用顺序。
+
+![](../Images/Swift/property/property_images02.png)
+
+### 0x03 传进去的参数是存储属且设置属性观察器
 
 
 <br>
