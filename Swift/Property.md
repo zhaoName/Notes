@@ -7,7 +7,7 @@
 
 <br>
 
-## 一、属性分类
+## 一、实例属性分类
 
 ### 0x01 存储属性
 
@@ -399,7 +399,104 @@ swift-basic-macos`Shape.side.setter:
 
 <br>
 
+## 四、类型属性
 
+我们可以用 `static` 关键字定义类型属性，如果是类的计算属性的话，也可以使用 `class` 关键字。
+
+```
+class SomeClass {
+    static var storedTypeProperty = "Some value."
+    static var computedTypeProperty: Int {
+        return 27
+    }
+    class var overrideableComputedTypeProperty: Int {
+        return 107
+    }
+}
+```
+
+### 0x01 类型属性存放在哪
+
+声明两个全局变量 `num1`、`num2`，并定义一个类型属性 `age`。
+
+```
+let num1: Int = 10
+
+class Person {
+    static var age: Int = 0
+}
+Person.age = 15
+
+let num2: Int = 10
+```
+
+在 `Person.age = 15` 出下断点，查看汇编代码
+
+```
+swift-basic-macos`main:
+    ...
+    ; num1 的内存地址 rip(0x100005873) + 0x2ac5 
+    0x100005868 <+8>:  movq   $0xa, 0x2ac5(%rip)        ; swift::getRootSuperclass()::$_0::operator()() const::TheLazy + 12
+    0x100005873 <+19>: movl   %edi, -0x1c(%rbp)
+    0x100005876 <+22>: movq   %rsi, -0x28(%rbp)
+->  0x10000587a <+26>: callq  0x100005940               ; swift_basic_macos.Person.age.unsafeMutableAddressor : Swift.Int at main.swift
+    ...
+    0x10000589b <+59>: movq   -0x30(%rbp), %rax
+    ; rax的地址值就是 age 的内存地址，而 rax 的地址是上面函数的返回值，所以可以在此下断点，用 register read rax 读出 rax 的地址值
+    0x10000589f <+63>: movq   $0xf, (%rax)
+    ; num1 的内存地址 rip(0x1000058bc) + 0x2a8c
+    0x1000058b1 <+81>: movq   $0xb, 0x2a8c(%rip)        ; static swift_basic_macos.Person.age : Swift.Int + 4
+    0x1000058bc <+92>: addq   $0x30, %rsp
+    ...
+```
+
+经过计算得出
+
+```
+num1的内存地址：0x100008338
+age 的内存地址：0x100008340
+num2的内存地址：0x100008348
+```
+
+这样就证明出**类型属性没有存储在类中，而是存储在全局区。**
+
+
+### 0x02 类型属性的初始化
+
+上面的汇编代码中有个函数调用的过程，Xcode 注释为 `swift_basic_macos.Person.age.unsafeMutableAddressor : Swift.Int at main.swift`。这里就是类型属性的初始化过程。我们在这里打断点，执行 `lldb` 指令`si` 进入函数 `unsafeMutableAddressor`
+
+```
+swift-basic-macos`Person.age.unsafeMutableAddressor:
+    ...
+    0x10000594e <+14>: leaq   -0x35(%rip), %rax         ; globalinit_33_D9AA5BB1779C44BAFDBE2AD05D14A30E_func0 at main.swift
+    0x100005955 <+21>: leaq   0x29b4(%rip), %rdi        ; globalinit_33_D9AA5BB1779C44BAFDBE2AD05D14A30E_token0
+    0x10000595c <+28>: movq   %rax, %rsi
+    0x10000595f <+31>: callq  0x100005e92               ; symbol stub for: swift_once
+->  0x100005964 <+36>: leaq   0x29d5(%rip), %rax        ; static swift_basic_macos.Person.age : Swift.Int
+    ...
+```
+
+可以看到里面会调用 `swift_once ` 函数，`si `一路跟进去，最终跟到 `libswiftCore.dylib swift_once:`。
+
+```
+libswiftCore.dylib`swift_once:
+->  0x7fff5ad017d0 <+0>:  cmpq   $-0x1, (%rdi)
+    ...
+    0x7fff5ad017e4 <+20>: callq  0x7fff5ad40204            ; symbol stub for: dispatch_once_f
+    ...
+```
+
+在`libswiftCore.dylib swift_once:` 中调用了 `GCD` 的 `dispatch_once_f` 函数。也就是说类型属性内部是调用 `dispatch_once_f `函数来保证其只初始化一次，且类型属性的初始化是线程安全的。
+
+`diapatch_once_f` 要接收一个闭包当参数，我们可以认为类型属性的初始化过程就在这个闭包中。从上面的汇编上的注释可以看出 `rax` 是 `func0`。也就是说 `rax` 可能是要传到 `diapatch_once_f ` 中的函数地址。用`register read rsi` 读取函数地址为 `0x100005920`
+
+![](../Images/Swift/property/property_images03.png)
+
+再到 `func0` 函数查看，有类型初始化的代码。
+
+![](../Images/Swift/property/property_images04.png)
+
+**总结：类型属性会在第一次使用的时候初始化，且能保证线程安全 (因为底层是调用`diapatch_once_f ` 实现的)**
 
 <br>
 
