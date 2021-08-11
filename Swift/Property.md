@@ -30,7 +30,7 @@ struct FixedLengthRange {
 
 必须将延时加载属性声明成变量（使用 `var` 关键字），因为属性的初始值可能在实例构造完成之后才会得到。而常量属性在构造过程完成之前必须要有初始值，因此无法声明成延时加载。
 
-```
+```swift
 class Car {
     init() {
         print("car init")
@@ -66,7 +66,7 @@ car is running
 
 当结构体包含一个延迟属性时，若要访问结构体中的延迟属性，则结构体实例必须用 `var` 修饰。
 
-```
+```swift
 struct Point {
     var x = 0
     var y = 0
@@ -87,7 +87,7 @@ p1.z = 1
 
 定义计算属性必须用 `var` 声明，因为 `let` 表示常量，值时一成不变的。而计算属性的值是可能发生变化的。
 
-```
+```swift
 struct Point {
     var x = 0.0, y = 0.0
 }
@@ -113,7 +113,7 @@ struct Rect {
 
 如果计算属性的 `setter` 没有定义表示新值的参数名，则可以使用默认名称 `newValue`。
 
-```
+```swift
 struct AlternativeRect {
     var origin = Point()
     var size = Size()
@@ -133,7 +133,7 @@ struct AlternativeRect {
 
 **只读计算属性**只有 `getter` 没有 `setter` 的计算属性叫只读计算属性。只读计算属性的声明可以去掉 `get` 关键字和花括号
 
-```
+```swift
 struct Cuboid {
     var width = 0.0, height = 0.0, depth = 0.0
     var volume: Double {
@@ -151,7 +151,7 @@ struct Cuboid {
 
 Swift 中可以为非 `lazy` 的 `var` 存储属性设置属性观察器。
 
-```
+```swift
 class StepCounter {
     var totalSteps: Int = 0 {
         willSet(newTotalSteps) {
@@ -184,7 +184,7 @@ stepCounter.totalSteps = 200
 
 属性观察器对全局变量、局部变量同样有效
 
-```
+```swift
 // 全局变量
 var year: Int = 2020{
     willSet {
@@ -203,7 +203,7 @@ oldValue: 2020
 ```
 
 
-```
+```swift
 func test11() {
     var age: Int = 10 {
         willSet {
@@ -225,7 +225,7 @@ oldValue: 10
 
 ## 三、 `inout`
 
-```
+```swift
 struct Shape {
     var width: Int
     
@@ -263,7 +263,7 @@ func test11(num: inout Int) {
 
 ### 0x01 传进去的参数是存储属性且没有设置属性观察器
 
-```
+```swift
 var s = Shape(width: 10, side: 4)
 test11(num: &s.width)
 s.show()
@@ -290,7 +290,7 @@ swift-basic-macos`main:
 
 ### 0x02 传进去的参数是计算属性
 
-```
+```swift
 var s = Shape(width: 10, side: 4)
 test11(num: &s.girth)
 
@@ -332,7 +332,7 @@ swift-basic-macos`main:
 
 ### 0x03 传进去的参数是存储属且设置属性观察器
 
-```
+```swift
 var s = Shape(width: 10, side: 4)
 test11(num: &s.side)
 
@@ -403,7 +403,7 @@ swift-basic-macos`Shape.side.setter:
 
 我们可以用 `static` 关键字定义类型属性，如果是类的计算属性的话，也可以使用 `class` 关键字。
 
-```
+```swift
 class SomeClass {
     static var storedTypeProperty = "Some value."
     static var computedTypeProperty: Int {
@@ -419,7 +419,7 @@ class SomeClass {
 
 声明两个全局变量 `num1`、`num2`，并定义一个类型属性 `age`。
 
-```
+```swift
 let num1: Int = 10
 
 class Person {
