@@ -413,9 +413,119 @@ swift-basic-macos`plus #1 (_:) in getFn():
 
 ## 三、自动闭包
 
+自动闭包是一种自动创建的闭包，用于包装传递给函数作为参数的表达式。这种闭包不接受任何参数，当它被调用的时候，会返回被包装在其中的表达式的值。
 
+自动闭包让你能够延迟求值，因为直到你调用这个闭包，代码段才会被执行。
+
+
+### 0x01 引入自动闭包
+
+定义如下函数，调用`testAutoclosure ` 函数时，无论 `num1` 传入的是正数还是负数，`sum`函数都会被调用。
 
 ```swift
+func sum() -> Int {
+    print("sum+++++")
+    return 10
+}
+
+func testAutoclosure(_ num1: Int, _ num2: Int) -> Int {
+    return num1 > 0 ? num1 : num2;
+}
+
+testAutoclosure(1, sum())
+// 打印结果
+sum+++++
+```
+
+可以把参数 `num2` 的类型定义成函数类型，这样当 `num1` 大于 0 时，`sum` 函数就不会被调用。
+
+```swift
+func sum() -> Int {
+    print("sum+++++")
+    return 10
+}
+
+// num2 改成函数类型，可以被延迟加载
+func testAutoclosure(_ num1: Int, _ num2: () -> Int) -> Int {
+    return num1 > 0 ? num1 : num2();
+}
+
+testAutoclosure(1, sum)
+```
+
+上述 `testAutoclosure` 的第二个参数还可以当成闭包传进去
+
+```swift
+testAutoclosure(1) {
+    return 10
+}
+```
+
+代码再简化
+
+```swift
+testAutoclosure(1) { 10 }
+```
+
+那能不能再简化了，答案是能！Swift 提供自动闭包 `@autoclosure` 可以将需要延迟执行的代码包装成闭包
+
+```swift
+func testAutoclosure(_ num1: Int, _ num2: @autoclosure () -> Int) -> Int {
+    return num1 > 0 ? num1 : num2();
+}
+
+// 等价于 testAutoclosure(1) { 10 }
+// 也就是将 10 自动包装成闭包
+testAutoclosure(1, 10)
+```
+
+
+### 0x02 `??`
+
+Swift 中最常用的自动闭包应该是 `??`
+ 
+```swift
+func testAutoclosure() {
+    let a: Int? = 10
+    let b = a ?? 100
+}
+```
+当 `a` 有值时，`?? `后面的代码不会被执行。下面是 `??` 的函数声明
+
+```swift
+public func ?? <T>(optional: T?, defaultValue: @autoclosure () throws -> T) rethrows -> T
+```
+
+### 0x03 自动闭包注意点
+
+- `@autoclosure` 只支持 `() -> T` 格式的参数
+
+- `@autoclosure` 并非只支持最后一个参数
+
+```swift
+func testAutoclosure(_ num1: Int, _ num2: @autoclosure () -> Int, _ num3: Int) -> Int {
+    return num1 > 0 ? num1 : num2();
+}
+```
+
+- 有 `@autoclosure` 和无 `@autoclosure` 构成函数重载
+
+```swift
+func testAutoclosure(_ num1: Int, _ num2: @autoclosure () -> Int) -> Int {
+    print("has autoclosure----")
+    return num1 > 0 ? num1 : num2();
+}
+
+func testAutoclosure(_ num1: Int, _ num2:() -> Int) -> Int {
+    print("no autoclosure----")
+    return num1 > 0 ? num1 : num2();
+}
+
+testAutoclosure(1) { 10 }
+testAutoclosure(1, 10)
+// 打印结果
+no autoclosure----
+has autoclosure----
 ```
 
 
@@ -423,33 +533,18 @@ swift-basic-macos`plus #1 (_:) in getFn():
 
 ## 四、逃逸闭包
 
+当一个闭包作为参数传到一个函数中，但是这个闭包在函数返回之后才被执行，我们称该闭包从函数中逃逸。Swift 中在参数类型前加上 `@escaping`，用来表示这个闭包可以"逃出"这个函数。
+
 
 ```swift
+var completionHandlers: [() -> Void] = []
+func someFunctionWithEscapingClosure(completionHandler: @escaping () -> Void) {
+    completionHandlers.append(completionHandler)
+}
 ```
 
 <br>
 
-```swift
-```
-
-```swift
-```
-
-```swift
-```
-
-```swift
-```
-
-```swift
-```
-
-
-<br>
-
-
-
-<br>
 
 参考：
 
