@@ -229,9 +229,9 @@ int main(int argc, const char * argv[]) {
 
 **相关内容**
 
-- [OC对象本质(一)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(一).md)
+- [OC对象本质(一)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%B8%80).md)
 
-- [OC对象本质(二)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(二).md)
+- [OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)
 
 <br>
 写于2019-04-25

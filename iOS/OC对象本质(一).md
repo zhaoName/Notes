@@ -53,12 +53,12 @@ struct NSObject_IMPL {
 
 ```
 // objc-class.mm 
-
 size_t class_getInstanceSize(Class cls)
 {
     if (!cls) return 0;
     return cls->alignedInstanceSize();
 }
+
 // Class's ivar size rounded up to a pointer-size boundary.
 uint32_t alignedInstanceSize() {
 	return word_align(unalignedInstanceSize());
@@ -315,35 +315,34 @@ NSLog(@"malloc_size:%zu", malloc_size((__bridge const void *)(p)));
 
 ```
 // malloc.c
-
 void *calloc(size_t num_items, size_t size)
 {
-	void *retval;
-	retval = malloc_zone_calloc(default_zone, num_items, size);
-	if (retval == NULL) {
-		errno = ENOMEM;
-	}
-	return retval;
+    void *retval;
+    retval = malloc_zone_calloc(default_zone, num_items, size);
+    if (retval == NULL) {
+        errno = ENOMEM;
+    }
+    return retval;
 }
 
 void *malloc_zone_calloc(malloc_zone_t *zone, size_t num_items, size_t size)
 {
-	MALLOC_TRACE(TRACE_calloc | DBG_FUNC_START, (uintptr_t)zone, num_items, size, 0);
-
-	void *ptr;
-	if (malloc_check_start && (malloc_check_counter++ >= malloc_check_start)) {
-		internal_check();
-	}
-
-	ptr = zone->calloc(zone, num_items, size);
-	
-	if (malloc_logger) {
-		malloc_logger(MALLOC_LOG_TYPE_ALLOCATE | MALLOC_LOG_TYPE_HAS_ZONE | MALLOC_LOG_TYPE_CLEARED, (uintptr_t)zone,
-				(uintptr_t)(num_items * size), 0, (uintptr_t)ptr, 0);
-	}
-
-	MALLOC_TRACE(TRACE_calloc | DBG_FUNC_END, (uintptr_t)zone, num_items, size, (uintptr_t)ptr);
-	return ptr;
+    MALLOC_TRACE(TRACE_calloc | DBG_FUNC_START, (uintptr_t)zone, num_items, size, 0);
+    
+    void *ptr;
+    if (malloc_check_start && (malloc_check_counter++ >= malloc_check_start)) {
+        internal_check();
+    }
+    
+    ptr = zone->calloc(zone, num_items, size);
+    
+    if (malloc_logger) {
+        malloc_logger(MALLOC_LOG_TYPE_ALLOCATE | MALLOC_LOG_TYPE_HAS_ZONE | MALLOC_LOG_TYPE_CLEARED, (uintptr_t)zone,
+                      (uintptr_t)(num_items * size), 0, (uintptr_t)ptr, 0);
+    }
+    
+    MALLOC_TRACE(TRACE_calloc | DBG_FUNC_END, (uintptr_t)zone, num_items, size, (uintptr_t)ptr);
+    return ptr;
 }
 
 // nano_zone_common.h
@@ -357,9 +356,9 @@ void *malloc_zone_calloc(malloc_zone_t *zone, size_t num_items, size_t size)
 
 **相关内容**
 
-- [OC对象本质(二)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(二).md)
+- [OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)
 
-- [OC对象本质(三)](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/OC对象本质(三).md)
+- [OC对象本质(三)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%B8%89).md)
 
 
 <br>
