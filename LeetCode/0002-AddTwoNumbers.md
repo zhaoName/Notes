@@ -26,7 +26,7 @@ Explanation: 342 + 465 = 807.
 
 - 第一思路  保留l1
 
-```
+```python3
 ## Time Complexity: O(max(m ,n))  Space Complexity:O(1)
 def addTwoNumbers(self, l1: ListNode, l2: ListNode) -> ListNode:
 	## lastNd 记录 l1 的最后一个节点，否则当 l1 较短，或者l1 l2一样长且有进位时，链表会断掉
@@ -57,4 +57,38 @@ def addTwoNumbers(self, l1: ListNode, l2: ListNode) -> ListNode:
         newNode = ListNode(1)
         lastNd.next = newNode
     return save
+```
+
+
+<br>
+
+## 二刷 
+
+2021-08-20
+
+```python3
+class Solution:
+	def addTwoNumbers(self, l1: ListNode, l2: ListNode) -> ListNode:
+		carry, head, tail = 0, None, None
+		while l1 or l2:
+			n1 = l1.val if l1 else 0
+			n2 = l2.val if l2 else 0 
+			sum = n1 + n2 + carry
+
+			if head == None:
+				head = ListNode(sum % 10)
+				tail = head
+			else:
+				tail.next = ListNode(sum % 10)
+				tail = tail.next
+
+			carry = int(sum / 10)
+			if l1:
+				l1 = l1.next
+			if l2:
+				l2 = l2.next
+
+		if carry == 1:
+			tail.next = ListNode(1)
+		return head
 ```
