@@ -25,7 +25,7 @@
 
 ### 图片展示
 
-![](https://images.gitee.com/uploads/images/2019/0826/141627_ebd5611c_1355277.png "bucketsort.png")
+![](../Images/Sort/bucketsort.png)
 
 
 ### OC 代码实现

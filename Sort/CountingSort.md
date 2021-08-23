@@ -14,7 +14,7 @@
 
 ### 动画展示
 
-![](https://images.gitee.com/uploads/images/2019/0824/185122_c0260036_1355277.gif "countingSort.gif")
+![](../Images/Sort/countingSort.gif)
 
 
 ### OC 代码实现

@@ -18,7 +18,7 @@
 
 ### 动画展示
 
-![](https://images.gitee.com/uploads/images/2019/0822/112432_a1eff311_1355277.gif "quickSort.gif")
+![](../Images/Sort/quickSort.gif)
 
 
 ### OC 代码实现

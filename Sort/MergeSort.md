@@ -21,7 +21,7 @@
 
 ### 动画展示
 
-![](https://images.gitee.com/uploads/images/2019/0820/144833_59efa028_1355277.gif "mergeSort.gif")
+![](../Images/Sort/mergeSort.gif)
 
 
 ### OC 代码实现

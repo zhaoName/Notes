@@ -15,7 +15,7 @@
 
 ### 动画展示
 
-![](https://images.gitee.com/uploads/images/2019/0816/135216_65e5d593_1355277.gif "selectionSort.gif")
+![](../Images/Sort/selectionSort.gif)
 
 
 ### OC 代码实现

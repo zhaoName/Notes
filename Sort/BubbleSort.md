@@ -19,7 +19,7 @@
 
 ### 动画演示
 
-![](https://images.gitee.com/uploads/images/2019/0816/135655_11e96a12_1355277.gif "bubbleSort.gif")
+![](../Images/Sort/bubbleSort.gif)
 
 
 ### 最好情况

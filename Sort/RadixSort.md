@@ -17,7 +17,7 @@
 ### 动画展示
 
 
-![](https://images.gitee.com/uploads/images/2019/0826/163124_dddfa886_1355277.gif "radixSort.gif")
+![](../Images/Sort/radixSort.gif)
 
 
 ### OC 代码实现
