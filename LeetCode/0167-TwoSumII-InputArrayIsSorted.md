@@ -25,7 +25,7 @@ The tests are generated such that there is exactly one solution.
 
 ## 解法
 
-```
+```python3
 from typing import List
 
 class Solution:

@@ -24,7 +24,7 @@ Follow up: Squaring each element and sorting the new array is very trivial, coul
 
 ## 解法
 
-```
+```python3
 # Time:O(n*k) k为负数的个数
 # Space: O(1)
 def sortedSquares1(self, nums: List[int]) -> List[int]:

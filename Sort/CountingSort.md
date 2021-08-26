@@ -19,7 +19,7 @@
 
 ### OC 代码实现
 
-```
+```Objective-C
 - (void)countingSort:(NSMutableArray *)arr
 {
     // 若已知最大值 这步可省略
@@ -75,7 +75,7 @@
 
 ### C 代码实现
 
-```
+```C
 void c_countingsSort(int arr[], int len)
 {
     int *countings = malloc(10 * sizeof(int));

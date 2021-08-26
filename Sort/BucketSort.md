@@ -30,7 +30,7 @@
 
 ### OC 代码实现
 
-```
+```Objective-C
 - (void)bucketSort:(NSMutableArray *)arr
 {
     if (arr.count < 2) return;

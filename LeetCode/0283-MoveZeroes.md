@@ -22,7 +22,7 @@ Follow up: Could you minimize the total number of operations done?
 
 ## 解法
 
-```
+```python3
 from typing import List
 
 class Solution:

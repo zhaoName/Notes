@@ -22,7 +22,7 @@ Follow up: Could you do this in one pass?
 
 ## 解法
 
-```
+```python
 class Solution:
     def removeNthFromEnd(self, head: ListNode, n: int) -> ListNode:
         dummy = ListNode(0, head)

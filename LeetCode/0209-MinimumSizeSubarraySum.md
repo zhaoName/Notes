@@ -25,7 +25,7 @@ Follow up: If you have figured out the O(n) solution, try coding another solutio
 
 ## 解法
 
-```
+```python3
 from typing import List
 import sys
 
