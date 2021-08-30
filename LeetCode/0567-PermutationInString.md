@@ -22,7 +22,7 @@ s1 and s2 consist of lowercase English letters.
 
 ## 解法
 
-```python
+```python3
 def checkInclusion(self, s1: str, s2: str) -> bool:
     # 统计 s1 中每个字符出现的次数
     counter1 = collections.Counter(s1)

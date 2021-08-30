@@ -25,8 +25,7 @@ nums is sorted in ascending order.
 
 ## 解法
 
-```
-
+```python3
 from typing import List
 
 class Solution:

@@ -25,7 +25,7 @@ A linked list can be reversed either iteratively or recursively. Could you imple
 
 - 带头结点
 
-```
+```C
 /**
  * typedef struct ZZNode{
  *    void *data;
@@ -55,7 +55,7 @@ ZZHeadLinkedList* zz_reverse_headLinkedList(ZZHeadLinkedList *list)
 
 - 不带头结点
 
-```
+```C
 /**
  * typedef struct ZZNode{
  *    void *data;
@@ -92,7 +92,7 @@ ZZLinkedList* zz_reverse_linkedList(ZZLinkedList *list)
 
 ### Python
 
-```
+```python3
 def reverseList(self, head: ListNode) -> ListNode:
 	if not head: return None
 	
@@ -108,4 +108,50 @@ def reverseList(self, head: ListNode) -> ListNode:
 		temp = nextNd
 		i += 1
 	return reNode
+```
+
+<br>
+
+## 二刷
+
+
+```python3
+# queue
+    def reverseList_queue(self, head: ListNode) -> ListNode:
+        if head == None: return head
+
+        linkQueue = queue.Queue()
+        while head:
+            temp = head
+            head = head.next
+            temp.next = None
+            linkQueue.put(temp)
+        head = linkQueue.get()
+
+        while linkQueue.qsize() > 0:
+            node = linkQueue.get()
+            node.next = head
+            head = node
+        return head
+```
+
+
+```
+## stack
+    def reverseList_stack(self, head: ListNode) -> ListNode:
+        if head == None: return head
+        list = []
+        while head:
+            temp = head
+            head = head.next
+            temp.next = None
+            list.append(temp)
+
+        head = list.pop()
+        ans = head
+        while len(list) > 0:
+            node = list.pop()
+            head.next = node
+            head = node
+        return ans
 ```
