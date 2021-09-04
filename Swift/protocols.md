@@ -9,7 +9,7 @@
 
 协议的定义方式与类、结构体和枚举的定义非常相似
 
-```
+```swift
 protocol SomeProtocol {
 
 }
@@ -18,7 +18,7 @@ protocol SomeProtocol {
 某个类遵守某个协议时，需要在类型名称后加上协议名称，中间以冒号（`:`）分隔。遵循多个协议时，各协议之间用逗号（`,`）分隔
 
 
-```
+```swift
 struct SomeStructure: FirstProtocol, AnotherProtocol {
 
 }
@@ -26,7 +26,7 @@ struct SomeStructure: FirstProtocol, AnotherProtocol {
 
 若是一个类拥有父类，应该将父类名放在遵循的协议名之前，以逗号分隔
 
-```
+```swift
 class SomeClass: SomeSuperClass, FirstProtocol, AnotherProtocol {
     
 }
@@ -38,7 +38,7 @@ class SomeClass: SomeSuperClass, FirstProtocol, AnotherProtocol {
 
 协议总是用 `var` 关键字来声明变量属性，在类型声明后加上 `{ set get }` 来表示属性是可读可写的，可读属性则用 `{ get } `来表示
 
-```
+```swift
 protocol SomeProtocol {
     var mustBeSettable: Int { get set }
     var doesNotNeedToBeSettable: Int { get }
@@ -49,7 +49,7 @@ protocol SomeProtocol {
 
 - 若协议中要求属性是可读可写的，那实现该属性不能是常量属性或只读的计算型属性，而需要用 `var ` 修饰的属性
 
-```
+```swift
 class Person: SomeProtocol {
     // 协议中要求属性是可读可写的，实现的时候必须用 var 修饰
     var mustBeSettable: Int {
@@ -64,7 +64,7 @@ class Person: SomeProtocol {
 
 - 若协议中的属性权限只是可读的，可以用任何属性实现
 
-```
+```swift
 class Person: SomeProtocol {
     // 协议中要求属性是可读可写的，实现的时候必须用 var 修饰
     var mustBeSettable: Int = 1
@@ -76,7 +76,7 @@ class Person: SomeProtocol {
     }
     
     // 存储属性实现协议中的「只读属性」
-     let doesNotNeedToBeSettable: Int = 0
+    let doesNotNeedToBeSettable: Int = 0
     
     // 可读可写的存储属性实现协议中的 「只读属性」
     var doesNotNeedToBeSettable: Int = 0
@@ -85,7 +85,7 @@ class Person: SomeProtocol {
 
 在协议中定义类型属性时，总是使用 `static` 关键字作为前缀。当类类型遵循协议时，除了 `static` 关键字，还可以使用 `class` 关键字来声明类型属性。
 
-```
+```swift
 protocol SomeProtocol {
     static var commonClassProperty: Int { get set }
     
@@ -118,7 +118,7 @@ class Person: SomeProtocol {
 
 在协议中定义类方法的时候，必须 `static` 关键字作为前缀。在类实现协议时，类方法要求使用 `class` 或 `static` 作为关键字前缀。
 
-```
+```swift
 protocol SomeProtocol {
     static func testStaticMethod()
 }
