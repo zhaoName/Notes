@@ -41,6 +41,5 @@ class Solution:
         n = len(nums)
         res = []
         backtrack()
-        print(res)
         return res
 ```
