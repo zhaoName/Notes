@@ -24,9 +24,9 @@ Can you solve it using O(1) (i.e. constant) memory?
 ### C
 
 
-- 快满指针法(类似 202-HappyNumber)
+- 快慢指针法(类似 202-HappyNumber)
 
-```
+```C
 /**
  * 141. Linked List Cycle
  * time complexily:O(n)  space complexily:O(1)
@@ -62,7 +62,7 @@ bool hasCycle(struct ListNode *head)
 
 - 集合 哈希表
 
-```
+```python3
 ## Time complexity:O(n)  Space complexity:O(n)
 def hasCycle(self, head) -> bool:
 	s = set()
@@ -72,4 +72,20 @@ def hasCycle(self, head) -> bool:
 		s.add(head)
 		head = head.next
 	return False
+```
+
+
+### 二刷
+
+```python3
+# 快慢指针
+def hasCycle(self, head: ListNode) -> bool:
+    if not head: return False
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+        if fast == slow:
+            return True
+    return False
 ```
