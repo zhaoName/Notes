@@ -5,11 +5,15 @@
 ## 题目
 
 ```
-Given a sorted linked list, delete all duplicates such that each element appear only once.
+Given the head of a sorted linked list, delete all duplicates such that each element appears only once. Return the linked list sorted as well.
 
-Example
-Input: 1->1->2->3->3
-Output: 1->2->3
+Input: head = [1,1,2,3,3]
+Output: [1,2,3]
+
+Constraints:
+The number of nodes in the list is in the range [0, 300].
+-100 <= Node.val <= 100
+The list is guaranteed to be sorted in ascending order.
 ```
 
 
@@ -21,7 +25,7 @@ Output: 1->2->3
 
 ### C 
 
-```
+```C
 /**
  * 83. Remove Duplicates from Sorted List
  *
@@ -45,4 +49,21 @@ struct ListNode* deleteDuplicates(struct ListNode* head)
    }
    return head;
 }
+```
+
+
+### 二刷
+
+```python3
+def deleteDuplicates(self, head: ListNode) -> ListNode:
+    if not head: return None
+    preHead = head
+    slow, fast = head, head.next
+    while fast:
+        if slow.val == fast.val:
+            slow.next = fast.next
+        else:
+            slow = slow.next
+        fast = fast.next
+    return preHead
 ```
