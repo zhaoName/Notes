@@ -26,7 +26,7 @@ Notes:
 
 - 第一思路 push: O(1)  pop:O(n)
 
-```
+```python3
 import queue
 
 class MyStack:
@@ -55,3 +55,27 @@ class MyStack:
     def empty(self) -> bool:
     	return self.my_queue.empty()
 ``` 
+
+
+- 双端队列
+
+```python3
+class MyStack_deque:
+    def __init__(self):
+        self.que = collections.deque()
+
+    def push(self, x: int):
+        self.que.append(x)
+
+    def pop(self) -> int:
+        if len(self.que) == 0: return None
+        return self.que.pop()
+
+
+    def top(self) -> int:
+        if len(self.que) == 0: return None
+        return self.que[-1]
+
+    def empty(self) -> bool:
+        return len(self.que) == 0
+```

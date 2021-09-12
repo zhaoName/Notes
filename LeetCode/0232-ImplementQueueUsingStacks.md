@@ -24,7 +24,7 @@ Notes:
 
 - 第一思路 用list当做栈
 
-```
+```Python3
 class MyQueue:
 
     def __init__(self):
@@ -63,9 +63,9 @@ class MyQueue:
 ```
 
 
-- 第一思路 先实现栈 在实现队列
+- 第一思路 先实现栈 再实现队列
 
-```
+```python3
 class MyStack:
 	def __init__(self):
 		self.list = []
