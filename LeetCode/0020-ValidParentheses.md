@@ -1,11 +1,25 @@
 
 # 20. Valid Parentheses
 
-## C
+## 题目
+
+```
+Given a string s containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.
+
+An input string is valid if:
+Open brackets must be closed by the same type of brackets.
+Open brackets must be closed in the correct order.
+
+Constraints:
+1 <= s.length <= 104
+s consists of parentheses only '()[]{}'.
+```
+
+## 解法
 
 ### 第一思路
 
-```
+```C
 bool isValid(char *s)
 {
     int length = (int)strlen(s);
@@ -39,7 +53,7 @@ bool isValid(char *s)
 
 ### 优化思路
 
-```
+```C
 // '(' 与 ')' 的ASCII值差1，'[' 与 ']'，'{' 与 '}' 的ASCII值差2
 bool isValid(char *s)
 {
@@ -71,7 +85,7 @@ bool isValid(char *s)
 
 ### 第一思路
 
-```
+```python3
 class Solution:
     def isValid(self, s: str) -> bool:
         stack = ['#']
@@ -92,13 +106,9 @@ class Solution:
 
 ### 优化
 
-```
+```python3
 class Solution(object):
     def isValid(self, s):
-        """
-        :type s: str
-        :rtype: bool
-        """
         stack = []
         mapping = {")": "(", "}": "{", "]": "["}
         for char in s:
