@@ -1,12 +1,25 @@
 
 # 7. Reverse Integer
 
-## C
-
-### 第一思路
-
+## 题目
 
 ```
+Given a signed 32-bit integer x, return x with its digits reversed.
+If reversing x causes the value to go outside the signed 32-bit integer range [-231, 231 - 1], then return 0.
+Assume the environment does not allow you to store 64-bit integers (signed or unsigned).
+
+Input: x = 123
+Output: 321
+
+Constraints: -2^31 <= x <= 2^31 - 1
+```
+
+## 解法
+
+- 第一思路
+
+
+```C
 int reverse(int x)
 {
     // 32-bit signed int 最大为 2147483647
@@ -38,24 +51,42 @@ int reverse(int x)
 
 <br>
 
-### 优化
+- C 优化
 
-```
+```C
 /**
  * 32-bit int: -2147483648 ~ 2147483647
- *
- * 若 temp = sum * 10 + x % 10 溢出 则 sum ≥ IntMax / 10
- * 若 sum > IntMax / 10, 则 sum * 10 + x % 10 一定溢出
- * 若 sum = IntMax / 10, 则  x % 10 > 7 一定溢出
  */
-int reverse(int x)
-{
-    long sum = 0;
+int reverse(int x) {
+    int rev = 0;
     while (x != 0) {
-        sum = sum * 10 + x % 10;
-        x = x / 10;
+        if (rev < INT_MIN / 10 || rev > INT_MAX / 10) {
+            return 0;
+        }
+        int digit = x % 10;
+        x /= 10;
+        rev = rev * 10 + digit;
     }
-    if (sum > 2147483647 || sum < -2147483647) return 0;
-    return (int)sum;
+    return rev;
 }
 ```
+
+- python 不考虑移除写法
+
+```python3
+## [-2147483648, 2147483647]
+def reverse_str(self, x: int) -> int:
+    if -10 < x < 10: return x
+    xs, ans = str(x), 0
+    if xs[0] == '-':
+        xs = xs[:0:-1]
+        ans = -(int(xs))
+    else:
+      ans = int(xs[::-1])
+    return 0 if ans > 2147483647 or ans < -2147483648 else ans
+```
+
+
+
+
+
