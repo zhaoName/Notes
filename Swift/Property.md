@@ -427,7 +427,7 @@ class Person {
 }
 Person.age = 15
 
-let num2: Int = 10
+let num2: Int = 11
 ```
 
 在 `Person.age = 15` 出下断点，查看汇编代码
