@@ -21,6 +21,8 @@ Follow up: Could you solve it both recursively and iteratively?
 
 ## 解法
 
+- 递归
+
 ```python3
 # 递归
 def isSymmetric_recursive(self, root: TreeNode) -> bool:
@@ -32,3 +34,31 @@ def check(self, p: TreeNode, q: TreeNode) -> bool:
     if not p or not q: return False
     return p.val == q.val and self.check(p.left, q.right) and self.check(p.right, q.left)
 ```
+
+- 迭代
+
+```python3
+def isSymmetric_iteratively(self, root: TreeNode) -> bool:
+    # 只有根节点 也是对称二叉树
+    if not root or (not root.left and not root.right): return True
+
+    que = [root.left, root.right]
+    while que:
+        leftNode = que.pop(0)
+        rightNode = que.pop(0)
+        # 同时为空 继续往下遍历
+        if not leftNode and not rightNode: continue
+        # 有一个为空 或者值不等 返回 False
+        if (not leftNode or not rightNode) or leftNode.val != rightNode.val: return False
+
+        que.append(leftNode.left)
+        que.append(rightNode.right)
+        que.append(leftNode.right)
+        que.append(rightNode.left)
+    return True
+```
+
+
+
+
+
