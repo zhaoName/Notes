@@ -58,7 +58,7 @@ var str1 = "0123456789ABCDEF"
 
 ![](../Images/Swift/String/string_image02.png)
 
-转成汇编可以看到 16 个字节存储的内容为 `0xd000000000000010` 和 `0x800000010000b930` 。不再是以 ASCII 值和长度的格式存储。想要搞清楚字符串长度超过 15 之后存储内容的变化，我们需要知道 `String.init()` 方法做了什么事？ 
+转成汇编可以看到 16 个字节存储的内容为 `0xd000000000000010` 和 `0x800000010000b930` 。不再是以 ASCII 值和长度的格式存储。想要搞清楚这两个地址代表什么意思，我们需要知道 `String.init()` 方法做了什么事？ 
 
 ```
 swift-basic-macos`main:
@@ -89,7 +89,7 @@ libswiftCore.dylib`Swift.String.init(_builtinStringLiteral: Builtin.RawPointer, 
 ...
 ; 用字符串的长度和 15 比较
 0x7fff72f6b5e1 <+33>:  cmpq   $0xf, %rsi
-; 小于 15 跳转到 0x7fff72f6b627 继续执行
+; 小于等于 15 跳转到 0x7fff72f6b627 继续执行
 0x7fff72f6b5e5 <+37>:  jle    0x7fff72f6b627            ; <+103>
 ; 大于 15 往下执行
 ; 通过一系列操作将字符串长度和标志位 存放到 rax
@@ -112,7 +112,7 @@ libswiftCore.dylib`Swift.String.init(_builtinStringLiteral: Builtin.RawPointer, 
 ...
 ```
 
-`String.init()` 方法内部会对字符串长度进行判断，若长度小于 15，则存储的是 ASCII 值和字符串的长度；若长度大于 15，则会将字符串长度等信息存放到前 8 个字节中(`rax`)，字符串的真实地址 + `0x7fffffffffffffe0` 存放到后 8 个字节(`rdx`)。
+`String.init()` 方法内部会对字符串长度进行判断，若长度小于等于 15，则存储的是 ASCII 值和字符串的长度；若长度大于 15，则会将字符串长度等信息存放到前 8 个字节中(`rax`)，字符串的真实地址 + `0x7fffffffffffffe0` 存放到后 8 个字节(`rdx`)。
 
 ![](../Images/Swift/String/string_image03.png)
 
@@ -126,6 +126,7 @@ libswiftCore.dylib`Swift.String.init(_builtinStringLiteral: Builtin.RawPointer, 
 
 <br>
 
+## 二、`append()` 会后字符串如何存储
 
 <br>
 
