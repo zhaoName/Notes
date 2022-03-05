@@ -135,7 +135,7 @@ libswiftCore.dylib`Swift.String.init(_builtinStringLiteral: Builtin.RawPointer, 
 有个快速获取字符串真实地址的小技巧就是将 `0x800000010000b930 ` 的最高位置 0，然后加上 `0x20`。
 
 ```
-	0x800000010000b930 
+    0x800000010000b930
 ==> 0x000000010000b930 + 0x20 = 0x10000B950
 ```
 
