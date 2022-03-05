@@ -300,7 +300,7 @@ print(resultVector)  // Vector2D(x: 8.0, y: -4.0)
 let resultVector = vector +- anotherVector +- vector
 print(resultVector)  //Vector2D(x: 8.0, y: -2.0)
 
-// 运算过程：vector +- anotherVector +- vector = (3, 1) +- (2, 4) +- (3, 1) = (3, 1) +- (5, 3) = (8, -4)
+// 运算过程：vector +- anotherVector +- vector = (3, 1) +- (2, 4) +- (3, 1) = (3, 1) +- (5, 3) = (8, -2)
 ```
 
 `higherThan: AdditionPrecedence ` 表示比加法优先级高
