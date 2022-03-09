@@ -32,3 +32,7 @@
 - [Access Control](https://github.com/zhaoName/Notes/blob/master/Swift/AccessControl.md)
 
 - [Pointer](https://github.com/zhaoName/Notes/blob/master/Swift/Pointer.md)
+
+- [Literal Protocol](https://github.com/zhaoName/Notes/blob/85d6b62264/Swift/LiteralProtocol.md)
+
+- [Expression Pattern](https://github.com/zhaoName/Notes/blob/master/Swift/ExpressionPattern.md)
