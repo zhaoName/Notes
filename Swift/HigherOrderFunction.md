@@ -47,7 +47,13 @@ print(mapCast)
 `flatMap` 的定义如下。闭包 `(Element) throws -> SegmentOfResult` 的返回值是个遵守 `Sequence ` 协议的数组。`flatMap `的返回值是将闭包返回值(数组)的元素，重新组装成一个数组 `[SegmentOfResult.Element] `。
 
 ```swift
-func flatMap<SegmentOfResult>(_ transform: (Element) throws -> SegmentOfResult) rethrows -> [SegmentOfResult.Element] where SegmentOfResult : Sequence
+public func flatMap<SegmentOfResult: Sequence>(_ transform: (Element) throws -> SegmentOfResult) rethrows -> [SegmentOfResult.Element] {
+    var result: [SegmentOfResult.Element] = []
+    for element in self {
+        result.append(contentsOf: try transform(element))
+    }
+    return result
+}
 ```
 
 例：
@@ -67,7 +73,19 @@ let flatMapped = numbers.flatMap { Array(repeating: $0, count: $0) }
 `compactMap` 的定义如下。闭包 `transform: (Element) throws -> ElementOfResult?` 的返回值是可选类型。`compactMap` 的返回值是将闭包的返回值解包后放在一个数组中。简单来说 `compactMap` 可以去除值为 `nil` 的元素。
 
 ```swift
-func compactMap<ElementOfResult>(_ transform: (Element) throws -> ElementOfResult?) rethrows -> [ElementOfResult]
+public func compactMap<ElementOfResult>(_ transform: (Element) throws -> ElementOfResult?) rethrows -> [ElementOfResult] {
+    return try _compactMap(transform)
+}
+
+public func _compactMap<ElementOfResult>(_ transform: (Element) throws -> ElementOfResult?) rethrows -> [ElementOfResult] {
+    var result: [ElementOfResult] = []
+    for element in self {
+        if let newElement = try transform(element) {
+            result.append(newElement)
+        }
+    }
+    return result
+}
 ```
 
 例：
@@ -116,8 +134,53 @@ print(shortNames)
 // Prints "["Kim", "Karl"]"
 ```
 
-<br>
+### 0x05 `reduce`
 
+`reduce` 定义如下。在第一次循环时，会将初始值 `initialResult ` 传到闭包中，得到返回值 `partialResult`。后续循环都会将 `partialResult ` 传到闭包中，得到最终结果`partialResult `。
+
+```swift
+public func reduce<Result>(_ initialResult: Result,
+                           _ nextPartialResult:(_ partialResult: Result, Element) throws -> Result) rethrows -> Result {
+    var accumulator = initialResult
+    for element in self {
+        accumulator = try nextPartialResult(accumulator, element)
+    }
+    return accumulator
+}
+```
+
+例：
+
+```swift
+let numbers = [1, 2, 3, 4]
+let numberSum = numbers.reduce(10, { $0 + $1 })
+
+// numberSum == 20
+```
+
+使用 `reduce` 实现 `map` 的功能
+
+```swift
+let numbers = [1, 2, 3, 4]
+
+let mapNums = numbers.map { $0 * 2 }
+
+let reduceNums = numbers.reduce([], { initResult, ele in
+    return initResult + [ele * 2]
+})
+
+// [2, 4, 6, 8]  [2, 4, 6, 8]
+```
+使用 `reduce` 实现 `filter` 的功能
+
+```swift
+let filterNums = numbers.filter { $0 % 2 == 0 } 
+
+let reduceNums = numbers.reduce([]) { initResult, ele in
+    return ele % 2 == 0 ? initResult + [ele] : initResult
+}
+// [2, 4]  [2, 4]
+```
 
 <br>
 
@@ -177,7 +240,8 @@ var num5 = num1.flatMap { Optional.some($0 * 2) }
 <br>
 
 
-<br>
+参考
 
+- [SequenceAlgorithms.swift](https://github.com/apple/swift/blob/main/stdlib/public/core/SequenceAlgorithms.swift)
 
-<br>
+- [Optional.swift](https://github.com/apple/swift/blob/main/stdlib/public/core/Optional.swift)
