@@ -239,6 +239,60 @@ var num5 = num1.flatMap { Optional.some($0 * 2) }
 
 <br>
 
+## 三、`lazy` 在高级函数中的使用
+
+```swift
+let cast = ["Vivien", "Marlon", "Kim", "Karl"]
+let mapCast = cast.map { (ele) -> String in
+    print("mapping...\(ele)")
+    return ele.lowercased()
+}
+
+print("map begin-----")
+print("mapped...\(mapCast[0])")
+print("mapped...\(mapCast[1])")
+print("mapped...\(mapCast[2])")
+print("mapped...\(mapCast[3])")
+print("map end-----")
+
+// 打印结果
+mapping...Vivien
+mapping...Marlon
+mapping...Kim
+mapping...Karl
+map begin-----
+mapped...vivien
+mapped...marlon
+mapped...kim
+mapped...karl
+map end-----
+```
+可以看到在调用 `map` 函数前，就已经对开始处理闭包。如果闭包中是一个很耗时的操作，就很浪费性能。
+
+`lazy` 能帮助我们懒处理 `map` 的闭包
+
+```swift
+let mapCast = cast.lazy.map { (ele) -> String in
+    print("mapping...\(ele)")
+    return ele.lowercased()
+}
+
+print("map begin-----")
+print("mapped...\(mapCast[0])")
+print("mapped...\(mapCast[2])")
+print("map end-----")
+
+// 打印结果
+map begin-----
+mapping...Vivien
+mapped...vivien
+mapping...Kim
+mapped...kim
+map end-----
+```
+
+
+<br>
 
 参考
 
