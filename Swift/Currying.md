@@ -195,7 +195,7 @@ func add2(_ a: Int, _ b: Int, _ c: Int) -> Int {
 }
 ```
 
-柯里化的结果 `currying_add2(30)(20)(10)`
+柯里化结果
 
 ```swift
 func currying_add2(_ c: Int) -> ((Int) -> ((Int) -> Int)) {
@@ -205,13 +205,17 @@ func currying_add2(_ c: Int) -> ((Int) -> ((Int) -> Int)) {
         }
     }
 }
+
+print(currying_add2(30)(20)(10)) // 60
 ```
+
+我们希望的是输入数字 10，对其进行加 20，再加 30 的操作。从对拥有两个参数的函数柯里化的经验来看，输入的数字对应的是返回函数的入参。`currying_add2 ` 返回值类型是个嵌套函数，输入的数字对应的就是最里面函数的入参。对应关系如下：
 
 ![](../Images/Swift/Currying/Currying_images04.png)
 
 我们定义一个函数 `currying()`，它接收一个函数类型的参数 `fn`，并将这个函数 `fn` 柯里化。 意思就是将`add(10, 20) `  转化成 `currying(add)(20)(10)` 。
 
-`currying(add)(20)(10)` 类似将接收三个参数的函数柯里化
+`currying(add)(20)(10)` 与接收三个参数的函数柯里化结果类似
 
 ```swift
 func currying(_ fn: @escaping (Int, Int) -> Int) -> ((Int) -> ((Int) -> Int)) {
