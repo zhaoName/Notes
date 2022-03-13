@@ -244,7 +244,7 @@ extension ZZ where Base: Person {
 
 RxSwift 中关于`rx`的实现在 `Reactive.swift` 中
 
-```
+```swift
 public struct Reactive<Base> {
     /// Base object to extend.
     public let base: Base

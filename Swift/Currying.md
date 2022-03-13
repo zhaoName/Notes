@@ -241,6 +241,80 @@ func currying<A, B, C>(_ fn: @escaping (A, B) -> C) -> ((B) -> ((A) -> C)) {
 
 <br>
 
+### 0x07 柯里化在 `Selector`的实际应用
 
+```swift
+protocol TargetAction {
+    func performAction()
+}
+
+struct TargetActionWrapper<T: AnyObject>: TargetAction {
+    weak var target: T?
+    weak var contrl: Control? = nil
+    
+    let action: (T) -> () -> ()
+    
+    func performAction() {
+        if let t = target {
+            action(t)()
+        }
+    }
+}
+
+enum ControlEvent {
+    case touchUpInside
+    case valueChanged
+}
+
+class Control {
+    var actions = [ControlEvent: TargetAction]()
+    
+    func setTarget<T: AnyObject>(_ target: T, action: @escaping (T) -> () -> (), controlEvent: ControlEvent) {
+        actions[controlEvent] = TargetActionWrapper(target: target, action: action)
+    }
+    
+    func removeTargetForControlEvent(controlEvent: ControlEvent) {
+        actions[controlEvent] = nil
+    }
+    
+    func performActionForControlEvent(controlEvent: ControlEvent) {
+        actions[controlEvent]?.performAction()
+    }
+}
+```
+
+使用
+
+```swift
+class Person {
+    let button = Control()
+    
+    init() {
+        button.setTarget(self, action: Person.didTouchPersonBtn, controlEvent: .touchUpInside)
+    }
+    
+    func didTouchPersonBtn() {
+        print(#function)
+    }
+}
+
+let per = Person()
+per.button.performActionForControlEvent(controlEvent: .touchUpInside)
+//  didTouchPersonBtn()
+```
+
+感觉难点在于确定参数 `action` 的类型，这一点 Xcode 给了我们一定的提示，如下图：
+
+![](../Images/Swift/Currying/Currying_images05.png)
+
+那相应的 `Person` 中 `didTouchPersonBtn()` 方法的类型为 `(Person) -> () -> ()`
+
+<br>
+
+参考
+
+- [柯里化 (CURRYING)](https://swifter.tips/currying/)
+
+<br>
 
 
