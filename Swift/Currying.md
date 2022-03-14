@@ -307,8 +307,6 @@ per.button.performActionForControlEvent(controlEvent: .touchUpInside)
 
 ![](../Images/Swift/Currying/Currying_images05.png)
 
-那相应的 `Person` 中 `didTouchPersonBtn()` 方法的类型为 `(Person) -> () -> ()`
-
 <br>
 
 参考

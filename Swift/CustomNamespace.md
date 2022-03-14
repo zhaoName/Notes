@@ -1,7 +1,7 @@
-# POP 实现类似 `xxx.rx.xxx` 的功能
+# 自定义命名空间
 
 
-在 RxSwift 中给 `UIButton` 添加点击事件的写法`button.rx.tap.subscribe {}` 。这里的 `rx` 一方面可以代表 RxSwift 这个三方库，另一方面还可以防止三方库自定义的计算属性 `tap` 和系统属性冲突(若有)。那 `rx` 是怎么实现的呢？
+在 RxSwift 中给 `UIButton` 添加点击事件的写法`button.rx.tap.subscribe {}` 。这里的 `rx` 一方面可以代表 RxSwift 这个三方库，另一方面还可以防止三方库自定义的属性 `tap` 和系统属性存在命名冲突(若有)。那 `rx` 是怎么实现的呢？
 
 <br>
 
