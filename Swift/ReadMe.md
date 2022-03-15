@@ -21,7 +21,7 @@
 
 - [OpaqueType](https://github.com/zhaoName/Notes/blob/master/Swift/OpaqueType.md)
 
-- [metadata](https://github.com/zhaoName/Notes/blob/master/Swift/metadata.md)
+- [X.self、X.Type、AnyClass](https://github.com/zhaoName/Notes/blob/master/Swift/X.self%26X.Type%26AnyClass.md)
 
 - [String](https://github.com/zhaoName/Notes/blob/master/Swift/String.md)
 
@@ -36,3 +36,11 @@
 - [Literal Protocol](https://github.com/zhaoName/Notes/blob/85d6b62264/Swift/LiteralProtocol.md)
 
 - [Expression Pattern](https://github.com/zhaoName/Notes/blob/master/Swift/ExpressionPattern.md)
+
+- [HigherOrderFunction](https://github.com/zhaoName/Notes/blob/master/Swift/HigherOrderFunction.md)
+
+- [Currying](https://github.com/zhaoName/Notes/blob/master/Swift/Currying.md)
+
+- [CustomNamespace](https://github.com/zhaoName/Notes/blob/master/Swift/CustomNamespace.md)
+
+- [Optional 中的 == 运算符](https://github.com/zhaoName/Notes/blob/master/Swift/Optional%E4%B8%AD%E7%9A%84%3D%3D%E8%BF%90%E7%AE%97%E7%AC%A6.md)
