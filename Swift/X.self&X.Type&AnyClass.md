@@ -1,9 +1,4 @@
-# Metadata
-
-
-
-
-
+# `X.self`、`X.Type`、`AnyClass`
 
 <br>
 
@@ -105,9 +100,6 @@ class MMyClass: Copyable {
 
 <br>
 
-
-
-<br>
 
 参考：
 
