@@ -233,7 +233,7 @@ dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
     [[SPThumbnailCache sharedThumbnailCache] cacheProfileImage:newImage forUserId:userId];
 });
 ```
-我们需要保证在所有的后台任务完成前， `tearDown` 一定不能被执行。一个新的缩略图 `cache` 的实例将会被延迟创建，并且之前用户的数据 (`newImage` 对象) 会被存储在它里面。
+我们需要保证在所有的后台任务完成前， `tearDown` 一定不能被执行。否则一个新的缩略图 `cache` 的实例将会被延迟创建，并且之前用户的数据 (`newImage` 对象) 会被存储在它里面。
 
 
 
