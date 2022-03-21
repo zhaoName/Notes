@@ -67,7 +67,7 @@ struct method_t {
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector OBJC_SWIFT_UNAVAILABLE("");
 ```
 
-![](../Images/iOS/Aspects/Aspects_images01.png)
+![](../Images/iOS/TypeEncoding/TypeEncoding_images01.png)
 
 
 #### `struct method_t` 

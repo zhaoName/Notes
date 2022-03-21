@@ -1,6 +1,7 @@
 # Aspects - 01
 
 
+本文介绍 `Aspects.m `中定义的四个类 `AspectInfo `、`AspectIdentifier `、`AspectsContainer `、`AspectTracker ` 的实现细节。
 
 
 <br>
@@ -76,7 +77,7 @@
 }
 ```
 
-`AspectInfo` 是继承于 `NSObject`，并且遵循了 `AspectInfo` 协议。
+`AspectInfo` 是继承于 `NSObject`，并且遵循 `AspectInfo` 协议。
 
 `- (id)initWithInstance:invocation:`方法，把外面传进来的实例`instance` 和原始的 `invocation` 保存到 `AspectInfo` 实例对应的成员变量中。
 
@@ -254,7 +255,7 @@
 
 
 
-**总结，AspectInfo里面主要是 NSInvocation 信息。将 NSInvocation 包装一层，比如参数信息等。**
+**总结：`AspectInfo` 里面主要是 `NSInvocation` 信息。将 `NSInvocation` 包装一层，比如参数信息等。**
 
 <br>
 
@@ -763,60 +764,93 @@ if (signaturesMatch) {
 
 ### 四、AspectTracker
 
-```Objective-C
-
-```
+`AspectTracker.h` 定义如下：
 
 ```Objective-C
-
+@interface AspectTracker : NSObject
+- (id)initWithTrackedClass:(Class)trackedClass;
+@property (nonatomic, strong) Class trackedClass;
+@property (nonatomic, readonly) NSString *trackedClassName;
+@property (nonatomic, strong) NSMutableSet *selectorNames;
+@property (nonatomic, strong) NSMutableDictionary *selectorNamesToSubclassTrackers;
+- (void)addSubclassTracker:(AspectTracker *)subclassTracker hookingSelectorName:(NSString *)selectorName;
+- (void)removeSubclassTracker:(AspectTracker *)subclassTracker hookingSelectorName:(NSString *)selectorName;
+- (BOOL)subclassHasHookedSelectorName:(NSString *)selectorName;
+- (NSSet *)subclassTrackersHookingSelectorName:(NSString *)selectorName;
+@end
 ```
+
+`AspectTracker.h` 实现如下：
 
 ```Objective-C
+@implementation AspectTracker
 
+- (id)initWithTrackedClass:(Class)trackedClass {
+    if (self = [super init]) {
+        _trackedClass = trackedClass;
+        _selectorNames = [NSMutableSet new];
+        _selectorNamesToSubclassTrackers = [NSMutableDictionary new];
+    }
+    return self;
+}
+
+- (BOOL)subclassHasHookedSelectorName:(NSString *)selectorName {
+    return self.selectorNamesToSubclassTrackers[selectorName] != nil;
+}
+
+- (void)addSubclassTracker:(AspectTracker *)subclassTracker hookingSelectorName:(NSString *)selectorName {
+    NSMutableSet *trackerSet = self.selectorNamesToSubclassTrackers[selectorName];
+    if (!trackerSet) {
+        trackerSet = [NSMutableSet new];
+        self.selectorNamesToSubclassTrackers[selectorName] = trackerSet;
+    }
+    [trackerSet addObject:subclassTracker];
+}
+- (void)removeSubclassTracker:(AspectTracker *)subclassTracker hookingSelectorName:(NSString *)selectorName {
+    NSMutableSet *trackerSet = self.selectorNamesToSubclassTrackers[selectorName];
+    [trackerSet removeObject:subclassTracker];
+    if (trackerSet.count == 0) {
+        [self.selectorNamesToSubclassTrackers removeObjectForKey:selectorName];
+    }
+}
+- (NSSet *)subclassTrackersHookingSelectorName:(NSString *)selectorName {
+    NSMutableSet *hookingSubclassTrackers = [NSMutableSet new];
+    for (AspectTracker *tracker in self.selectorNamesToSubclassTrackers[selectorName]) {
+        if ([tracker.selectorNames containsObject:selectorName]) {
+            [hookingSubclassTrackers addObject:tracker];
+        }
+        [hookingSubclassTrackers unionSet:[tracker subclassTrackersHookingSelectorName:selectorName]];
+    }
+    return hookingSubclassTrackers;
+}
+- (NSString *)trackedClassName {
+    return NSStringFromClass(self.trackedClass);
+}
+
+- (NSString *)description {
+    return [NSString stringWithFormat:@"<%@: %@, trackedClass: %@, selectorNames:%@, subclass selector names: %@>", self.class, self, NSStringFromClass(self.trackedClass), self.selectorNames, self.selectorNamesToSubclassTrackers.allKeys];
+}
+
+@end
 ```
 
-```Objective-C
+`AspectTracker`这个类是用来跟踪要被 hook 的类。
 
-```
+`trackedClass` 是被追踪的类。`trackedClassName` 是被追踪类的类名。`selectorNames` 是一个 `NSMutableSet`，这里会记录要被 hook 替换的方法名，用 `NSMutableSet` 是为了防止重复替换方法。`selectorNamesToSubclassTrackers` 是一个字典，`key` 是 `hookingSelectorName`，`value`是装满 `AspectTracker` 的 `NSMutableSet`。
 
-```Objective-C
+`addSubclassTracker:hookingSelectorName:`方法是把 `AspectTracker` 加入到对应`selectorName` 的集合中。
 
-```
+`removeSubclassTracker:hookingSelectorName:`方法是把 `AspectTracker` 从对应的 `selectorName` 的集合中移除。
 
-```Objective-C
+`subclassTrackersHookingSelectorName:` 方法是一个并查集，传入一个 `selectorName`，通过递归查找，找到所有包含这个 `selectorName` 的 `set`，最后把这些 `set` 合并在一起作为返回值返回。
 
-```
-
-```Objective-C
-
-```
 
 <br>
-<br>
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image01.png)
 
 <br>
 
+参考： [iOS 如何实现 Aspect Oriented Programming](https://github.com/halfrost/Halfrost-Field/blob/master/contents/iOS/Aspect/ios_aspect.md)
 
 <br>
-
-
-```Objective-C
-
-```
-
-```Objective-C
-
-```
-
-```Objective-C
-
-```
-
-```Objective-C
-
-```
-
-<br>
-
-参考：
-
