@@ -300,27 +300,129 @@ if (identifier) {
 
 ## 二、hook 过程详解
 
-
-
-```Objective-C
-
-```
+`aspect_prepareClassAndHookSelector` 函数调用栈如下：
 
 ```Objective-C
 
+- aspect_prepareClassAndHookSelector(self, selector, error);
+  ├── aspect_hookClass(self, error)
+  │    ├──aspect_swizzleClassInPlace
+  │    ├──aspect_swizzleForwardInvocation
+  │    │  └──__ASPECTS_ARE_BEING_CALLED__
+  │    │       ├──aspect_aliasForSelector
+  │    │       ├──aspect_getContainerForClass
+  │    │       ├──aspect_invoke
+  │    │       └──aspect_remove
+  │    └── aspect_hookedGetClass
+  ├── aspect_isMsgForwardIMP
+  ├──aspect_aliasForSelector(selector)
+  └── aspect_getMsgForwardIMP
 ```
+
+
+### 0x01 `aspect_hookClass`
+
+在说`aspect_hookClass` 前，先了解 `class` 和 `object_getClass `的实现。在 objc4 源码中可以查看代码如下：
+
+- 若是实例对象调用，则 `class` 和 `object_getClass` 返回的结果是一样的，都指向 isa 指针，也就是当前实例的类对象(若 isa 指针没被修改)。
+
+- 若是类对象调用，则 `class` 返回是类对象本身，`object_getClass` 返回类的 isa 指针，也就是当前类的元类对象(若 isa 指针没被修改)。
 
 ```Objective-C
+// NSObject.mm
++ (Class)class {
+    return self;
+}
 
+- (Class)class {
+    return object_getClass(self);
+}
+
+// objc-class.mm
+Class object_getClass(id obj)
+{
+    if (obj) return obj->getIsa();
+    else return Nil;
+}
 ```
+
+所以 `aspect_hookClass` 方法中的 `statedClass` 和 `baseClass` 是有区别的。
 
 ```Objective-C
+// 类对象调用 class 方法，直接返回本身
+// 实例对象调用 class 方法，class 方法的内部调用 object_getClass
+Class statedClass = self.class;
+// object_getClass 获取的类的isa, 若是已经 hook 的类，self 的 isa 会指向其子类 xxx_Aspects_
+Class baseClass = object_getClass(self);
 
+NSLog(@"statedClass:%@---baseClass:%@", statedClass, baseClass);
+
+// 若该类已被hook 则类名为 xxx_Aspects_, 否则 statedClass == baseClass (KVO除外)
+NSString *className = NSStringFromClass(baseClass);
 ```
+
+以 hook `viewWillAppear:` 方法为例：
 
 ```Objective-C
+[self aspect_hookSelector:@selector(viewWillAppear:) withOptions:AspectPositionInstead usingBlock:^() {
+    NSLog(@"hook======1");
+} error:nil];
+
+[self aspect_hookSelector:@selector(viewWillAppear:) withOptions:AspectPositionInstead usingBlock:^() {
+    NSLog(@"hook======2");
+} error:nil];
+```
+
+打印 `statedClass` 和 `baseClass` 可以看到，第一次 hook 时 `statedClass` 和 `baseClass` 一样，都是类对象 `ViewController `。第二次打印 `baseClass` 是 `ViewController_Aspects_ `，也就是传进来的实例对象的 isa 指针被修改了(怎么修改后面会说)，指向 `ViewController_Aspects_ ` 类。
 
 ```
+// statedClass:ViewController---baseClass:ViewController
+// statedClass:ViewController---baseClass:ViewController_Aspects_
+```
+
+再往后看，先判断 `className` 是否包含 `_Aspects_ `，若包含说明已经类已经被 hook 直接返回。
+
+若 `baseClass` 是元类对象，则调用 `aspect_swizzleClassInPlace ` 方法。
+
+若也不是元类，再判断 `statedClass` 和 `baseClass` 是否相等。如果不相等，说明为 KVO 过的对象，因为 KVO 的对象 isa 指针会指向一个中间类。对 KVO 中间类调用`aspect_swizzleClassInPlace`。代码如下：
+
+```Objective-C
+static NSString *const AspectsSubclassSuffix = @"_Aspects_";
+
+if ([className hasSuffix:AspectsSubclassSuffix]) {
+    // Already subclassed (若类名中包含 “_Aspects_” 后缀，则说明此类已被 hook)
+    return baseClass;
+}else if (class_isMetaClass(baseClass)) {
+    // We swizzle a class object, not a single object.
+    return aspect_swizzleClassInPlace((Class)self);
+}else if (statedClass != baseClass) {
+    // Probably a KVO'ed class. Swizzle in place. Also swizzle meta classes in place.
+    return aspect_swizzleClassInPlace(baseClass);
+}
+```
+
+这里注意下，若是 KVO 过的对象，直接对使用 KVO 动态生成的子类 `NSKVONotifying_xxx`，不会再新建类名 `xxx_Aspects_` 的子类。示例：
+
+```Objective-C
+[self addObserver:self forKeyPath:@"age" options: NSKeyValueObservingOptionNew context:nil];
+
+[self aspect_hookSelector:@selector(viewWillAppear:) withOptions:AspectPositionInstead usingBlock:^() {
+    NSLog(@"hook======1");
+} error:nil];
+
+[self aspect_hookSelector:@selector(viewWillAppear:) withOptions:AspectPositionInstead usingBlock:^() {
+    NSLog(@"hook======2");
+} error:nil];
+
+// 打印结果
+// statedClass:ViewController---baseClass:NSKVONotifying_ViewController  第一次 
+// statedClass:ViewController---baseClass:NSKVONotifying_ViewController  第二次
+```
+
+先把 `aspect_hookClass` 看完，后面再说 `aspect_swizzleClassInPlace `。
+
+当 `className` 没有包含 `_Aspects_` 后缀，也不是元类，也不是KVO的中间类，即 `statedClass == baseClass` 的情况，动态创建一个名为 `xxx_Aspects_` 的子类。
+
 
 ```Objective-C
 
