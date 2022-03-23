@@ -68,7 +68,36 @@ Aspects 整个库里面就只有两个供外部调用的方法，如下。Aspect
 }
 ```
 
-这两个方法内部都会调用`aspect_add(self, selector, options, block, error)` 方法，所以我们可以从 `aspect_add` 开始研究，其函数调用栈如下：
+这两个方法内部都会调用`aspect_add(self, selector, options, block, error)` 方法，所以我们可以从 `aspect_add` 开始研究，
+
+```Objective-C
+static id aspect_add(id self, SEL selector, AspectOptions options, id block, NSError **error) {
+    NSCParameterAssert(self);
+    NSCParameterAssert(selector);
+    NSCParameterAssert(block);
+
+    __block AspectIdentifier *identifier = nil;
+    aspect_performLocked(^{
+        // 判断当期那传入的 selector 是否允许被 hook
+        if (aspect_isSelectorAllowedAndTrack(self, selector, options, error)) {
+            // 用runtime的关联对象给 self 增加一个 aspectContainer 属性
+            AspectsContainer *aspectContainer = aspect_getContainerForObject(self, selector);
+            // 获取 block 的方法签名，并与原方法的方法签名对比
+            identifier = [AspectIdentifier identifierWithSelector:selector object:self options:options block:block error:error];
+            if (identifier) {
+                // identifier 放入对应的数组中
+                [aspectContainer addAspect:identifier withOptions:options];
+
+                // Modify the class to allow message interception.
+                aspect_prepareClassAndHookSelector(self, selector, error);
+            }
+        }
+    });
+    return identifier;
+}
+```
+
+其函数调用栈如下：
 
 ```Objective-C
 - aspect_hookSelector:(SEL)selector withOptions:(AspectOptions)options usingBlock:(id)block error:(NSError **)error
@@ -201,20 +230,85 @@ do {
 }while ((currentClass = class_getSuperclass(currentClass)));
 ```
 
-
-```Objective-C
-
-```
-
-
-```Objective-C
-
-```
+通过了 `selector` 是否能被 hook 合法性的检查之后，就要获取或者创建 `AspectsContainer` 容器了。
 
 <br>
 
+### 0x03 `aspect_getContainerForObject`
+
+在读取或者创建 `AspectsContainer` 之前，先对 `selector` 加一个通用前缀 `aspects_`
+
+```Objective-C
+static NSString *const AspectsMessagePrefix = @"aspects_";
+
+static SEL aspect_aliasForSelector(SEL selector) {
+    NSCParameterAssert(selector);
+	return NSSelectorFromString([AspectsMessagePrefix stringByAppendingFormat:@"_%@", NSStringFromSelector(selector)]);
+}
+```
+
+然后用这个加了前缀的 `aliasSelector` 当关联对象中的 `key`, 来获取 `AspectsContainer` 。若获取不到就创建，并用关联对象存储。
+
+```Objective-C
+// Loads or creates the aspect container.
+static AspectsContainer *aspect_getContainerForObject(NSObject *self, SEL selector) {
+    NSCParameterAssert(self);
+    SEL aliasSelector = aspect_aliasForSelector(selector);
+    AspectsContainer *aspectContainer = objc_getAssociatedObject(self, aliasSelector);
+    if (!aspectContainer) {
+        aspectContainer = [AspectsContainer new];
+        objc_setAssociatedObject(self, aliasSelector, aspectContainer, OBJC_ASSOCIATION_RETAIN);
+    }
+    return aspectContainer;
+}
+```
+<br>
+
+### 0x04 创建 `AspectIdentifier `
+
+得到 `aspectContainer` 之后，就可以开始准备我们要 hook 方法的一些信息。这些信息都装在`AspectIdentifier` 中，所以我们需要新建一个 `AspectIdentifier`。
+
+调用 `AspectIdentifier` 的类方法对其初始化，在这个类方法中会获取 `block` 的方法签名，并与原方法的方法签名对比。若失败则返回 `nil`，否则保存 `self`、`selector` 、`options`、`block` 等信息。如下：
+
+```Objective-C
+// 获取 block 的方法签名，并与原方法的方法签名对比
+identifier = [AspectIdentifier identifierWithSelector:selector object:self options:options block:block error:error];
+```
+
+`aspectContainer` 容器会通过 `options` 选项将 `identifier` 分别添加到容器中的`beforeAspects`、`insteadAspects`、`afterAspects` 三个数组。如下
+
+```Objective-C
+if (identifier) {
+    // identifier 放入对应的数组中
+    [aspectContainer addAspect:identifier withOptions:options];
+    ...
+}
+```
+
+### 0x05 总结 `aspect_add`
+
+- 首先调用 `aspect_performLocked` ，利用自旋锁，保证整个操作的线程安全
+
+- 接着调用 `aspect_isSelectorAllowedAndTrack` 对传进来的参数进行强校验，保证参数合法性。
+- 接着创建`AspectsContainer`容器，利用`AssociatedObject`关联对象动态添加到NSObject分类中作为属性的。
+- 然后在 `AspectIdentifier` 实例验证 `block` 的方法签名。`AspectIdentifier` 主要包含了单个的  `Aspect` 的具体信息，包括执行时机，要执行 `block` 所需要用到的具体信息。
+- 再然后 `aspectContainer` 容器会通过 `options` 选项将 `identifier` 分别添加到容器中的`beforeAspects`、`insteadAspects`、`afterAspects` 三个数组。
+- 最后调用 `prepareClassAndHookSelector` 准备hook。
+
+<br>
+
+
 ## 二、hook 过程详解
 
+
+
+```Objective-C
+
+```
+
+```Objective-C
+
+```
 
 ```Objective-C
 
