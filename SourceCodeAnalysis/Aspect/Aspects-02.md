@@ -728,8 +728,182 @@ hook `Person` 中的 `+ classMethod:`
 
 ### 0x05 `__ASPECTS_ARE_BEING_CALLED__`
 
+首先是 hook 前的准备工作：
+
+- 获取原始的 `selector`
+
+- 获取带有 `aspects_xxxx` 前缀的方法
+- 替换 `invocation.selector`
+- 获取实例对象的容器 `objectContainer`，这里是之前 `aspect_add` 方法中关联过的对象。
+- 获取获得类对象容器` classContainer`
+- 初始化 `AspectInfo`，传入 `self`、`invocation` 参数
+
+```Objective-C
+static void __ASPECTS_ARE_BEING_CALLED__(__unsafe_unretained NSObject *self, SEL selector, NSInvocation *invocation) {
+    NSCParameterAssert(self);
+    NSCParameterAssert(invocation);
+    
+    SEL originalSelector = invocation.selector;
+    SEL aliasSelector = aspect_aliasForSelector(invocation.selector);
+    invocation.selector = aliasSelector;
+    
+    AspectsContainer *objectContainer = objc_getAssociatedObject(self, aliasSelector);
+    AspectsContainer *classContainer = aspect_getContainerForClass(object_getClass(self), aliasSelector);
+    AspectInfo *info = [[AspectInfo alloc] initWithInstance:self invocation:invocation];
+    
+    NSArray *aspectsToRemove = nil;
+    ...
+}
+```
+
+调用宏定义执行 Aspects 切片功能。宏定义里面就做了两件事情，一个是执行了 `[aspect invokeWithInfo:info]` 方法，一个是把需要移除的 Aspects 加入等待被移除的数组中。如下：
+
+`[aspect invokeWithInfo:info]` 方法在 [Aspects-01 ]()里面详细分析过了其实现。这个函数的主要目的是得到 `blockSignature`。然后处理参数，如果参数 `block` 中的参数大于 1 个，则把传入的 `AspectInfo` 放入 `blockInvocation` 中。然后从 `originalInvocation` 中取出参数给 `blockInvocation` 赋值。最后调用`[blockInvocation invokeWithTarget:self.block]` 这里 Target 设置为`self.block`。也就执行了我们 hook 方法的 block。
+
+```Objective-C
+#define aspect_invoke(aspects, info) \
+for (AspectIdentifier *aspect in aspects) {\
+    [aspect invokeWithInfo:info];\
+    if (aspect.options & AspectOptionAutomaticRemoval) { \
+        aspectsToRemove = [aspectsToRemove?:@[] arrayByAddingObject:aspect]; \
+    } \
+}
+```
+
+```Objective-C
+// Before hooks.
+aspect_invoke(classContainer.beforeAspects, info);
+aspect_invoke(objectContainer.beforeAspects, info);
+```
+
+```
+// After hooks.
+aspect_invoke(classContainer.afterAspects, info);
+aspect_invoke(objectContainer.afterAspects, info);
+```
 
 
+这里要注意若没有 `insteadAspects`，我们就需要调用判断当前继承链是否能响应 `aliasSelector ` 方法，如果能则直接调用 `aliasSelector`，也就是**调用原方法。** 如下：
+
+```
+// Instead hooks.
+BOOL respondsToAlias = YES;
+if (objectContainer.insteadAspects.count || classContainer.insteadAspects.count) {
+    aspect_invoke(classContainer.insteadAspects, info);
+    aspect_invoke(objectContainer.insteadAspects, info);
+}else {
+    Class klass = object_getClass(invocation.target);
+    do {
+        // 调用 aliasSelector，也就是调用原方法
+        // selector 和 aliasSelector 方法实现的修改 在 aspect_prepareClassAndHookSelector() 中
+        if ((respondsToAlias = [klass instancesRespondToSelector:aliasSelector])) {
+            [invocation invoke];
+            break;
+        }
+    }while (!respondsToAlias && (klass = class_getSuperclass(klass)));
+}
+```
+
+至此 before、instead、after 对应时间的 Aspects 切片的 hook 如果能被执行的，都执行完毕了。
+
+但如果 hook 没有被正常执行，那就会尝试执行 `__aspects_forwardInvocation` 方法。由于 `forwardInvocation` 和 `__aspects_forwardInvocation ` 的方法实现已交换，也就是会尝试走正常消息转发流程。 
+
+若当前没有对消息转发流程进行重写，就报出 `doesNotRecognizeSelector` 的错误。如下：
+
+```Objective-C
+// If no hooks are installed, call original implementation (usually to throw an exception)
+if (!respondsToAlias) {
+    invocation.selector = originalSelector;
+    SEL originalForwardInvocationSEL = NSSelectorFromString(AspectsForwardInvocationSelectorName);
+    if ([self respondsToSelector:originalForwardInvocationSEL]) {
+        ((void( *)(id, SEL, NSInvocation *))objc_msgSend)(self, originalForwardInvocationSEL, invocation);
+    }else {
+        [self doesNotRecognizeSelector:invocation.selector];
+    }
+}
+
+// Remove any hooks that are queued for deregistration.
+[aspectsToRemove makeObjectsPerformSelector:@selector(remove)];
+```
+
+至此 `aspect_hookClass`  方法全部走完，我们回到 `aspect_prepareClassAndHookSelector` 。
+
+<br>
+
+### 0x06 `aspect_prepareClassAndHookSelector`
+
+`aspect_prepareClassAndHookSelector` 实现如下：
+
+首先调用 `aspect_hookClass ` 完成动态生成一个 `xxx_Aspects_` 的子类。并为子类添加 `forwardInvocation:` 方法，`forwardInvocation:` 方法实现为 `__ASPECTS_ARE_BEING_CALLED__` 。
+
+```Objective-C
+static void aspect_prepareClassAndHookSelector(NSObject *self, SEL selector, NSError **error) {
+    NSCParameterAssert(selector);
+    // 若 selector 是实例方法，则 klass 是self 动态生成一个子类, 并将 self 的 isa 指针指向子类
+    // 若 selecotr 是类方法，则 klass 是元类对象
+    Class klass = aspect_hookClass(self, error);
+    
+    Method targetMethod = class_getInstanceMethod(klass, selector);
+    IMP targetMethodIMP = method_getImplementation(targetMethod);
+    
+    if (!aspect_isMsgForwardIMP(targetMethodIMP)) {
+        // Make a method alias for the existing method implementation, it not already copied.
+        const char *typeEncoding = method_getTypeEncoding(targetMethod);
+        SEL aliasSelector = aspect_aliasForSelector(selector);
+        if (![klass instancesRespondToSelector:aliasSelector]) {
+            // 若子类没有 aspects__{selector} 方法则添加一个，并指向原方法的实现
+            __unused BOOL addedAlias = class_addMethod(klass, aliasSelector, method_getImplementation(targetMethod), typeEncoding);
+            NSCAssert(addedAlias, @"Original implementation for %@ is already copied to %@ on %@", NSStringFromSelector(selector), NSStringFromSelector(aliasSelector), klass);
+        }
+        
+        // We use forwardInvocation to hook in.
+        // 给子类添加的 selector 方法，并将方法实现转发给 _objc_msgForward
+        class_replaceMethod(klass, selector, aspect_getMsgForwardIMP(self, selector), typeEncoding);
+        
+        AspectLog(@"Aspects: Installed hook for -[%@ %@].", klass, NSStringFromSelector(selector));
+    }
+}
+```
+
+然后判断 `targetMethodIMP` 是不是 `_objc_msgForward `，即判断当前IMP是不是消息转发。
+
+```Objective-C
+static BOOL aspect_isMsgForwardIMP(IMP impl) {
+    return impl == _objc_msgForward
+#if !defined(__arm64__)
+    || impl == (IMP)_objc_msgForward_stret
+#endif
+    ;
+}
+```
+
+若不是消息转发，且子类里面不能响应 `aliasSelector`，就为 `klass` 添加 `aliasSelector` 方法，方法的实现为原方法的实现。
+
+再给子类添加的 `selector` 方法，并将方法实现转发给 `_objc_msgForward`。如下：
+
+```Objective-C
+if (!aspect_isMsgForwardIMP(targetMethodIMP)) {
+    // Make a method alias for the existing method implementation, it not already copied.
+    const char *typeEncoding = method_getTypeEncoding(targetMethod);
+    SEL aliasSelector = aspect_aliasForSelector(selector);
+    if (![klass instancesRespondToSelector:aliasSelector]) {
+        // 若子类没有 aspects__{selector} 方法则添加一个，并指向原方法的实现
+        __unused BOOL addedAlias = class_addMethod(klass, aliasSelector, method_getImplementation(targetMethod), typeEncoding);
+        NSCAssert(addedAlias, @"Original implementation for %@ is already copied to %@ on %@", NSStringFromSelector(selector), NSStringFromSelector(aliasSelector), klass);
+    }
+    
+    // We use forwardInvocation to hook in.
+    // 给子类添加的 selector 方法，并将方法实现转发给 _objc_msgForward
+    class_replaceMethod(klass, selector, aspect_getMsgForwardIMP(self, selector), typeEncoding);
+}
+```
+
+由于我们将 `slector` 指向 `_objc_msgForward` 或 `_objc_msgForward_stret`，可想而知，当`selector` 被执行的时候，会触发消息转发从而进入 `forwardInvocation:`，而我们又对`forwardInvacation` 进行了 swizzling，因此最终转入我们自己的处理逻辑代码 `__ASPECTS_ARE_BEING_CALLED__` 中。
+
+
+<br>
+
+### 三、`aspect_remove`
 
 ```Objective-C
 
