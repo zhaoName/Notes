@@ -419,9 +419,316 @@ if ([className hasSuffix:AspectsSubclassSuffix]) {
 // statedClass:ViewController---baseClass:NSKVONotifying_ViewController  第二次
 ```
 
-先把 `aspect_hookClass` 看完，后面再说 `aspect_swizzleClassInPlace `。
+先把 `aspect_hookClass` 看完，后面再说 `aspect_swizzleClassInPlace ` (hook 类方法或 hook 已经 KVO 过的对象的实例方法)。
 
-当 `className` 没有包含 `_Aspects_` 后缀，也不是元类，也不是KVO的中间类，即 `statedClass == baseClass` 的情况，动态创建一个名为 `xxx_Aspects_` 的子类。
+当 `className` 没有包含 `_Aspects_` 后缀，也不是元类，也不是KVO的中间类，即 `statedClass == baseClass` 的情况，动态创建一个名为 `xxx_Aspects_` 的子类。如下：
+
+先调用 `objc_getClass` 查找是否有名为 `xxx_Aspects_` 的类。这时若返回 `nil`，就去调用 `objc_allocateClassPair` 创建这个类。`objc_getClass` 和 `objc_allocateClassPair` 在 objc4 中都可以找到源码，这里不做过多叙述。
+
+```Objective-C
+// Default case. Create dynamic subclass.
+const char *subclassName = [className stringByAppendingString:AspectsSubclassSuffix].UTF8String;
+Class subclass = objc_getClass(subclassName);
+
+if (subclass == nil) {
+    // 动态创建名为 xxx_Aspects_ 子类，父类是当前类
+    subclass = objc_allocateClassPair(baseClass, subclassName, 0);
+    if (subclass == nil) {
+        NSString *errrorDesc = [NSString stringWithFormat:@"objc_allocateClassPair failed to allocate class %s.", subclassName];
+        AspectError(AspectErrorFailedToAllocateClassPair, errrorDesc);
+        return nil;
+    }
+    
+    // 替换当前类 forwardInvocation 方法的实现为 __ASPECTS_ARE_BEING_CALLED__
+    aspect_swizzleForwardInvocation(subclass);
+    // 修改subclass类中的 -class 方法实现 使其指向 statedClass
+    aspect_hookedGetClass(subclass, statedClass);
+    // 修改subclass元类中的 +class 方法实现 使其指向 statedClass
+    aspect_hookedGetClass(object_getClass(subclass), statedClass);
+    // 注册动态生成的子类
+    objc_registerClassPair(subclass);
+}
+
+// 修改 self 的isa指针 指向动态生成的 xxx_Aspects_ 子类
+object_setClass(self, subclass);
+```
+
+需要注意的是 `aspect_hookedGetClass` 方法，实现如下: 
+
+```Objective-C
+static void aspect_hookedGetClass(Class class, Class statedClass) {
+    NSCParameterAssert(class);
+    NSCParameterAssert(statedClass);
+	Method method = class_getInstanceMethod(class, @selector(class));
+	IMP newIMP = imp_implementationWithBlock(^(id self) {
+		return statedClass;
+    });
+    // 替换 class 的 -class 方法的方法实现(IMP)，使其返回 statedClass 类型
+	class_replaceMethod(class, @selector(class), newIMP, method_getTypeEncoding(method));
+}
+```
+
+`aspect_hookedGetClass` 是把 `subclass` 类或元类中的 `class` 方法的方法实现替换了，使其返回 `statedClass ` 类型。**但是没有改变 `subclass` 的 `isa` 指针**。
+
+类对象、元类对象的本质结构都是 `struct objc_class`, 我们自己构造一个和 `struct objc_class` 类似的结构体：
+
+```Objective-C
+struct zz_objc_class {
+    Class isa;
+    Class superclass;
+};
+```
+
+然后初始化一个 `subclass` 类型的实例对象，再获取 `subclass ` 的类对象和元类对象。将类对象和元类对象强转成 `struct zz_objc_class`，查看 `aspect_hookedGetClass` 前后 isa 指针的变化。同时打印 `aspect_hookedGetClass` 前后，`subclass` 调用 `class` 方法的变化。
+
+```Objective-C
+id sub = [subclass new];
+struct zz_objc_class *subClass = (__bridge struct zz_objc_class *)(object_getClass(sub));
+struct zz_objc_class *subMetaClass = (__bridge struct zz_objc_class *)(object_getClass(subclass));
+
+NSLog(@"aspect_hookedGetClass之前,调用subClass的 class方法-----%@-----%@", [sub class], [subclass class]);
+NSLog(@"aspect_hookedGetClass之前获取subClass的isa-----%@-----%@", object_getClass(sub), object_getClass(subclass));
+
+...
+// 修改subclass类的 -class 方法实现 使其指向 statedClass
+aspect_hookedGetClass(subclass, statedClass);
+// 修改subclass元类的 -class 方法实现 使其指向 statedClass
+aspect_hookedGetClass(object_getClass(subclass), statedClass);
+...
+
+NSLog(@"aspect_hookedGetClass之后,调用subClass的 class方法-----%@-----%@", [sub class], [subclass class]);
+NSLog(@"aspect_hookedGetClass之后获取subClass的isa-----%@-----%@", object_getClass(sub), object_getClass(subclass));
+```
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image02.png)
+
+
+再来看 `aspect_hookClass`  方法中的最后一句代码
+
+```Objective-C
+// 修改 self 的isa指针 指向动态生成的 xxx_Aspects_ 子类
+object_setClass(self, subclass);
+```
+
+同样我们也获取实例对象 `self` 的类对象和元类对象，然后对比调用`object_setClass` 前后实例对象 `self` 的 isa 指针变化
+
+```Objective-C
+struct zz_objc_class *selfClass = (__bridge struct zz_objc_class *)(object_getClass(self));
+struct zz_objc_class *selfMetaClass = (__bridge struct zz_objc_class *)(object_getClass([self class]));
+```
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image03.png)
+
+
+总结：经过 `aspect_hookedGetClass ` 和 `object_setClass ` 之后，`subclass` 和 `stateClass` 的关系如下：
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image04.png)
+
+至此，对于 hook 实例方法来说， hookClass 阶段就完成了，成功的把 `self` hook 成了其子类 `xxx_Aspects_`。
+
+<br>
+
+### 0x02 `aspect_swizzleClassInPlace`
+
+前面说过若 `baseClass` 不是元类或在 `statedClass != baseClass` 情况下，会调用 `aspect_swizzleClassInPlace` 方法，实现如下：
+
+```Objective-C
+/// hook类方法，或hook已经KVO过的对象的实例方法 会来到这里
+static Class aspect_swizzleClassInPlace(Class klass) {
+    NSCParameterAssert(klass);
+    NSString *className = NSStringFromClass(klass);
+
+    _aspect_modifySwizzledClasses(^(NSMutableSet *swizzledClasses) {
+        // 没有 swizzled 的 class, 执行 aspect_swizzleForwardInvocation()
+        if (![swizzledClasses containsObject:className]) {
+            aspect_swizzleForwardInvocation(klass);
+            [swizzledClasses addObject:className];
+        }
+    });
+    return klass;
+}
+```
+
+`_aspect_modifySwizzledClasses` 会传入一个入参为 `(NSMutableSet *swizzledClasses)`的 block，block 里面就是判断在这个 `Set` 里面是否包含当前的`ClassName`，如果不包含，就调用 `aspect_swizzleForwardInvocation()` 方法，并把`className` 加入到 `Set` 集合里面。
+
+`_aspect_modifySwizzledClasses`方法里面使用 `dispatch_once` 保证了 `swizzledClasses` 这个 Set 集合是全局唯一的，并且给传入的 block 加上了线程锁`@synchronized()`，保证了 block 调用中线程是安全的。如下：
+
+```Objective-C
+static void _aspect_modifySwizzledClasses(void (^block)(NSMutableSet *swizzledClasses)) {
+    static NSMutableSet *swizzledClasses;
+    static dispatch_once_t pred;
+    dispatch_once(&pred, ^{
+        swizzledClasses = [NSMutableSet new];
+    });
+    @synchronized(swizzledClasses) {
+        block(swizzledClasses);
+    }
+}
+```
+
+`aspect_swizzleClassInPlace` 和上面的 `aspect_hookClass` 内部都会调用`aspect_swizzleForwardInvocation` 方法。不过再说它之前我们需要了解一下 `class_replaceMethod`。
+
+<br>
+
+### 0x03 `class_replaceMethod` 
+
+在 objc4 的 objc-runtime-new.mm 文件中可以找到 `class_replaceMethod` 方法的实现，如下：
+
+```Objective-C
+IMP class_replaceMethod(Class cls, SEL name, IMP imp, const char *types)
+{
+    if (!cls) return nil;
+
+    mutex_locker_t lock(runtimeLock);
+    return addMethod(cls, name, imp, types ?: "", YES);
+}
+
+static IMP addMethod(Class cls, SEL name, IMP imp, const char *types, bool replace)
+{
+    IMP result = nil;
+    runtimeLock.assertLocked();
+    checkIsKnownClass(cls);
+    
+    assert(types);
+    assert(cls->isRealized());
+
+    method_t *m;
+    // 在 cls 中查找 name 方法
+    if ((m = getMethodNoSuper_nolock(cls, name))) {
+        // already exists
+        if (!replace) {
+            result = m->imp;
+        } else {
+            // 找到就将 name 对应的方法实现修改为传进来的参数 imp
+            // 并返回 name 之前的imp
+            result = _method_setImplementation(cls, m, imp);
+        }
+    } else {
+        // 找不到 就新增一个 name 方法，对应方法实现为传进来 imp
+        // fixme optimize
+        method_list_t *newlist;
+        newlist = (method_list_t *)calloc(sizeof(*newlist), 1);
+        newlist->entsizeAndFlags = (uint32_t)sizeof(method_t) | fixed_up_method_list;
+        newlist->count = 1;
+        newlist->first.name = name;
+        newlist->first.types = strdupIfMutable(types);
+        newlist->first.imp = imp;
+
+        prepareMethodLists(cls, &newlist, 1, NO, NO);
+        cls->data()->methods.attachLists(&newlist, 1);
+        flushCaches(cls);
+        // 找不到 返回 nil
+        result = nil;
+    }
+    return result;
+}
+
+static method_t *getMethodNoSuper_nolock(Class cls, SEL sel)
+{
+    runtimeLock.assertLocked();
+    assert(cls->isRealized());
+    
+    for (auto mlists = cls->data()->methods.beginLists(), end = cls->data()->methods.endLists(); mlists != end; ++mlists) {
+        method_t *m = search_method_list(*mlists, sel);
+        if (m) return m;
+    }
+    return nil;
+}
+```
+
+在结合注释
+
+> Discussion
+> 
+> This function behaves in two different ways:
+> 
+> - If the method identified by name does not yet exist, it is added as if class_addMethod were called. The type encoding specified by types is used as given.
+> 
+> - If the method identified by name does exist, its IMP is replaced as if method_setImplementation were called. The type encoding specified by types is ignored.
+
+
+得出结论：
+
+- 若 name 方法不存在，就会像调用 `class_addMethod` 一样添加它，新增的方法的 `types ` 和 `IMP` 和传进来的参数一致。返回为 `nil`。
+
+- 若 name 方法存在，将会像调用 `method_setImplementation` 方法一样，修改它的实现，并返回 name 方法之前的 imp 。
+
+<br>
+
+### 0x04 `aspect_swizzleForwardInvocation`
+
+`aspect_swizzleForwardInvocation` 的实现如下：
+
+```Objective-C
+static NSString *const AspectsForwardInvocationSelectorName = @"__aspects_forwardInvocation:";
+
+static void aspect_swizzleForwardInvocation(Class klass) {
+    NSCParameterAssert(klass);
+    // If there is no method, replace will act like class_addMethod.
+    IMP originalImplementation = class_replaceMethod(klass, @selector(forwardInvocation:), (IMP)__ASPECTS_ARE_BEING_CALLED__, "v@:@");
+    if (originalImplementation) {
+        class_addMethod(klass, NSSelectorFromString(AspectsForwardInvocationSelectorName), originalImplementation, "v@:@");
+    }
+    AspectLog(@"Aspects: %@ is now aspect aware.", NSStringFromClass(klass));
+}
+```
+
+若 hook 的是实例方法，则会动态生成一个 `xxx_Aspects_` 的子类。`xxx_Aspects_` 类对象中肯定没有 `forwardInvocation:`，那 `class_replaceMethod` 就会为 `xxx_Aspects_` 类对象新增一个 `forwardInvocation:` 方法，并将其方法实现指向 `(IMP)__ASPECTS_ARE_BEING_CALLED__`。
+
+这时返回值是空，也就不会走 `if `判断。以 hook `ViewController` 中的 `viewWillAppear:` 为例
+
+```Objective-C
+// 获取类 (或元类) 的所有方法
+static void zz_getAllMethods(Class cls)
+{
+    unsigned int count = 0;
+    Method *methodList = class_copyMethodList(cls, &count);
+    for (int i=0; i<count; i++) {
+        NSLog(@"类:%@----方法名：%s-----方法签名：%s-----方法实现：%p",
+              cls,
+              method_getName(methodList[i]),
+              method_getTypeEncoding(methodList[i]),
+              method_getImplementation(methodList[i]));
+    }
+}
+```
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image05.png)
+
+若 hook 的是类方法，不会动态生成子类。若我们自定义一个类 `Person`, 并重写 `+  forwardInvocation:` 方法，此时就会走 `if` 代码。交换 `+  forwardInvocation:` 方法与 `__ASPECTS_ARE_BEING_CALLED__` 方法的实现。` Person.m` 实现如下：
+
+```Objective-C
+@implementation Person
+
++ (void)classMethod:(NSString *)str
+{
+    NSLog(@"%s", __func__);
+}
+
++ (void)forwardInvocation:(NSInvocation *)anInvocation
+{
+    NSLog(@"%s", __func__);
+}
+
+@end
+```
+
+hook `Person` 中的 `+ classMethod:` 
+
+```Objective-C
+[object_getClass([Person class]) aspect_hookSelector:@selector(classMethod:) withOptions:AspectPositionInstead usingBlock:^() {
+    NSLog(@"hook======1");
+} error:nil];
+```
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image06.png)
+
+
+<br>
+
+### 0x05 `__ASPECTS_ARE_BEING_CALLED__`
+
+
 
 
 ```Objective-C
@@ -432,13 +739,6 @@ if ([className hasSuffix:AspectsSubclassSuffix]) {
 
 ```
 
-```Objective-C
-
-```
-
-```Objective-C
-
-```
 
 ```Objective-C
 
@@ -450,6 +750,6 @@ if ([className hasSuffix:AspectsSubclassSuffix]) {
 
 <br>
 
-
+Aspects 的设计思想：**hook 是在 runtime 中动态创建子类的基础上实现的**。所有的 swizzling 操作都发生在子类，这样做的好处是你不需要去更改对象本身的类，也就是，当你在 remove aspects 的时候，如果发现当前对象的 aspect 都被移除了，那么，你可以将 isa 指针重新指回对象本身的类，从而消除了该对象的 swizzling , 同时也不会影响到其他该类的不同对象)这样对原来替换的类或者对象没有任何影响而且可以在子类基础上新增或者删除 aspect。
 
 <br>
