@@ -78,7 +78,7 @@ static id aspect_add(id self, SEL selector, AspectOptions options, id block, NSE
 
     __block AspectIdentifier *identifier = nil;
     aspect_performLocked(^{
-        // 判断当期那传入的 selector 是否允许被 hook
+        // 判断传入的 selector 是否允许被 hook
         if (aspect_isSelectorAllowedAndTrack(self, selector, options, error)) {
             // 用runtime的关联对象给 self 增加一个 aspectContainer 属性
             AspectsContainer *aspectContainer = aspect_getContainerForObject(self, selector);
@@ -315,7 +315,7 @@ if (identifier) {
   │    │       └──aspect_remove
   │    └── aspect_hookedGetClass
   ├── aspect_isMsgForwardIMP
-  ├──aspect_aliasForSelector(selector)
+  ├── aspect_aliasForSelector(selector)
   └── aspect_getMsgForwardIMP
 ```
 
@@ -350,11 +350,14 @@ Class object_getClass(id obj)
 
 ```Objective-C
 // 类对象调用 class 方法，直接返回本身
-// 实例对象调用 class 方法，class 方法的内部调用 object_getClass
+// 实例对象调用 class 方法，class 方法的内部调用 object_getClass，返回的是类对象
 Class statedClass = self.class;
-// object_getClass 获取的类的isa, 若是已经 hook 的类，self 的 isa 会指向其子类 xxx_Aspects_
+// object_getClass 获取对象的 isa 指针
+// 若 self 是元类对象，则 baseClass 是基类 NSObject 的元类对象
+// 若 self 是实例对象，则 baseClass == statedClass 是对应的类对象
+// 若 self 是实例对象，且已经被 hook，此时 self 的 isa 会指向其子类，也就是说 baseClass 是 xxx_Aspects_
+// 若 self 是实例对象，且已经 KVO 过，此时 self 的 isa 会指向其子类，也就是说 baseClass 是 NSKVONotifying_xxx
 Class baseClass = object_getClass(self);
-
 NSLog(@"statedClass:%@---baseClass:%@", statedClass, baseClass);
 
 // 若该类已被hook 则类名为 xxx_Aspects_, 否则 statedClass == baseClass (KVO除外)
@@ -376,8 +379,8 @@ NSString *className = NSStringFromClass(baseClass);
 打印 `statedClass` 和 `baseClass` 可以看到，第一次 hook 时 `statedClass` 和 `baseClass` 一样，都是类对象 `ViewController `。第二次打印 `baseClass` 是 `ViewController_Aspects_ `，也就是传进来的实例对象的 isa 指针被修改了(怎么修改后面会说)，指向 `ViewController_Aspects_ ` 类。
 
 ```
-// statedClass:ViewController---baseClass:ViewController
-// statedClass:ViewController---baseClass:ViewController_Aspects_
+// statedClass:ViewController---baseClass:ViewController   第一次 
+// statedClass:ViewController---baseClass:ViewController_Aspects_   第二次
 ```
 
 再往后看，先判断 `className` 是否包含 `_Aspects_ `，若包含说明已经类已经被 hook 直接返回。
@@ -421,7 +424,7 @@ if ([className hasSuffix:AspectsSubclassSuffix]) {
 
 先把 `aspect_hookClass` 看完，后面再说 `aspect_swizzleClassInPlace ` (hook 类方法或 hook 已经 KVO 过的对象的实例方法)。
 
-当 `className` 没有包含 `_Aspects_` 后缀，也不是元类，也不是KVO的中间类，即 `statedClass == baseClass` 的情况，动态创建一个名为 `xxx_Aspects_` 的子类。如下：
+当 `className` 没有包含 `_Aspects_` 后缀，也不是元类，也不是KVO的中间类，即 `statedClass == baseClass` 的情况，动态创建一个名为 `xxx_Aspects_` 的子类(hook 实例方法的情况)。如下：
 
 先调用 `objc_getClass` 查找是否有名为 `xxx_Aspects_` 的类。这时若返回 `nil`，就去调用 `objc_allocateClassPair` 创建这个类。`objc_getClass` 和 `objc_allocateClassPair` 在 objc4 中都可以找到源码，这里不做过多叙述。
 
@@ -463,7 +466,7 @@ static void aspect_hookedGetClass(Class class, Class statedClass) {
 	IMP newIMP = imp_implementationWithBlock(^(id self) {
 		return statedClass;
     });
-    // 替换 class 的 -class 方法的方法实现(IMP)，使其返回 statedClass 类型
+    // 替换 class 的 class 方法的方法实现(IMP)，使其返回 statedClass 类型
 	class_replaceMethod(class, @selector(class), newIMP, method_getTypeEncoding(method));
 }
 ```
@@ -492,7 +495,7 @@ NSLog(@"aspect_hookedGetClass之前获取subClass的isa-----%@-----%@", object_g
 ...
 // 修改subclass类的 -class 方法实现 使其指向 statedClass
 aspect_hookedGetClass(subclass, statedClass);
-// 修改subclass元类的 -class 方法实现 使其指向 statedClass
+// 修改subclass元类的 +class 方法实现 使其指向 statedClass
 aspect_hookedGetClass(object_getClass(subclass), statedClass);
 ...
 
@@ -898,29 +901,171 @@ if (!aspect_isMsgForwardIMP(targetMethodIMP)) {
 }
 ```
 
-由于我们将 `slector` 指向 `_objc_msgForward` 或 `_objc_msgForward_stret`，可想而知，当`selector` 被执行的时候，会触发消息转发从而进入 `forwardInvocation:`，而我们又对`forwardInvacation` 进行了 swizzling，因此最终转入我们自己的处理逻辑代码 `__ASPECTS_ARE_BEING_CALLED__` 中。
+由于我们将 `slector` 的方法实现指向 `_objc_msgForward` 或 `_objc_msgForward_stret`，可想而知，当`selector` 被执行的时候，会触发消息转发从而进入 `forwardInvocation:`，而我们又对`forwardInvacation` 进行了 swizzling，因此最终转入我们自己的处理逻辑代码 `__ASPECTS_ARE_BEING_CALLED__` 中。在 `__ASPECTS_ARE_BEING_CALLED__` 中会调用 hook 方法和原方法。
 
 
 <br>
 
 ### 三、`aspect_remove`
 
-```Objective-C
+有两个地方会调用 `remove`。一个是内部调用，在 `__ASPECTS_ARE_BEING_CALLED__` 方法中，若 `options` 为 `AspectOptionAutomaticRemoval`，则会在最后调用 `AspectIdentifier` 的 `remove` 方法。
 
+另外一个是外部调用，在调用 `aspect_hookSelector` 会返回一个 `id<AspectToken>` 类型的值，然后调用协议 `AspectToken ` 中的 `remove` 方法。
+
+这两种方式最终都会走到`AspectIdentifier` 的 `remove` 方法，并调用 `aspect_remove `，如下：
+
+```Objective-C
+- (BOOL)remove {
+    return aspect_remove(self, NULL);
+}
+
+static BOOL aspect_remove(AspectIdentifier *aspect, NSError **error) {
+    NSCAssert([aspect isKindOfClass:AspectIdentifier.class], @"Must have correct type.");
+
+    __block BOOL success = NO;
+    aspect_performLocked(^{
+        id self = aspect.object; // strongify
+        if (self) {
+            AspectsContainer *aspectContainer = aspect_getContainerForObject(self, aspect.selector);
+            success = [aspectContainer removeAspect:aspect];
+
+            aspect_cleanupHookedClassAndSelector(self, aspect.selector);
+            // destroy token
+            aspect.object = nil;
+            aspect.block = nil;
+            aspect.selector = NULL;
+        }else {
+            NSString *errrorDesc = [NSString stringWithFormat:@"Unable to deregister hook. Object already deallocated: %@", aspect];
+            AspectError(AspectErrorRemoveObjectAlreadyDeallocated, errrorDesc);
+        }
+    });
+    return success;
+}
+```
+
+`aspect_remove` 是整个 `aspect_add` 的逆过程，其函数调用栈如下：
+
+```Objective-C
+- aspect_remove(AspectIdentifier *aspect, NSError **error)
+  └── aspect_cleanupHookedClassAndSelector
+      ├──aspect_deregisterTrackedSelector
+      │   └── aspect_getSwizzledClassesDict
+      ├──aspect_destroyContainerForObject
+      └── aspect_undoSwizzleClassInPlace
+          └── _aspect_modifySwizzledClasses
+                └──aspect_undoSwizzleForwardInvocation
+```
+
+
+
+首先获取 `AspectsContainer`, 将三个数组中对应要移除的 `aspect` 都移除。
+
+```Objective-C
+AspectsContainer *aspectContainer = aspect_getContainerForObject(self, aspect.selector);
+// 移除数组中对应的 aspect
+success = [aspectContainer removeAspect:aspect];
+```
+
+然后来到 `remove` 最关键的过程就是 `aspect_cleanupHookedClassAndSelector(self, aspect.selector)` 移除之前 hook 的 `class` 和 `selector`。
+
+
+首先判断 `selector` 的方法实现是不是 `_objc_msgForward` 的方法实现，若是则将 `selector` 方法实现替换回来。如下：
+
+```Objective-C
+// Check if the method is marked as forwarded and undo that.
+Method targetMethod = class_getInstanceMethod(klass, selector);
+IMP targetMethodIMP = method_getImplementation(targetMethod);
+
+// 在 aspect_prepareClassAndHookSelector 方法中我们将 selector 的方法实现替换成 _objc_msgForward
+// 所以这里的 targetMethodIMP 就是 _objc_msgForward 的方法实现
+if (aspect_isMsgForwardIMP(targetMethodIMP)) {
+    // Restore the original method implementation.
+    
+    const char *typeEncoding = method_getTypeEncoding(targetMethod);
+    SEL aliasSelector = aspect_aliasForSelector(selector);
+    // 在 aspect_prepareClassAndHookSelector 方法中将 selector 的方法实现给了 aliasSelector
+    Method originalMethod = class_getInstanceMethod(klass, aliasSelector);
+    // 这里拿到的就是 selector(原方法) 的方法实现
+    IMP originalIMP = method_getImplementation(originalMethod);
+    NSCAssert(originalMethod, @"Original implementation for %@ not found %@ on %@", NSStringFromSelector(selector), NSStringFromSelector(aliasSelector), klass);
+    
+    // 将 selector 的方法实现替换回来
+    class_replaceMethod(klass, selector, originalIMP, typeEncoding);
+    AspectLog(@"Aspects: Removed hook for -[%@ %@].", klass, NSStringFromSelector(selector));
+}
+```
+
+然后调用 `aspect_deregisterTrackedSelector` 将 `AspectTracker` 移除。
+
+再判断若`container` 没有 `aspect`，则释放关联对象 `AspectsContainer`
+
+```Objective-C
+static void aspect_destroyContainerForObject(id<NSObject> self, SEL selector) {
+    NSCParameterAssert(self);
+    SEL aliasSelector = aspect_aliasForSelector(selector);
+    objc_setAssociatedObject(self, aliasSelector, nil, OBJC_ASSOCIATION_RETAIN);
+}
+```
+
+再判断是不是动态生成的子类`xxx_Aspects_`，若是则将重置 self 的 isa 指针，将它指向原来的类对象。如下:
+
+```Objective-C
+NSString *className = NSStringFromClass(klass);
+if ([className hasSuffix:AspectsSubclassSuffix]) {
+    Class originalClass = NSClassFromString([className stringByReplacingOccurrencesOfString:AspectsSubclassSuffix withString:@""]);
+    NSCAssert(originalClass != nil, @"Original class must exist");
+    // 重置 self 的 isa 指针
+    object_setClass(self, originalClass);
+    AspectLog(@"Aspects: %@ has been restored.", NSStringFromClass(originalClass));
+}
+```
+
+若是元类或 KVO 过的类，则调用 `aspect_undoSwizzleClassInPlace` 方法，如下：
+
+```Objective-C
+else {
+    // Class is most likely swizzled in place. Undo that.
+    if (isMetaClass) {
+        // 元类
+        aspect_undoSwizzleClassInPlace((Class)self);
+    }else if (self.class != klass) {
+        // KVO过的类
+        aspect_undoSwizzleClassInPlace(klass);
+    }
+}
 ```
 
 ```Objective-C
+static void aspect_undoSwizzleClassInPlace(Class klass) {
+    NSCParameterAssert(klass);
+    NSString *className = NSStringFromClass(klass);
 
+    _aspect_modifySwizzledClasses(^(NSMutableSet *swizzledClasses) {
+        if ([swizzledClasses containsObject:className]) {
+            aspect_undoSwizzleForwardInvocation(klass);
+            [swizzledClasses removeObject:className];
+        }
+    });
+}
 ```
+
+`aspect_undoSwizzleClassInPlace` 内部调用 `aspect_undoSwizzleForwardInvocation` 方法将 `forwardInvocation` 的方法实现还原。如下： 
 
 
 ```Objective-C
+static void aspect_undoSwizzleForwardInvocation(Class klass) {
+    NSCParameterAssert(klass);
+    Method originalMethod = class_getInstanceMethod(klass, NSSelectorFromString(AspectsForwardInvocationSelectorName));
+    Method objectMethod = class_getInstanceMethod(NSObject.class, @selector(forwardInvocation:));
+    // There is no class_removeMethod, so the best we can do is to retore the original implementation, or use a dummy.
+    IMP originalImplementation = method_getImplementation(originalMethod ?: objectMethod);
+    // 将 forwardInvocation: 的方法实现还原
+    class_replaceMethod(klass, @selector(forwardInvocation:), originalImplementation, "v@:@");
 
+    AspectLog(@"Aspects: %@ has been restored.", NSStringFromClass(klass));
+}
 ```
 
-```Objective-C
-
-```
 
 <br>
 
