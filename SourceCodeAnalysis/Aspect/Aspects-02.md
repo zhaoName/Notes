@@ -904,7 +904,7 @@ if (!aspect_isMsgForwardIMP(targetMethodIMP)) {
 由于我们将 `slector` 的方法实现指向 `_objc_msgForward` 或 `_objc_msgForward_stret`，可想而知，当`selector` 被执行的时候，会触发消息转发从而进入 `forwardInvocation:`，而我们又对`forwardInvacation` 进行了 swizzling，因此最终转入我们自己的处理逻辑代码 `__ASPECTS_ARE_BEING_CALLED__` 中。在 `__ASPECTS_ARE_BEING_CALLED__` 中会调用 hook 方法和原方法。
 
 
-若 hook 实例方法或 KVO 过的类的实例方法(`subclass` 需要换成 `NSKVONotifying_xxx` )，`aspect_prepareClassAndHookSelector` 方法执行完，`subclass` 和 `stateClass` 关系如下图：
+若 hook 实例方法或 KVO 过的类的实例方法(`subclass` 已换成 `NSKVONotifying_xxx` )，`aspect_prepareClassAndHookSelector` 方法执行完，`subclass` 和 `stateClass` 关系如下图：
 
 ![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image07.png)
 
@@ -1085,7 +1085,7 @@ static void aspect_undoSwizzleForwardInvocation(Class klass) {
 
 先说 hook 的是实例方法，实例对象可以有很多个，若我们在动态生成的子类中修改 selector 的方法实现，则 hook 只会对当前对象生效。以上面的 `Person` 为例:
 
-```
+```Objective-C
 Person *per = [Person new];
 Person *per1 = [Person new];
 
