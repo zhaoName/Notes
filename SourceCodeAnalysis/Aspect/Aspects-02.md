@@ -523,7 +523,7 @@ struct zz_objc_class *selfMetaClass = (__bridge struct zz_objc_class *)(object_g
 ![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image03.png)
 
 
-总结：经过 `aspect_hookedGetClass ` 和 `object_setClass ` 之后，`subclass` 和 `stateClass` 的关系如下：
+总结：以 hook 实例方法为例(KVO 过的类除外)，经过 `aspect_hookedGetClass ` 和 `object_setClass ` 之后，`subclass` 和 `stateClass` 的关系如下：
 
 ![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image04.png)
 
@@ -904,7 +904,13 @@ if (!aspect_isMsgForwardIMP(targetMethodIMP)) {
 由于我们将 `slector` 的方法实现指向 `_objc_msgForward` 或 `_objc_msgForward_stret`，可想而知，当`selector` 被执行的时候，会触发消息转发从而进入 `forwardInvocation:`，而我们又对`forwardInvacation` 进行了 swizzling，因此最终转入我们自己的处理逻辑代码 `__ASPECTS_ARE_BEING_CALLED__` 中。在 `__ASPECTS_ARE_BEING_CALLED__` 中会调用 hook 方法和原方法。
 
 
-<br>
+若 hook 实例方法或 KVO 过的类的实例方法(`subclass` 需要换成 `NSKVONotifying_xxx` )，`aspect_prepareClassAndHookSelector` 方法执行完，`subclass` 和 `stateClass` 关系如下图：
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image07.png)
+
+若 hook 类方法，`aspect_prepareClassAndHookSelector` 中 `aspect_swizzleClassInPlace` 方法执行完，元类中方法如下图：
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image08.png)
 
 ### 三、`aspect_remove`
 
@@ -1069,6 +1075,47 @@ static void aspect_undoSwizzleForwardInvocation(Class klass) {
 
 <br>
 
-Aspects 的设计思想：**hook 是在 runtime 中动态创建子类的基础上实现的**。所有的 swizzling 操作都发生在子类，这样做的好处是你不需要去更改对象本身的类，也就是，当你在 remove aspects 的时候，如果发现当前对象的 aspect 都被移除了，那么，你可以将 isa 指针重新指回对象本身的类，从而消除了该对象的 swizzling , 同时也不会影响到其他该类的不同对象)这样对原来替换的类或者对象没有任何影响而且可以在子类基础上新增或者删除 aspect。
+## 四、总结
+
+- 若 hook 的是实例方法或 hook KVO 过的类的实例方法，**则 hook 是在 runtime 中动态创建子类的基础上实现的**
+
+- 若 hook 的是类方法，则在元类中修改 `selector` 的方法实现，不会动态创建子类。
+
+这样做的好处是什么呢？
+
+先说 hook 的是实例方法，实例对象可以有很多个，若我们在动态生成的子类中修改 selector 的方法实现，则 hook 只会对当前对象生效。以上面的 `Person` 为例:
+
+```
+Person *per = [Person new];
+Person *per1 = [Person new];
+
+[per aspect_hookSelector:@selector(instanceMethod:) withOptions:AspectPositionAfter usingBlock:^() {
+    NSLog(@"hook======2");
+} error:nil];
+
+[per instanceMethod:@"per123"];
+[per1 instanceMethod:@"per456"];
+```
+
+`per1` 没有 hook `instanceMethod:`，那 `per1` 的 isa 指针没有被修改，调用 `instanceMethod:` 也就不会走 hook block 。
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image09.png)
+
+
+但对于类方法来说，因为类对象就一个，所以一旦某个类 hook 了类方法，那能影响的类对象也就一个。所以也就没有必要动态生成一个元类对象。
+
+<br>
+
+最后上两张图
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image10.png)
+
+
+![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image11.png)
+
+
+<br>
+
+参考： [iOS 如何实现 Aspect Oriented Programming](https://github.com/halfrost/Halfrost-Field/blob/master/contents/iOS/Aspect/ios_aspect.md)
 
 <br>
