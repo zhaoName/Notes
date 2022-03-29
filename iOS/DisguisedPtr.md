@@ -109,7 +109,7 @@ public:
 
 首先来解释下，如何隐藏对象的地址 (Disgused)
 
-```C++
+```Objective-C
 // 创建对象
 Foo foo;
 foo.bar = 1;
@@ -134,7 +134,7 @@ Foo *someFoo = disguisedFooPtr;
 再看下 `DisguisedPtr` 中的一些操作符运算
 
 
-```C++
+```Objective-C
 // T* operator -> ()
 disguisedFooPtr->bar = 10;
 NSLog(@"disguisedFooPtr->bar: %d", someFoo->bar); // disguisedFooPtr->bar: 10

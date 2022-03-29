@@ -214,11 +214,11 @@ sunnyxx 为了搞清属性是怎么实现的,曾经反编译过相关的代码,�
 
 - 不会生成同名带下划线的成员变量
 
-![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image01.png)
+![](../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image01.png)
 
 - 编译器只会生成 setter getter 的声明，不会自动生成 setter getter 方法的实现
 
-![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image02.png)
+![](../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image02.png)
 
 - 在 protocol 中使用 @property 时，我们需要在遵守这个协议的类中，完善属性的方法实现和带成员变量
 
@@ -275,10 +275,10 @@ category 中使用 @property 声明属性，也是只有 setter getter 方法的
 
 ### 0x07. runtime 如何实现 weak 属性
 
-![](../../Images/iOS/MemoryManage/MemoryManage_image0403.png)
+![](../Images/iOS/MemoryManage/MemoryManage_image0403.png)
 
 
-![](../../Images/iOS/MemoryManage/MemoryManage_image0404.png)
+![](../Images/iOS/MemoryManage/MemoryManage_image0404.png)
 
 
 <br>
@@ -393,15 +393,15 @@ NEVER_INLINE void objc_object::clearDeallocating_slow()
 
 - 若指定了成员变量的名称,会生成一个指定的名称的成员变量, setter/getter 方法不变
 
-![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image03.png)
+![](../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image03.png)
 
 - 若声明一个和成员变量相同名称的属性，则这个属性只有 setter/getter 方法的声明
 
-![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image04.png)
+![](../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image04.png)
 
 - 若 `@synthesize foo`, 则会生成一个同名的成员变量
 
-![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image05.png)
+![](../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image05.png)
 
 
 > 假如 property 名为 foo，存在一个名为 _foo 的实例变量，那么还会自动合成新变量么？
@@ -512,7 +512,7 @@ END_ENTRY _objc_msgSend
 
 题目中的 对象 看他的回答是指实例对象。
 
-![](../../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image06.png)
+![](../Images/Interview/招聘一个靠谱的iOS/HireAReliableiOS_image06.png)
 
 
 <br>
@@ -1139,7 +1139,7 @@ typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
 - `kCFRunLoopBeforeExit`事件，会调用`objc_autoreleasePoolPop()`
 
 
-![](../../Images/iOS/AutoReleasePool/AutoreleasePool_image0106.png)
+![](../Images/iOS/AutoReleasePool/AutoreleasePool_image0106.png)
 
 
 当启动 RunLoop 时，也就是`kCFRunLoopEntry`即将进入 RunLoop，会调用`objc_autoreleasePoolPush()`方法，初始化`AutoreleasePoolPage `对象。
@@ -1554,11 +1554,11 @@ dispatch_sync(queueA, ^{
 
 `setValue:forKey:`原理
 
-![](../../Images/KVC本质/kvc_image1.png)
+![](../Images/iOS/KVC本质/kvc_image1.png)
 
 <br>
 
-### 0x30.  KVC 的`keyPath`中的集合运算符如何使用？
+### 0x30. KVC 的`keyPath`中的集合运算符如何使用？
 
 其实没懂题目啥意思。。
 
