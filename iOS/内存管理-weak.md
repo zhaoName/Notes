@@ -13,7 +13,7 @@
 
 通常使用普通的函数实现一个与数据类型有关的算法是很繁琐的，比如两个数的加法，要考虑很多类型：
 
-```
+```C++
 int add(int a,int b) { return a+b; }
 
 float add(float a,float b) { return  a+b; }
@@ -22,7 +22,7 @@ float add(float a,float b) { return  a+b; }
 
 虽然在 C++ 中可以通过函数重载来解决这个问题，但是反复写相同算法的函数是比较辛苦的，更重要的是函数重载是静态编译，运行时占用过多内存。这是我们可以考虑用模板函数
 
-```
+```C++
 template <typename T>
 T add(T a, T b)
 {
@@ -41,7 +41,7 @@ NSLog(@"%f", add<float>(3.2, 5.6));
 
 类模板和函数模板有所不同，编译器不能为类模板推断模板类型，需要显式的指定参数类型。
 
-```
+```C++
 template <class T>
 class Stack {
 private:
@@ -110,7 +110,7 @@ T Stack<T>::top() {
 ### 0x01 指针基础
 
 
-```
+```Objective-C
 int a = 10;
 int *p = &a;
 int **pp = &p;
@@ -122,7 +122,7 @@ NSLog(@"%p, %p %p %p", p, &a, &p, pp);
 
 指针存储的是地址，指针的指针存储的是指针的地址。
 
-```
+```Objective-C
 NSObject *obj = [[NSObject alloc] init];
 __weak NSObject* weakObj = obj;
     
@@ -144,16 +144,40 @@ NSLog(@"%p %p %p", obj, weakObj, weakPtr);
 
 ![](../Images/iOS/MemoryManage/MemoryManage_image0403.png)
 
-`SideTable`中三个成员，第一个`slock`是锁，第二个`refcnts`用于存储对象的引用计数，第三个`weak_table`是弱引用表。
+`weak_table` 在结构体 `SideTable ` 中，`SideTable` 中三个成员，第一个`slock`是锁，第二个`refcnts` 用于存储对象的引用计数，第三个`weak_table`是弱引用表。定义如下：
 
+```Objective-C
+// NSObject.mm
+
+struct SideTable {
+    spinlock_t slock;
+    RefcountMap refcnts;
+    weak_table_t weak_table;
+    ...
+};
+```
 
 从注释上看`weak_table_t`是个全局的弱引用表，以`object`为`key`，
-`weak_entry_t`作为`value`。`num_entries`是表中存储的`weak_entry_t`的个数。`mask`是`weak_entries`的总容量减1。
+`weak_entry_t` 作为 `value`。`num_entries`是表中存储的`weak_entry_t`的个数。`mask`是`weak_entries` 的总容量减 1。如下：
 
+```Objective-C
+// objc-weak.h
 
-在介绍`weak_entry_t`前，先看段代码
-
+/**
+ * The global weak references table. Stores object ids as keys,
+ * and weak_entry_t structs as their values.
+ */
+struct weak_table_t {
+    weak_entry_t *weak_entries;
+    size_t    num_entries;
+    uintptr_t mask;
+    uintptr_t max_hash_displacement;
+};
 ```
+
+在介绍`weak_entry_t`前，先介绍 [DisguisedPtr](https://github.com/zhaoName/Notes/blob/master/iOS/DisguisedPtr.md)，如下
+
+```Objective-C
 // objc4-750  objc-weak.mm
 
 // DisguisedPtr<T> acts like pointer type T*, except the 
@@ -172,7 +196,46 @@ typedef DisguisedPtr<objc_object *> weak_referrer_t;
 
 还有一点我们需要知道，OC 中的类实质是`objc_class`类型的结构体。而`objc_class `继承自`objc_object `。也就是说可以将`objc_object *`看成 OC 中的对象。
 
-在``weak_entry_t``结构中，`referent`是`weak`指向的 OC 对象，若`out_of_line_ness == 2`，则`weak`指针的地址存放在 hash 结构的 `referrers `数组中；若`out_of_line_ness != 2`，则`weak`指针的地址存放在常规顺序存储数组`inline_referrers`中，且`inline_referrers`最多能存储四个元素。
+```Objective-C
+// objc-weak.h
+
+struct weak_entry_t {
+    DisguisedPtr<objc_object> referent;
+    union {
+        struct {
+            weak_referrer_t *referrers;
+            uintptr_t        out_of_line_ness : 2;
+            uintptr_t        num_refs : PTR_MINUS_2;
+            uintptr_t        mask;
+            uintptr_t        max_hash_displacement;
+        };
+        struct {
+            // out_of_line_ness field is low bits of inline_referrers[1]
+            weak_referrer_t  inline_referrers[WEAK_INLINE_COUNT];
+        };
+    };
+
+    bool out_of_line() {
+        return (out_of_line_ness == REFERRERS_OUT_OF_LINE);
+    }
+
+    weak_entry_t& operator=(const weak_entry_t& other) {
+        memcpy(this, &other, sizeof(other));
+        return *this;
+    }
+    
+    // 初始化 weak_entry_t，初始元素存储在线性数组 inline_referrers 中
+    weak_entry_t(objc_object *newReferent, objc_object **newReferrer) : referent(newReferent)
+    {
+        inline_referrers[0] = newReferrer;
+        for (int i = 1; i < WEAK_INLINE_COUNT; i++) {
+            inline_referrers[i] = nil;
+        }
+    }
+};
+```
+
+在 `weak_entry_t` 结构中，`referent`是`weak`指向的 OC 对象，若`out_of_line_ness == 2`，则`weak`指针的地址存放在 hash 结构的 `referrers `数组中；若`out_of_line_ness != 2`，则`weak`指针的地址存放在常规顺序存储数组`inline_referrers`中，且`inline_referrers`最多能存储四个元素。
 
 
 ![](../Images/iOS/MemoryManage/MemoryManage_image0404.png)
@@ -698,7 +761,6 @@ static void weak_entry_remove(weak_table_t *weak_table, weak_entry_t *entry)
     weak_compact_maybe(weak_table);
 }
 ```
-
 
 
 <br>

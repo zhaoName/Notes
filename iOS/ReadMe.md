@@ -23,10 +23,6 @@
 
 - [内存管理 - Timer](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20Timer.md)
 
-
-- [Tagged Pointer](https://github.com/zhaoName/Notes/blob/master/iOS/Tagged%20Pointer.md)
-
-
 - [内存管理 - MRC](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20MRC.md)
 
 
@@ -70,20 +66,20 @@
 
 - [Category本质(三)关联对象](https://github.com/zhaoName/Notes/blob/master/iOS/Category%E6%9C%AC%E8%B4%A8(%E4%B8%89)%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1.md)
 
-
 - [KVC本质](https://github.com/zhaoName/Notes/blob/master/iOS/KVC%E6%9C%AC%E8%B4%A8.md)
-
 
 - [KVO本质](https://github.com/zhaoName/Notes/blob/master/iOS/KVO%E6%9C%AC%E8%B4%A8.md)
 
-
 - [OC对象本质(一)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%B8%80).md)
-
 
 - [OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)
 
-
 - [OC对象本质(三)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%B8%89).md)
+- [Type Encodings](https://github.com/zhaoName/Notes/blob/master/iOS/TypeEncodings.md)
+- [编译 & 运行 objc4-750](https://github.com/zhaoName/Notes/blob/master/iOS/compile%26run-objc4-750.md)
+- [DisguisedPtr](https://github.com/zhaoName/Notes/blob/master/iOS/DisguisedPtr.md)
+- [WeakAssociatedObject](https://github.com/zhaoName/Notes/blob/master/iOS/WeakAssociatedObject.md)
+
 
 
 <br>
