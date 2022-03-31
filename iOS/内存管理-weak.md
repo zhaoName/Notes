@@ -104,45 +104,12 @@ T Stack<T>::top() {
 
 <br>
 
-## 二、学前须知
+## 二、`weak_table` 表结构
 
 
-### 0x01 指针基础
+### 0x01 `weak_table`表结构
 
-
-```Objective-C
-int a = 10;
-int *p = &a;
-int **pp = &p;
-NSLog(@"%p, %p %p %p", p, &a, &p, pp);
-
-// 打印结果
-2019-08-05 17:33:49.834969+0800 MemoryManagement[3073:2360169] 0x7ffee9b72860, 0x7ffee9b72860 0x7ffee9b72858 0x7ffee9b72858
-```
-
-指针存储的是地址，指针的指针存储的是指针的地址。
-
-```Objective-C
-NSObject *obj = [[NSObject alloc] init];
-__weak NSObject* weakObj = obj;
-    
-__weak NSObject **weakPtr = &weakObj;
-NSLog(@"%p %p %p", obj, weakObj, weakPtr);
-
-// 打印结果
-2019-08-05 18:07:57.091970+0800 MemoryManagement[6079:2388744] 0x6000028501a0 0x6000028501a0 0x7ffeeb69f858
-```
-
-![](../Images/iOS/MemoryManage/MemoryManage_image0401.png)
-
-`weakPtr`是个二维指针，里面存储的是`weakObj`的地址。`weakObj `是个指针，也是个 OC 对象，里面存储的是`objc_class`的地址。`objc_class `是个结构体，里面有`isa`
-指针和成员变量的具体值。
-
-![](../Images/iOS/MemoryManage/MemoryManage_image0402.png)
-
-### 0x02 `weak_table`表结构
-
-![](../Images/iOS/MemoryManage/MemoryManage_image0403.png)
+![](../Images/iOS/weak/weak_image01.png)
 
 `weak_table` 在结构体 `SideTable ` 中，`SideTable` 中三个成员，第一个`slock`是锁，第二个`refcnts` 用于存储对象的引用计数，第三个`weak_table`是弱引用表。定义如下：
 
@@ -178,7 +145,7 @@ struct weak_table_t {
 在介绍`weak_entry_t`前，先介绍 [DisguisedPtr](https://github.com/zhaoName/Notes/blob/master/iOS/DisguisedPtr.md)，如下
 
 ```Objective-C
-// objc4-750  objc-weak.mm
+// objc-private.h
 
 // DisguisedPtr<T> acts like pointer type T*, except the 
 // stored value is disguised to hide it from tools like `leaks`.
@@ -235,10 +202,126 @@ struct weak_entry_t {
 };
 ```
 
-在 `weak_entry_t` 结构中，`referent`是`weak`指向的 OC 对象，若`out_of_line_ness == 2`，则`weak`指针的地址存放在 hash 结构的 `referrers `数组中；若`out_of_line_ness != 2`，则`weak`指针的地址存放在常规顺序存储数组`inline_referrers`中，且`inline_referrers`最多能存储四个元素。
+在 `weak_entry_t` 结构中，`referent`是`weak`指向的 OC 对象，共用体中的 `weak_referrer_t *referrers` 和 `weak_referrer_t  inline_referrers[]` 存储的都是 `weak` 变量的地址。
+
+- 若`out_of_line() == true`，则`weak` 变量地址存放散列表  `weak_referrer_t *referrers` 中；
+
+- 若`out_of_line() == false`，则`weak`变量地址存放在线性数组 `weak_referrer_t  inline_referrers[]`中，且`inline_referrers`数组中最多能存储四个元素。
+
+### 0x02 总结
+
+weak 会存放在全局散列表 `weak_table_t` 中，`weak_table_t` 有两层散列。
+
+- 第一层是 `weak_table_t` 中的 ` weak_entry_t *weak_entries`。`object` 当 key，`weak_entry_t` 当 value。
+
+- 第二层是 `weak_entry_t` 中的 `weak_referrer_t *referrers`。key 和 value 都是`referrer` 也就是 `weak` 地址。
+
+第二层散列需要注意的是，若指向同一个 object 的 weak 指针不超过 4 个，那 `referrer` 会存储在线性数组 `inline_referrers` 中。若超过 4 个，才会存储在散列表 `weak_referrer_t *referrers` 中。毕竟很少会有 4 个以上的 weak 变量同时指向一个 object。
+
+我们在 `objc-weak.mm` 中实现一个打印 `weak_table_t` 的函数
+
+```Objective-C
+/**
+ * 打印 weak_table 中的 referent(object)， 和 referent 对应的 referrer (weak 变量)
+ */
+void print_weak_table(weak_table_t *weak_table, objc_object *referent)
+{
+    ASSERT(referent);
+
+    weak_entry_t *weak_entries = weak_table->weak_entries;
+
+    if (!weak_entries) return;
+
+    printf("***********print_weak_table: %p 对应的 weak 变量**************\n", referent);
+    
+    size_t begin = hash_pointer(referent) & weak_table->mask;
+    size_t index = begin;
+    size_t hash_displacement = 0;
+    while (true) {
+        if (hash_displacement > weak_table->max_hash_displacement) { break; }
+        
+        weak_entry_t *entry = &weak_table->weak_entries[index];
+        if (!(*entry).out_of_line()) {
+            // 存储在线性数组
+            for (int i = 0; i < WEAK_INLINE_COUNT; i++) {
+                objc_object ** referrer = (*entry).inline_referrers[i];
+                printf("print_weak_table: inline_referrers[%d] ---%p \n", i, referrer);
+            }
+        } else {
+            // 存储在散列表
+            // 虽然存储在散列表，但这里并不知道 key 也就是我们要打印的 referrer,也就没发快速算出对应下标
+            // 所以我们要 for 遍历打印
+            for (unsigned long i = 0; i < (entry->mask + 1); i++) {
+                objc_object ** referrer = entry->referrers[i];
+                if (referrer) {
+                    printf("print_weak_table: referrers[%ld] ---%p \n", i, referrer);
+                }
+            }
+        }
+        
+        hash_displacement++;
+        index = (index+1) & weak_table->mask;
+    }
+}
+```
+
+然后在 `main.mm` 中声明如下代码
+
+```Objective-C
+Person *per = [[Person alloc] init];
+
+__weak Person *weakP1 = per;
+__weak Person *weakP2 = per;
+__weak Person *weakP3 = per;
+__weak Person *weakP4 = per;
+__weak Person *weakP5 = per;
+```
+
+打印结果如下，同时也证明我们的结论
+
+```
+objc_initWeak: 0x7ffeefbff4c8-----0x101215430 
+***********print_weak_table: 0x101215430 对应的 weak 变量**************
+print_weak_table: inline_referrers[0] ---0x7ffeefbff4c8 
+print_weak_table: inline_referrers[1] ---0x0 
+print_weak_table: inline_referrers[2] ---0x0 
+print_weak_table: inline_referrers[3] ---0x0 
 
 
-![](../Images/iOS/MemoryManage/MemoryManage_image0404.png)
+objc_initWeak: 0x7ffeefbff4d0-----0x101215430 
+***********print_weak_table: 0x101215430 对应的 weak 变量**************
+print_weak_table: inline_referrers[0] ---0x7ffeefbff4c8 
+print_weak_table: inline_referrers[1] ---0x7ffeefbff4d0 
+print_weak_table: inline_referrers[2] ---0x0 
+print_weak_table: inline_referrers[3] ---0x0 
+
+
+objc_initWeak: 0x7ffeefbff4d8-----0x101215430 
+***********print_weak_table: 0x101215430 对应的 weak 变量**************
+print_weak_table: inline_referrers[0] ---0x7ffeefbff4c8 
+print_weak_table: inline_referrers[1] ---0x7ffeefbff4d0 
+print_weak_table: inline_referrers[2] ---0x7ffeefbff4d8 
+print_weak_table: inline_referrers[3] ---0x0 
+
+
+objc_initWeak: 0x7ffeefbff4e0-----0x101215430 
+***********print_weak_table: 0x101215430 对应的 weak 变量**************
+print_weak_table: inline_referrers[0] ---0x7ffeefbff4c8 
+print_weak_table: inline_referrers[1] ---0x7ffeefbff4d0 
+print_weak_table: inline_referrers[2] ---0x7ffeefbff4d8 
+print_weak_table: inline_referrers[3] ---0x7ffeefbff4e0 
+
+
+objc_initWeak: 0x7ffeefbff4e8-----0x101215430 
+***********print_weak_table: 0x101215430 对应的 weak 变量**************
+print_weak_table: referrers[1] ---0x7ffeefbff4e0 
+print_weak_table: referrers[2] ---0x7ffeefbff4d0 
+print_weak_table: referrers[5] ---0x7ffeefbff4e8 
+print_weak_table: referrers[6] ---0x7ffeefbff4d8 
+print_weak_table: referrers[7] ---0x7ffeefbff4c8 
+```
+
+![](../Images/iOS/weak/weak_image02.png)
 
 <br>
 
@@ -258,7 +341,7 @@ struct weak_entry_t {
 }
 ```
 
-![](../Images/iOS/MemoryManage/MemoryManage_image0405.png)
+![](../Images/iOS/weak/weak_image05.png)
 
 可以看到初始化用`weak`修饰的变量，首先会调用`objc_initWeak`函数。
 
