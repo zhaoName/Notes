@@ -855,7 +855,7 @@ static void weak_entry_insert(weak_table_t *weak_table, weak_entry_t *new_entry)
 
 ### 0x01 `objc_destructInstance `
 
-```
+```Objective-C
 // objc-runtime-new.mm
 
 void *objc_destructInstance(id obj) 
@@ -878,7 +878,7 @@ void *objc_destructInstance(id obj)
 
 ### 0x02 `clearDeallocating_slow`
 
-```
+```Objective-C
 // NSObject.mm
 
 NEVER_INLINE void objc_object::clearDeallocating_slow()
@@ -903,7 +903,7 @@ NEVER_INLINE void objc_object::clearDeallocating_slow()
 ### 0x03 `weak_clear_no_lock`
 
 
-```
+```Objective-C
 // objc-weak.mm
 
 void weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
