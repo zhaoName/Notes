@@ -166,6 +166,22 @@ typedef DisguisedPtr<objc_object *> weak_referrer_t;
 ```Objective-C
 // objc-weak.h
 
+/**
+ * The internal structure stored in the weak references table. 
+ * It maintains and stores
+ * a hash set of weak references pointing to an object.
+ * If out_of_line_ness != REFERRERS_OUT_OF_LINE then the set
+ * is instead a small inline array.
+ */
+#define WEAK_INLINE_COUNT 4
+
+// out_of_line_ness field overlaps with the low two bits of inline_referrers[1].
+// inline_referrers[1] is a DisguisedPtr of a pointer-aligned address.
+// The low two bits of a pointer-aligned DisguisedPtr will always be 0b00
+// (disguised nil or 0x80..00) or 0b11 (any other address).
+// Therefore out_of_line_ness == 0b10 is used to mark the out-of-line state.
+#define REFERRERS_OUT_OF_LINE 2
+
 struct weak_entry_t {
     DisguisedPtr<objc_object> referent;
     union {
@@ -332,7 +348,7 @@ print_weak_table: referrers[7] ---0x7ffeefbff4c8
 
 要想知道`weak`的实现原理，首先要知道入口在哪！给下面方法下断点，将 Xcode 调到汇编模式`Xcode->Debug->Debug Workflow->Always Show Diaseembly`
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -343,44 +359,61 @@ print_weak_table: referrers[7] ---0x7ffeefbff4c8
 
 ![](../Images/iOS/weak/weak_image05.png)
 
-可以看到初始化用`weak`修饰的变量，首先会调用`objc_initWeak`函数。
+可以看到初始化用`weak`修饰的变量，首先会调用`objc_initWeak`函数。定义如下：
 
-```
-// objc4-750  NSObject.mm
+```Objective-C
+NSObject.mm
 
 /** 
- * Initialize a fresh weak pointer to some object location. 
- * It would be used for code like: 
+ * Initialize a fresh weak pointer to some object location.
+ * It would be used for code like:
  *
- * (The nil case) 
+ * (The nil case)
  * __weak id weakPtr;
- * (The non-nil case) 
- * NSObject *o = ...;
- * __weak id weakPtr = o;
- * 
- * This function IS NOT thread-safe with respect to concurrent 
+ * (The non-nil case)
+ * NSObject *obj = ...;
+ * __weak id weakPtr = obj;
+ *
+ * This function IS NOT thread-safe with respect to concurrent
  * modifications to the weak variable. (Concurrent weak clear is safe.)
  *
- * @param location Address of __weak ptr. 
- * @param newObj Object ptr. 
+ * @param location Address of __weak ptr.
+ * @param newObj Object ptr.
  */
 id objc_initWeak(id *location, id newObj)
 {
+    printf("\n\nobjc_initWeak: %p-----%p \n", location, newObj);
+    // location是 weakPtr的地址, newObj是obj指向堆空间地址
     if (!newObj) {
+        // 若 newObj 是空，则将 weak 指向的堆空间置为nil
         *location = nil;
         return nil;
     }
-    // location = &weakObj, newObj = obj
+    // DontHaveOld = false
+    // DoHaveNew = true
+    // DoCrashIfDeallocating = true
     return storeWeak<DontHaveOld, DoHaveNew, DoCrashIfDeallocating>(location, (objc_object*)newObj);
 }
 ```
 
-`objc_initWeak`方法内部调用`storeWeak `函数。传递两个参数，第一个参数是`id *`类型，可以看成`NSObject **`类型，指针的指针，结合注释里面存储的是`weak`指针的地址。第二个参数`id`类型，会强转成`objc_object*`，也就`weak`指针指向的对象。
+`objc_initWeak`方法内部调用 `storeWeak` template 函数。传递两个参数，第一个参数是`id *`类型，可以看成`objc_object **`类型，指针的指针，结合注释里面存储的是`weak`指针的地址。第二个参数`id`类型，会强转成`objc_object *`，也就`weak`指针指向的对象。
 
+还会带着三个 template 参数。这三个参数对应三个枚举值。定义如下：
 
-### 0x02 `storeWeak `
+```Objective-C
+// Template parameters.
+enum HaveOld { DontHaveOld = false, DoHaveOld = true };
+enum HaveNew { DontHaveNew = false, DoHaveNew = true };
 
+enum CrashIfDeallocating {
+    DontCrashIfDeallocating = false, DoCrashIfDeallocating = true
+};
 ```
+
+
+### 0x02 `storeWeak`
+
+```Objective-C
 // 更新 weak 变量
 // 若 HaveOld = true，表示该变量存在需要清理的值
 // 若 HaveNew = true, 表示有需要分配给该变量的新值
@@ -486,7 +519,7 @@ static id storeWeak(id *location, objc_object *newObj)
 
 ### 0x03 `weak_unregister_no_lock `
 
-```
+```Objective-C
 #define WEAK_INLINE_COUNT 4
 
 void weak_unregister_no_lock(weak_table_t *weak_table, id referent_id, id *referrer_id)
@@ -589,7 +622,7 @@ static void weak_entry_remove(weak_table_t *weak_table, weak_entry_t *entry)
 
 `weak_unregister_no_lock `的作用是解除`weak_table`中旧对象与`weak`指针的绑定关系。为新对象与`weak`指针绑定做准备，有点类似这样：
 
-```
+```Objective-C
 NSObject *obj = [[NSObject alloc] init];
 NSObject *obj1 = [[NSObject alloc] init];
 __weak NSObject* weakObj = obj;
@@ -597,9 +630,12 @@ weakObj = obj1;
 ```
 
 
-### 0x04 `weak_register_no_lock `
+### 0x04 `weak_register_no_lock`
 
-```
+`weak_register_no_lock` 的作用是将引用对象和 `weak` 指针的地址绑定起来，存储到`weak_table` 中。
+
+
+```Objective-C
 /** 
  * Registers a new (object, weak pointer) pair. Creates a new weak
  * object entry if it does not exist.
@@ -608,59 +644,144 @@ weakObj = obj1;
  * @param referent The object pointed to by the weak reference.
  * @param referrer The weak pointer address.
  */
-id weak_register_no_lock(weak_table_t *weak_table, id referent_id, id *referrer_id, bool crashIfDeallocating)
+id weak_register_no_lock(weak_table_t *weak_table, id referent_id, id *referrer_id, WeakRegisterDeallocatingOptions deallocatingOptions)
 {
-    // newObj = obj
     objc_object *referent = (objc_object *)referent_id;
-    // location = &weakObj
     objc_object **referrer = (objc_object **)referrer_id;
-    
-    // 若 referent 为空或 referent 是 Tagged Pointer,则直接返回 referent_id，也就是weak 指针的地址
-    if (!referent  ||  referent->isTaggedPointer()) return referent_id;
+
+    if (referent->isTaggedPointerOrNil()) return referent_id;
 
     // ensure that the referenced object is viable
-    bool deallocating;
-    if (!referent->ISA()->hasCustomRR()) {
-        deallocating = referent->rootIsDeallocating();
-    }
-    else {
-        BOOL (*allowsWeakReference)(objc_object *, SEL) = 
-            (BOOL(*)(objc_object *, SEL)) object_getMethodImplementation((id)referent, SEL_allowsWeakReference);
-        if ((IMP)allowsWeakReference == _objc_msgForward) {
-            return nil;
+    if (deallocatingOptions == ReturnNilIfDeallocating || deallocatingOptions == CrashIfDeallocating) {
+        bool deallocating;
+        if (!referent->ISA()->hasCustomRR()) {
+            deallocating = referent->rootIsDeallocating();
         }
-        deallocating = ! (*allowsWeakReference)(referent, SEL_allowsWeakReference);
-    }
+        else {
+            // Use lookUpImpOrForward so we can avoid the assert in
+            // class_getInstanceMethod, since we intentionally make this
+            // callout with the lock held.
+            auto allowsWeakReference = (BOOL(*)(objc_object *, SEL))
+            lookUpImpOrForwardTryCache((id)referent, @selector(allowsWeakReference), referent->getIsa());
+            if ((IMP)allowsWeakReference == _objc_msgForward) {
+                return nil;
+            }
+            deallocating = !(*allowsWeakReference)(referent, @selector(allowsWeakReference));
+        }
 
-    if (deallocating) {
-        if (crashIfDeallocating) {
-            _objc_fatal("Cannot form weak reference to instance (%p) of "
-                        "class %s. It is possible that this object was "
-                        "over-released, or is in the process of deallocation.",
-                        (void*)referent, object_getClassName((id)referent));
-        } else {
-            return nil;
+        if (deallocating) {
+            if (deallocatingOptions == CrashIfDeallocating) {
+                _objc_fatal("Cannot form weak reference to instance (%p) of "
+                            "class %s. It is possible that this object was "
+                            "over-released, or is in the process of deallocation.",
+                            (void*)referent, object_getClassName((id)referent));
+            } else {
+                return nil;
+            }
         }
     }
 
     // now remember it and where it is being stored
     weak_entry_t *entry;
     if ((entry = weak_entry_for_referent(weak_table, referent))) {
-        // 若从 weak_table 中找到对应的 entry, 则将 referent 存入 entry中
+        // 找到 referent 对应的 weak_entry_t 
         append_referrer(entry, referrer);
     } 
     else {
+        // referent 对应的 weak_entry_t 没有，则新建并添加到 weak_table
+        // 初始化 new_entry (最初使用的是线性数组 inline_referrers )
         weak_entry_t new_entry(referent, referrer);
-        // 判断是否需要扩容
+        // 添加新元素前，判断 weak_table 是否需要扩容
         weak_grow_maybe(weak_table);
-        // 将new_entry 存储到 weak_table
+        // 将 new_entry 插入到 weak_table
         weak_entry_insert(weak_table, &new_entry);
     }
     
-    // 这里不会设置 *referrer = nil，因为 objc_storeWeak() 函数会需要该指针
+    // Do not set *referrer. objc_storeWeak() requires that the 
+    // value not change.
+    print_weak_table(weak_table, referent);
     return referent_id;
 }
+```
 
+若 `weak_table` 中能找到 `referent` 对应的 `weak_entry_t` (不是第一个 `weak` 变量指向此对象)，则调用 `append_referrer()` 函数将 `weak` 变量地址(`referrer `) 存到结构体 `weak_entry_t ` 的数组中。如下：
+
+```Objective-C
+/** 
+ * Add the given referrer to set of weak pointers in this entry.
+ * Does not perform duplicate checking (b/c weak pointers are never
+ * added to a set twice). 
+ *
+ * @param entry The entry holding the set of weak pointers. 
+ * @param new_referrer The new weak pointer to be added.
+ */
+static void append_referrer(weak_entry_t *entry, objc_object **new_referrer)
+{
+    if (!entry->out_of_line()) {
+        // Try to insert inline.
+        for (size_t i = 0; i < WEAK_INLINE_COUNT; i++) {
+            if (entry->inline_referrers[i] == nil) {
+                entry->inline_referrers[i] = new_referrer;
+                return;
+            }
+        }
+
+        // Couldn't insert inline. Allocate out of line.
+        // 到这说明 inline_referrers 数组已满
+        weak_referrer_t *new_referrers = (weak_referrer_t *)calloc(WEAK_INLINE_COUNT, sizeof(weak_referrer_t));
+        // This constructed table is invalid, but grow_refs_and_insert will fix it and rehash it.
+        // grow_refs_and_insert 会将线性数组 new_referrers 转成散列表
+        for (size_t i = 0; i < WEAK_INLINE_COUNT; i++) {
+            new_referrers[i] = entry->inline_referrers[i];
+        }
+        entry->referrers = new_referrers;
+        entry->num_refs = WEAK_INLINE_COUNT;
+        entry->out_of_line_ness = REFERRERS_OUT_OF_LINE;
+        entry->mask = WEAK_INLINE_COUNT-1;
+        entry->max_hash_displacement = 0;
+    }
+
+    ASSERT(entry->out_of_line());
+    
+    // 扩容
+    if (entry->num_refs >= TABLE_SIZE(entry) * 3/4) {
+        return grow_refs_and_insert(entry, new_referrer);
+    }
+    // 确定 new_referrer 将要存储的下标
+    size_t begin = w_hash_pointer(new_referrer) & (entry->mask);
+    size_t index = begin;
+    size_t hash_displacement = 0;
+    while (entry->referrers[index] != nil) {
+        hash_displacement++;
+        index = (index+1) & entry->mask;
+        if (index == begin) bad_weak_table(entry);
+    }
+    if (hash_displacement > entry->max_hash_displacement) {
+        entry->max_hash_displacement = hash_displacement;
+    }
+    
+    weak_referrer_t &ref = entry->referrers[index];
+    ref = new_referrer;
+    entry->num_refs++;
+}
+```
+
+若 `weak_table` 中没有找到 `referent` 对应的 `weak_entry_t` (这是第一个 `weak` 变量指向此对象)，则新建 `weak_entry_t`，将 `referrer` 存到线性数组中。如下：
+
+```Objective-C
+// 初始化 weak_entry_t，初始元素存储在线性数组 inline_referrers 中
+weak_entry_t(objc_object *newReferent, objc_object **newReferrer) : referent(newReferent)
+{
+    inline_referrers[0] = newReferrer;
+    for (int i = 1; i < WEAK_INLINE_COUNT; i++) {
+        inline_referrers[i] = nil;
+    }
+}
+```
+
+然后判断 `weak_table` 是否需要扩容，最后调用`weak_entry_insert` 将新建的 `weak_entry_t` 存到散列表中。如下：
+
+```Objective-C
 /** 
  * Add new_entry to the object's table of weak references.
  * Does not check whether the referent is already in the table.
@@ -696,12 +817,12 @@ static void weak_entry_insert(weak_table_t *weak_table, weak_entry_t *new_entry)
 }
 ```
 
-`weak_register_no_lock`的作用是将引用对象和`weak`指针的地址绑定起来，存储到`weak_table`中。
+
 
 
 ### 0x05 总结
 
-![](../Images/iOS/MemoryManage/MemoryManage_image0406.png)
+![](../Images/iOS/weak/weak_image06.png)
 
 
 <br>
@@ -735,7 +856,7 @@ static void weak_entry_insert(weak_table_t *weak_table, weak_entry_t *new_entry)
 ### 0x01 `objc_destructInstance `
 
 ```
-// runtime-750  objc-runtime-new.mm
+// objc-runtime-new.mm
 
 void *objc_destructInstance(id obj) 
 {
@@ -758,7 +879,7 @@ void *objc_destructInstance(id obj)
 ### 0x02 `clearDeallocating_slow`
 
 ```
-// runtime-750  NSObject.mm
+// NSObject.mm
 
 NEVER_INLINE void objc_object::clearDeallocating_slow()
 {
@@ -783,7 +904,7 @@ NEVER_INLINE void objc_object::clearDeallocating_slow()
 
 
 ```
-// runtime-750  objc-weak.mm
+// objc-weak.mm
 
 void weak_clear_no_lock(weak_table_t *weak_table, id referent_id)
 {
