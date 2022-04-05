@@ -29,7 +29,7 @@ stu.directMethod()
 
 将上述代码使用 `swiftc -emit-silgen main.swift -Onone > main.sil` 命令转换成 sil 文件
 
-```Swift-sil
+```Swift
 // main
 sil [ossa] @main : $@convention(c) (Int32, UnsafeMutablePointer<Optional<UnsafeMutablePointer<Int8>>>) -> Int32 {
 bb0(%0 : $Int32, %1 : $UnsafeMutablePointer<Optional<UnsafeMutablePointer<Int8>>>):
@@ -102,7 +102,7 @@ stu.overrideTableMethod()
 
 转换成 SIL 文件，如下：
 
-```sil
+```Swift
 // main
 sil @main : $@convention(c) (Int32, UnsafeMutablePointer<Optional<UnsafeMutablePointer<Int8>>>) -> Int32 {
 bb0(%0 : $Int32, %1 : $UnsafeMutablePointer<Optional<UnsafeMutablePointer<Int8>>>):
@@ -146,7 +146,7 @@ bb0(%0 : $Int32, %1 : $UnsafeMutablePointer<Optional<UnsafeMutablePointer<Int8>>
 
 `Student` 和 `Person` 的 `sil_vtable ` 表如下：
 
-```sil
+```Swift
 sil_vtable Person {
   #Person.overrideTableMethod: (Person) -> () -> () : @main.Person.overrideTableMethod() -> ()	// Person.overrideTableMethod()
   #Person.nonOverrideTableMethod: (Person) -> () -> () : @main.Person.nonOverrideTableMethod() -> ()	// Person.nonOverrideTableMethod()
