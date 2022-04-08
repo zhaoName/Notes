@@ -44,3 +44,5 @@
 - [CustomNamespace](https://github.com/zhaoName/Notes/blob/master/Swift/CustomNamespace.md)
 
 - [Optional 中的 == 运算符](https://github.com/zhaoName/Notes/blob/master/Swift/Optional%E4%B8%AD%E7%9A%84%3D%3D%E8%BF%90%E7%AE%97%E7%AC%A6.md)
+- [MethodDispatch](https://github.com/zhaoName/Notes/blob/master/Swift/MethodDispatch.md)
+- [UIStackView](https://github.com/zhaoName/Notes/blob/master/Swift/UIStackView.md)
