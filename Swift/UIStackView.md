@@ -109,7 +109,7 @@ NSLayoutConstraint.activate([
 
 - 若 `arranged views` 沿主轴方向超出父视图 `UIStackView` 的范围，则会根据 `arranged views` 的 `compression resistance priority` 缩小视图
 
-- 若 `arranged views` 沿主轴方向没有填充父视图 `UIStackView`，则会根据 `arranged views` 的 `hugging priority` 缩小视图
+- 若 `arranged views` 沿主轴方向没有填充父视图 `UIStackView`，则会根据 `arranged views` 的 `hugging priority` 拉伸视图
 
 - 若无法分辨优先级，则根据 `subviews` 在 `arrangedSubviews` 数组中的索引来调整 `arranged views` 的大小。
 
