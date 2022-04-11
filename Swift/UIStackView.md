@@ -113,6 +113,8 @@ NSLayoutConstraint.activate([
 
 - 若无法分辨优先级，则根据 `subviews` 在 `arrangedSubviews` 数组中的索引来调整 `arranged views` 的大小。
 
+- hugging priority & compression resistance priority 可参考[AutoLayout - Content-Hugging & Compression-Resistance Priorities](https://github.com/zhaoName/Notes/blob/master/iOS/AutoLayout-Content-Hugging%26Compression-ResistancePriority.md)
+
 ### 0x02 `.fillEqually` 
 
 官方文档解释如下：

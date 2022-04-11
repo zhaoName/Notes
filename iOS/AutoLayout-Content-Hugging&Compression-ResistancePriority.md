@@ -9,7 +9,7 @@ Content Hugging Priority: 直译就是内容拥抱优先级，可以理解为抗
 Compression Resistance Piority: 抗压缩优先级，值越大，其控件越不容易被压缩。
 
 
-![](../Images/Swift/AutoLayout/CHCR_image01.png)
+![](../Images/iOS/AutoLayout/CHCR_image01.png)
 
 图片上只展示水平方向的优先级，Content-Hugging & Compression-Resistance Priorities 同样可以设置在垂直方向。也就是说每个控件有 4 个优先级。
 
@@ -133,7 +133,7 @@ override func viewDidLoad() {
 }
 ```
 
-![](../Images/Swift/AutoLayout/CHCR_image02.png)
+![](../Images/iOS/AutoLayout/CHCR_image02.png)
 
 然后在 `touchesBegan` 中做如下打印：
 
@@ -175,7 +175,7 @@ firstLable.setContentHuggingPriority(UILayoutPriority.init(251), for: .horizonta
 
 此时 `firstLable` 的 Content Hugging Priority 比 `secondLable` 的 Content Hugging Priority 大，也就是抗拉伸性要好，所以 `secondLable` 被拉伸。 
 
-![](../Images/Swift/AutoLayout/CHCR_image03.png)
+![](../Images/iOS/AutoLayout/CHCR_image03.png)
 
 同样若我们修改 `firstLable` 的 Content Hugging Priority 为 249，那 `firstLable` 将会被拉伸。
 
@@ -183,7 +183,7 @@ firstLable.setContentHuggingPriority(UILayoutPriority.init(251), for: .horizonta
 firstLable.setContentHuggingPriority(UILayoutPriority.init(249), for: .horizontal)
 ```
 
-![](../Images/Swift/AutoLayout/CHCR_image02.png)
+![](../Images/iOS/AutoLayout/CHCR_image02.png)
 
 <br>
 
@@ -197,7 +197,7 @@ firstLabel.text = "firstLable-firstLable-firstLable-firstLable"
 
 由于两个 `label` 的 Intrinsic Content Size 加在一起大于屏幕宽，所以必定有一个 `label` 被压缩，如下：
 
-![](../Images/Swift/AutoLayout/CHCR_image04.png)
+![](../Images/iOS/AutoLayout/CHCR_image04.png)
 
 打印两个 `label` 的 Compression Resistance Priority
 
@@ -214,7 +214,7 @@ firstLable.setContentCompressionResistancePriority(UILayoutPriority.init(749), f
 
 这样 `firstLable` 的 Compression Resistance Priority 的值较小，所以被压缩。
 
-![](../Images/Swift/AutoLayout/CHCR_image05.png)
+![](../Images/iOS/AutoLayout/CHCR_image05.png)
 
 <br>
 
@@ -240,11 +240,11 @@ override func viewDidLoad() {
 }
 ```
 
-![](../Images/Swift/AutoLayout/CHCR_image06.png)
+![](../Images/iOS/AutoLayout/CHCR_image06.png)
 
 如上图，文字被压缩。这时因为 Compression Resistance Priority 的值(750) 小于 width constraint priority (1000)。若我们将 width constraint priority 的值修改为 749，文字将会正常显示。如下：
 
-![](../Images/Swift/AutoLayout/CHCR_image07.png)
+![](../Images/iOS/AutoLayout/CHCR_image07.png)
 
 
 <br>
