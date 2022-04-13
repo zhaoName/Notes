@@ -47,19 +47,132 @@
 
 每个事件的理想宿命是被能够响应它的对象响应后释放，然而响应者诸多，事件一次只有一个，谁都想把事件抢到自己碗里来，为避免纷争，就得有一个先后顺序，也就是得有一个响应者的优先级。因此这就存在一个寻找事件最佳响应者（又称第一响应者 first responder）的过程，目的是找到一个具备最高优先级响应权的响应对象（the most appropriate responder object），这个过程叫做 Hit-Testing，那个命中的最佳响应者称为 hit-tested view。
 
-### 0x01 事件自下而上传递
+### 0x01 谁能成为第一响应者
 
+`UIKit` 根据事件的类型将对象指定为事件的第一响应者。事件类型包括：
 
+| Event type | First responder |
+| --- | --- |
+| Touch events | The view in which the touch occurred. |
+| Press events| The object that has focus. |
+| Shake-motion events | The object that you (or UIKit) designate. |
+| Remote-control events | The object that you (or UIKit) designate. |
+| Editing menu messages | The object that you (or UIKit) designate. |
+
+### 0x02 事件自下而上传递
+
+应用接收到事件后先将其置入事件队列中以等待处理。出队后，application 首先将事件传递给当前应用最后显示的窗口（`UIWindow`）询问其能否响应事件。若窗口能响应事件，则传递给子视图询问是否能响应，子视图若能响应则重复询问子视图的子视图。子视图询问的顺序是优先询问后添加的子视图，因为后添加会默认显示在上层，成为第一响应者的几率更大。事件传递顺序如下：
+
+```
+UIApplication(下) -> UIWindow -> subview -> ... -> subview (上)
+```
+
+创建如下视图：
 
 ![](../Images/iOS/TouchesEvents/TouchesEvents_02.png)
 
+当我们点击 `View B.1` 的时候，查找第一响应者的过程大致如下(深度优先搜索)：
+
 ![](../Images/iOS/TouchesEvents/TouchesEvents_03.png)
 
+- `UIWindow` 将事件传递给 `MainVIew`
 
+- `MainVIew` 判断自身能否响应事件，若能则倒序遍历 `MainVIew` 的子视图，判断触摸点的位置在 `View B` 范围内
+- `View B` 判断自身能否响应事件，若能再倒序遍历 `View B` 的子视图，判断触摸点的位置在 `View B.1` 范围内
+- 查找到 `View B.1` 是第一响应者。
 
-### 0x02 `hitTest:withEvent:`
+查找第一响应者要判断视图是否能响应事件，还要判断点击位置是否落在自身的范围内，那该如何判断？ 这就是说到 `hitTest:withEvent:` 和 `pointInside:withEvent:`
 
+### 0x03 `hitTest:withEvent:`
 
+在说 `hitTest:withEvent:` 前，要先知道若视图满足下面的任一条件，视图都不能响应事件：
+
+- `userInteractionEnabled = NO`
+
+- `hidden = YES` 如果父视图隐藏，那么子视图也会隐藏，隐藏的视图无法接收事件
+- alpha < 0.01 如果设置一个视图的透明度 < 0.01，会直接影响子视图的透明度。alpha：0.0 ~ 0.01为透明
+
+每个 `UIView` 对象都有一个 `hitTest:withEvent:` 方法，这是查找第一响应者过程中最核心的存在。其作用是询问事件在当前视图中的响应者，同时又是作为事件传递的桥梁。
+
+`hitTest:withEvent:` 方法返回一个 `UIView` 对象，作为当前视图层次中的响应者。默认实现是：
+
+- 若当前视图无法响应事件，则返回 `nil`
+
+- 若当前视图可以响应事件，但无子视图可以响应事件，则返回自身作为当前视图层次中的事件响应者
+- 若当前视图可以响应事件，同时有子视图可以响应，则返回子视图层次中的事件响应者。
+
+```Objective-C
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event{
+    //3种状态无法响应事件
+    if (self.userInteractionEnabled == NO || self.hidden == YES ||  self.alpha <= 0.01) return nil; 
+    //触摸点若不在当前视图上则无法响应事件
+    if ([self pointInside:point withEvent:event] == NO) return nil; 
+    //从后往前遍历子视图数组 
+    int count = (int)self.subviews.count; 
+    for (int i = count - 1; i >= 0; i--) 
+    { 
+        // 获取子视图
+        UIView *childView = self.subviews[i]; 
+        // 坐标系的转换,把触摸点在当前视图上坐标转换为在子视图上的坐标
+        CGPoint childP = [self convertPoint:point toView:childView]; 
+        //询问子视图层级中的最佳响应视图
+        UIView *fitView = [childView hitTest:childP withEvent:event]; 
+        if (fitView) 
+        {
+            //如果子视图中有更合适的就返回
+            return fitView; 
+        }
+    } 
+    //没有在子视图中找到更合适的响应视图，那么自身就是最合适的
+    return self;
+}
+```
+
+现在我们在上述示例的视图层次中的每个视图类中添加如下 3 个方法来验证一下之前的分析
+
+```Objective-C
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    return [super hitTest:point withEvent:event];
+}
+
+- (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    return [super pointInside:point withEvent:event];
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+}
+```
+
+点击 `View B1` 函数调用栈如下：
+
+```
+-[CView hitTest:withEvent:]
+-[CView pointInside:withEvent:]
+-[BView hitTest:withEvent:]
+-[BView pointInside:withEvent:]
+-[B2View hitTest:withEvent:]
+-[B2View pointInside:withEvent:]
+-[B1View hitTest:withEvent:]
+-[B1View pointInside:withEvent:]
+
+-[CView hitTest:withEvent:]
+-[CView pointInside:withEvent:]
+-[BView hitTest:withEvent:]
+-[BView pointInside:withEvent:]
+-[B2View hitTest:withEvent:]
+-[B2View pointInside:withEvent:]
+-[B1View hitTest:withEvent:]
+-[B1View pointInside:withEvent:]
+-[B1View touchesBegan:withEvent:]
+```
+
+可以看到最终是视图 `View B1` 先对事件进行了响应，同时事件传递过程也和之前的分析一致。事实上单击后从 `[CView hitTest:withEvent:]` 到 [B1View pointInside:withEvent:] 的过程会执行两遍，两次传的是同一个 touch，区别在于 touch 的状态不同，第一次是 begin 阶段，第二次是 end 阶段。也就是说，应用对于事件的传递起源于触摸状态的变化。
 
 <br>
 
