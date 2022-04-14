@@ -193,21 +193,53 @@ UIApplication ——> UIWindow ——> hit-tested view
 以点击 `View B1` 为例，在 `touchesBegan:withEvent:` 中下断点，得到函数调用栈如下：
 
 ```Objective-C
-
+* thread #1, queue = 'com.apple.main-thread', stop reason = breakpoint 1.1
+  * frame #0: 0x00000001008b94f8 ZZTouchesEvents`-[B1View touchesBegan:withEvent:](self=0x0000000100d117e0, _cmd="touchesBegan:withEvent:", touches=1 element, event=0x000000028151c000) at B1View.m:26:33
+    frame #1: 0x000000019830d448 UIKitCore`-[UIWindow _sendTouchesForEvent:] + 496
+    frame #2: 0x000000019830ef9c UIKitCore`-[UIWindow sendEvent:] + 3976
+    frame #3: 0x00000001982e8bc0 UIKitCore`-[UIApplication sendEvent:] + 712
+    frame #4: 0x0000000198370118 UIKitCore`__dispatchPreprocessedEventFromEventQueue + 7360
+    frame #5: 0x0000000198373070 UIKitCore`__processEventQueue + 6460
+    frame #6: 0x000000019836a5f4 UIKitCore`__eventFetcherSourceCallback + 160
+    frame #7: 0x000000019592381c CoreFoundation`__CFRUNLOOP_IS_CALLING_OUT_TO_A_SOURCE0_PERFORM_FUNCTION__ + 28
+    frame #8: 0x0000000195923718 CoreFoundation`__CFRunLoopDoSource0 + 208
+    frame #9: 0x0000000195922a28 CoreFoundation`__CFRunLoopDoSources0 + 268
+    frame #10: 0x000000019591cd20 CoreFoundation`__CFRunLoopRun + 824
+    frame #11: 0x000000019591c4bc CoreFoundation`CFRunLoopRunSpecific + 600
+    frame #12: 0x00000001ac42e820 GraphicsServices`GSEventRunModal + 164
+    frame #13: 0x00000001982c9164 UIKitCore`-[UIApplication _run] + 1072
+    frame #14: 0x00000001982ce840 UIKitCore`UIApplicationMain + 168
+    frame #15: 0x00000001008b9ba0 ZZTouchesEvents`main(argc=1, argv=0x000000016f54b888) at main.m:17:12
+    frame #16: 0x00000001955e3e40 libdyld.dylib`start + 4
 ```
 
 那么问题又来了。这个过程中，假如应用中存在多个 window 对象，UIApplication 是怎么知道要把事件传给哪个 window 的？window 又是怎么知道哪个视图才是最佳响应者的呢？
 
-其实简单思考一下，这两个过程都是传递事件的过程，涉及的方法都是 `sendEvent:` ，而该方法的参数（`UIEvent` 对象）是唯一贯穿整个经过的线索，那么就可以大胆猜测必然是该触摸事件对象上绑定了这些信息。事实上之前在介绍 `UITouch` 的时候就说过 touch 对象保存了触摸所属的 window 及 view，而 event 对象又绑定了 touch 对象，如此一来，是不是就说得通了。要是不信的话，那就自定义一个 Window 类，重写 `sendEvent:`方法，捕捉该方法调用时参数 event 的状态，答案就显而易见了
+其实简单思考一下，这两个过程都是传递事件的过程，涉及的方法都是 `sendEvent:` ，而该方法的参数（`UIEvent` 对象）是唯一贯穿整个经过的线索，那么就可以大胆猜测必然是该触摸事件对象上绑定了这些信息。事实上之前在介绍 `UITouch` 的时候就说过 touch 对象保存了触摸所属的 window 及 view，而 event 对象又绑定了 touch 对象，如此一来，是不是就说得通了。要是不信的话，那就自定义一个 `ZZWindow` 类，重写 `sendEvent:`方法，捕捉该方法调用时参数 event 的状态，答案就显而易见了
 
 ```Objective-C
+@implementation ZZWindow
+
+- (void)sendEvent:(UIEvent *)event
+{
+    [super sendEvent:event];
+}
+
+@end
 ```
 
-至于这两个属性是什么时候绑定到touch对象上的，必然是在hit-testing的过程中呗，仔细想想hit-testing干的不就是这个事儿吗~
+然后在 `sendEvent:` 方法中下断点，查看 `event ` 中信息
+
+![](../Images/iOS/TouchesEvents/TouchesEvents_04.png)
+
+![](../Images/iOS/TouchesEvents/TouchesEvents_05.png)
+
+至于这两个属性是什么时候绑定到 touch 对象上的，必然是在查找第一响应者的过程中。
 
 ### 0x02 事件响应链 
 
 <br>
+
 
 
 <br>
