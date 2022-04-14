@@ -128,9 +128,11 @@ UIApplication(下) -> UIWindow -> subview -> ... -> subview (上)
 }
 ```
 
-现在我们在上述示例的视图层次中的每个视图类中添加如下 3 个方法来验证一下之前的分析
+现在我们在上述示例的视图层次中的每个视图类中添加如下 3 个方法来验证一下之前的分析, 以 `B1View` 为例
 
 ```Objective-C
+@implementation B1View
+
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
     NSLog(@"%s", __func__);
@@ -145,8 +147,10 @@ UIApplication(下) -> UIWindow -> subview -> ... -> subview (上)
 
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
-    NSLog(@"%s", __func__);
+    NSLog(@"%s---%@", __func__, touches);
 }
+
+@end
 ```
 
 点击 `View B1` 函数调用栈如下：
@@ -178,6 +182,30 @@ UIApplication(下) -> UIWindow -> subview -> ... -> subview (上)
 
 ## 四、事件响应
 
+### 0x01 事件响应的前奏
+
+因为最佳响应者具有最高的事件响应优先级，因此 UIApplication 会先将事件传递给它供其响应。首先，UIApplication 将事件通过 `sendEvent:` 传递给事件所属的 window，window 同样通过 `sendEvent:` 再将事件传递给最佳响应者视图。过程如下
+
+```
+UIApplication ——> UIWindow ——> hit-tested view
+```
+
+以点击 `View B1` 为例，在 `touchesBegan:withEvent:` 中下断点，得到函数调用栈如下：
+
+```Objective-C
+
+```
+
+那么问题又来了。这个过程中，假如应用中存在多个 window 对象，UIApplication 是怎么知道要把事件传给哪个 window 的？window 又是怎么知道哪个视图才是最佳响应者的呢？
+
+其实简单思考一下，这两个过程都是传递事件的过程，涉及的方法都是 `sendEvent:` ，而该方法的参数（`UIEvent` 对象）是唯一贯穿整个经过的线索，那么就可以大胆猜测必然是该触摸事件对象上绑定了这些信息。事实上之前在介绍 `UITouch` 的时候就说过 touch 对象保存了触摸所属的 window 及 view，而 event 对象又绑定了 touch 对象，如此一来，是不是就说得通了。要是不信的话，那就自定义一个 Window 类，重写 `sendEvent:`方法，捕捉该方法调用时参数 event 的状态，答案就显而易见了
+
+```Objective-C
+```
+
+至于这两个属性是什么时候绑定到touch对象上的，必然是在hit-testing的过程中呗，仔细想想hit-testing干的不就是这个事儿吗~
+
+### 0x02 事件响应链 
 
 <br>
 
