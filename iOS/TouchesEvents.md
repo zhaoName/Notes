@@ -6,12 +6,67 @@
 
 ### 0x01 `UITouch`
 
+`UITouch` 对象表示屏幕上 touch 的位置、大小、移动和压力。
 
+通过传递给 `responder` 的 `UIEvent` 来获取 `UITouch` 对象，`UITouch` 提供以下信息：
+
+- touch 发生的 view 或 window。
+
+- touch 位于 view 或 window 的位置。
+- touch 大致半径。
+- touch 压力大小（支持 3D Touch 或 Apple Pencil 的设备）。
+
+
+```Objective-C
+typedef NS_ENUM(NSInteger, UITouchPhase) {
+    UITouchPhaseBegan,             // whenever a finger touches the surface.
+    UITouchPhaseMoved,             // whenever a finger moves on the surface.
+    UITouchPhaseStationary,        // whenever a finger is touching the surface but hasn't moved since the previous event.
+    UITouchPhaseEnded,             // whenever a finger leaves the surface.
+    UITouchPhaseCancelled,         // whenever a touch doesn't end but we need to stop tracking (e.g. putting device to face)
+    UITouchPhaseRegionEntered   API_AVAILABLE(ios(13.4), tvos(13.4)) API_UNAVAILABLE(watchos),  // whenever a touch is entering the region of a user interface
+    UITouchPhaseRegionMoved     API_AVAILABLE(ios(13.4), tvos(13.4)) API_UNAVAILABLE(watchos),  // when a touch is inside the region of a user interface, but hasn’t yet made contact or left the region
+    UITouchPhaseRegionExited    API_AVAILABLE(ios(13.4), tvos(13.4)) API_UNAVAILABLE(watchos),  // when a touch is exiting the region of a user interface
+};
+```
 
 ### 0x02 `UIEvent`
 
+`UIEvent` 描述用户与 app 的单次交互
+
+事件类型如下：
+
+```Objective-C
+typedef NS_ENUM(NSInteger, UIEventType) {
+    UIEventTypeTouches, // The event is related to touches on the screen.
+    UIEventTypeMotion, // The event is related to motion of the device, such as when the user shakes it.
+    UIEventTypeRemoteControl, // The event is a remote-control event
+    UIEventTypePresses API_AVAILABLE(ios(9.0)) // The event is related to the press of a physical button.
+}
+```
 
 ### 0x03 `UIResponder`
+
+每个响应者都是一个`UIResponder` 对象，即所有派生自 `UIResponder` 的对象，本身都具备响应事件的能力。因此以下类的实例都是响应者：
+
+- `UIView`
+
+- `UIViewController`
+- `UIApplication`
+- `AppDelegate`
+
+想要处理特定类型事件，responder 必须重写对应方法，如下：
+
+```Objective-C
+//手指触碰屏幕，触摸开始
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(nullable UIEvent *)event;
+//手指在屏幕上移动
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(nullable UIEvent *)event;
+//手指离开屏幕，触摸结束
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(nullable UIEvent *)event;
+//触摸结束前，某个系统事件中断了触摸，例如电话呼入
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(nullable UIEvent *)event;
+```
 
 
 <br>
@@ -236,10 +291,82 @@ UIApplication ——> UIWindow ——> hit-tested view
 
 至于这两个属性是什么时候绑定到 touch 对象上的，必然是在查找第一响应者的过程中。
 
-### 0x02 事件响应链 
+### 0x02 事件响应链 (Responder Chain)
+
+前面提到的最佳响应者，之所以称之为“最佳”，是因为其具备响应事件的最高优先权（响应链顶端的男人）。最佳响应者首先接收到事件，然后便拥有了对事件的绝对控制权：即它可以选择处理这个事件，也可以将这个事件转发给其他响应者 (`nextResponder `)，这个由响应者构成的视图链就称之为响应链。
+
+**响应者对于事件的操作方式：**
+
+响应者对于事件的拦截以及传递都是通过 `touchesBegan:withEvent:` 方法控制的，该方法的默认实现是将事件沿着默认的响应链往下传递。
+
+响应者对于接收到的事件有3种操作：
+
+- 不拦截，默认操作。事件会自动沿着默认的响应链往下传递
+
+- 拦截，不再往下分发事件。重写 `touchesBegan:withEvent:` 进行事件处理，不调用父类的 `touchesBegan:withEvent:`
+- 拦截，继续往下分发事件
+重写 `touchesBegan:withEvent:` 进行事件处理，同时调用父类的 `touchesBegan:withEvent:` 将事件往下传递
+
+**响应链中的事件传递规则：**
+
+每一个响应者对象（`UIResponder` 对象）都有一个 `nextResponder` 方法，用于获取响应链中当前对象的下一个响应者。因此，一旦事件的最佳响应者确定了，这个事件所处的响应链就确定了。
+
+对于响应者对象，默认的 `nextResponder` 实现如下：
+
+- `UIView` 对象：若视图是控制器的根视图，则其`nextResponder`为控制器对象；否则，其`nextResponder`为父视图。
+
+- `UIViewController` 对象：
+
+	- 若控制器的视图是 `window` 的根视图，则其 `nextResponder` 为 `UIWindow` 对象；
+	
+	- 若控制器是从别的控制器 presented 出来的，则其 `nextResponder` 为 presenting view controller。
+
+- `UIWindow` 对象： `nextResponder` 为 `UIApplication` 对象。
+
+- `UIApplication` 对象：若当前应用的 `AppDelegate` 是一个 `UIResponder` 对象，且不是 `UIView`、`UIViewController` 或 app 本身，则 `UIApplication` 的 `nextResponder` 为 `AppDelegate`。
+
+![](../Images/iOS/TouchesEvents/TouchesEvents_06.png)
+
+如上取官网一张图，若点击在 `UITextField ` 则时间的传递顺序如下：
+
+```
+UITextField ——> UIView ——> UIView ——> UIViewController ——> UIWindow ——> UIApplication ——> UIApplicationDelegate
+```
+
+图中虚线箭头是指若该 `UIView` 是作为 `UIViewController` 根视图存在的，则其 `nextResponder` 为 `UIViewController` 对象；若是直接 `addSubview:` 在 `UIWindow` 上的，则其 `nextResponder` 为 `UIWindow` 对象。
+
+定义 `printResponderChain` 方法打印响应链，如下
+
+```Objective-C
+- (void)printResponderChain
+{
+    UIResponder *responder = self;
+    printf("%s",[NSStringFromClass([responder class]) UTF8String]);
+    while (responder.nextResponder) {
+        responder = responder.nextResponder;
+        printf(" --> %s",[NSStringFromClass([responder class]) UTF8String]);
+    }
+}
+```
+
+然后在 `B1View` 的 `touchesBegan:withEvent:` 中调用，如下
+
+```Objective-C
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    NSLog(@"%s---%@", __func__, touches);
+    [self printResponderChain];
+}
+```
+
+得到如下结果
+
+```Objective-C
+B1View --> BView --> UIView --> ViewController --> UIDropShadowView --> 
+UITransitionView --> ZZWindow --> UIWindowScene --> UIApplication --> AppDelegate
+```
 
 <br>
-
 
 
 <br>
@@ -250,4 +377,7 @@ UIApplication ——> UIWindow ——> hit-tested view
 
 - [Touches, Presses, and Gestures](https://developer.apple.com/documentation/uikit/touches_presses_and_gestures)
 
+- [事件响应机制](https://yeziahehe.com/2020/01/19/responder_chain/)
+
+- [事件传递和响应链（Responder Chain）](https://github.com/pro648/tips/blob/master/sources/%E4%BA%8B%E4%BB%B6%E4%BC%A0%E9%80%92%E5%92%8C%E5%93%8D%E5%BA%94%E9%93%BE%EF%BC%88Responder%20Chain%EF%BC%89.md)
 <br>
