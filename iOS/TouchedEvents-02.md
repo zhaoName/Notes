@@ -279,18 +279,262 @@ window 会将事件优先传递给手势识别器，但若有多个手势，wind
 
 ## 二、UIControl
 
+`UIControl` 是系统提供的能够以 target-action 模式处理触摸事件的控件，iOS 中 `UIButton`、`UISegmentedControl`、`UISwitch` 等控件都是 `UIControl` 的子类。当 `UIControl` 跟踪到触摸事件时，会向其上添加的 target 发送事件以执行 action。值得注意的是，`UIConotrol` 是 `UIView` 的子类，因此本身也具备 `UIResponder` 应有的身份。
+
+### 0x01 target-action 执行时机及过程
+
+`UIControl` 作为能够响应事件的控件，必然也需要待事件交互符合条件时才去响应，因此也会跟踪事件发生的过程。`UIControl` 有自己的跟踪方式：
 
 ```Objective-C
-
+- (BOOL)beginTrackingWithTouch:(UITouch *)touch withEvent:(nullable UIEvent *)event;
+- (BOOL)continueTrackingWithTouch:(UITouch *)touch withEvent:(nullable UIEvent *)event;
+- (void)endTrackingWithTouch:(nullable UITouch *)touch withEvent:(nullable UIEvent *)event; // touch is sometimes nil if cancelTracking calls through to this.
+- (void)cancelTrackingWithEvent:(nullable UIEvent *)event;   // event may be nil if cancelled for non-event reasons, e.g. removed from window
 ```
+
+这 4 个方法和 `UIResponder` 的那 4 个方法几乎吻合，只不过 `UIControl` 只能接收单点触控，因此接收的参数是单个 `UITouch` 对象。这几个方法的职能也和 `UIResponder` 一致，用来跟踪触摸的开始、滑动、结束、取消。
+
+`UIControl` 本身也是 `UIResponder`，因此同样有 `touches` 系列的4个方法。事实上，`UIControl` 的 `Tracking` 系列方法是在 `touches` 系列方法内部调用的。比如 `beginTrackingWithTouch` 是在 `touchesBegan:withEvent:` 方法内部调用的， 因此它虽然也是 `UIResponder`，但 `touches` 系列方法的默认实现和 `UIResponder` 本类还是有区别的。
+
+自定义 `ZZButton` 继承自 `UIButton`，在其内部重写 `UIControl` 和 `UIResponder` 的方法，如下
 
 ```Objective-C
+@implementation ZZButton
 
+- (BOOL)beginTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    return [super beginTrackingWithTouch:touch withEvent:event];
+}
+
+- (BOOL)continueTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    return [super continueTrackingWithTouch:touch withEvent:event];
+}
+
+- (void)cancelTrackingWithEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+}
+
+- (void)endTrackingWithTouch:(UITouch *)touch withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    [super touchesBegan:touches withEvent:event];
+}
+
+- (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    [super touchesMoved:touches withEvent:event];
+}
+
+- (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    [super touchesEnded:touches withEvent:event];
+}
+
+- (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    NSLog(@"%s", __func__);
+    [super touchesCancelled:touches withEvent:event];
+}
+
+@end
 ```
+
+这时 `UIResponder` 的 `touches` 系列方法必须调用 `super`，然后 `touches` 方法的内部调用 `UIControl` 的方法，最终调用 action 。
 
 ```Objective-C
-
+-[ZZButton touchesBegan:withEvent:]
+-[ZZButton beginTrackingWithTouch:withEvent:]
+-[ZZButton touchesEnded:withEvent:]
+-[ZZButton endTrackingWithTouch:withEvent:]
+-[ZZControlViewController didTouchButton:]
 ```
+
+若 `UIResponder` 的 `touches` 系列方法没有调用 `super`，点击 `ZZButton` 打印结果如下：
+
+```Objective-C
+-[ZZButton touchesBegan:withEvent:]
+-[ZZButton touchesEnded:withEvent:]
+```
+
+当 `UIControl` 跟踪事件的过程中，识别出事件交互符合响应条件，就会触发 `target-action` 进行响应。`UIControl` 控件通过 `addTarget:action:forControlEvents:` 添加事件处理的 `target` 和 `action`，当事件发生时，`UIControl` 通知 `target` 执行对应的 `action`。说是“通知”其实很笼统，事实上这里有个 `action` 传递的过程。当 `UIControl` 监听到需要处理的交互事件时，会调用 `sendAction:to:forEvent:` 将 `target`、`action` 以及 `event` 对象发送给全局应用，`Application` 对象再通过 `sendAction:to:from:forEvent:` 向 `target` 发送 `action`。
+
+点击 `ZZButton`，在响应事件中下断点，函数调用栈如下图：
+
+![](../Images/iOS/TouchesEvents/ResponsePriority_03.png)
+
+因此，可以通过重写 `UIControl` 的 `sendAction:to:forEvent:` 或 `sendAction:to:from:forEvent:` 自定义事件执行的 `target` 及 `action`。
+
+我们重写 `ZZButton` 的 `sendAction:to:forEvent:` 如下:
+
+```Objective-C
+- (void)sendAction:(SEL)action to:(id)target forEvent:(UIEvent *)event
+{
+    [super sendAction:NSSelectorFromString(@"didTouchYellowView") to:[GestureViewController new] forEvent:event];
+}
+```
+
+点击 `ZZButton`，由于 `target` 和 `action` 都已被改变，所以函数调用栈如下图：
+
+![](../Images/iOS/TouchesEvents/ResponsePriority_04.png)
+
+另外，若不指定 `target`，即 `addTarget:action:forControlEvents:` 时 target 传空，那么当事件发生时，`Application` 会在响应链上从上往下寻找能响应 `action` 的对象。官方说明如下：
+
+> If you specify nil for the target object, the control searches the responder chain for an object that defines the specified action method.
+
+我们在 `ZZWindow` 中添加 `responderZZButton` 方法，然后修改 `ZZButton` 的 `addTarget:` 实现
+
+```Objective-C
+[self.btn addTarget:nil action:NSSelectorFromString(@"responderZZButton") forControlEvents:UIControlEventTouchUpInside];
+```
+
+点击`ZZButton`，由于 `target` 为 `nil`，`Application` 会在响应链上从上往下寻找能响应 `action` 的对象，即 `ZZWindow `。所以函数调用栈如下图：
+
+![](../Images/iOS/TouchesEvents/ResponsePriority_05.png)
+
+<br>
+
+### 0x02 `UIControl` 触摸事件优先级
+
+> In iOS 6.0 and later, default control actions prevent overlapping gesture recognizer behavior. For example, the default action for a button is a single tap. If you have a single tap gesture recognizer attached to a button’s parent view, and the user taps the button, then the button’s action method receives the touch event instead of the gesture recognizer.This applies only to gesture recognition that overlaps the default action for a control, which includes:
+
+> - A single finger single tap on a `UIButton`, `UISwitch`, `UIStepper`, `UISegmentedControl`, and `UIPageControl`.
+- A single finger swipe on the knob of a `UISlider`, in a direction parallel to the slider.
+- A single finger pan gesture on the knob of a `UISwitch`, in a direction parallel to the switch.
+
+简单理解：`UIControl` 会阻止父视图上的手势识别器行为，也就是 `UIControl` 处理事件的优先级比`UIGestureRecognizer` 高，但前提是相比于父视图上的手势识别器。
+
+e.g.1 给 `ZZButton` 的父视图，也就是控制器 `view` 添加点击手势，代码如下；
+
+```Objective-C
+@implementation ZZControlViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    [self.btn addTarget:self action:@selector(didTouchButton:) forControlEvents:UIControlEventTouchUpInside];
+    
+    ZZTapGestureRecognizer *tapGes = [[ZZTapGestureRecognizer alloc] initWithTarget:self action:@selector(didTouchSomeView)];
+    [self.view addGestureRecognizer:tapGes];
+}
+
+- (void)didTouchSomeView
+{
+    NSLog(@"%s", __func__);
+}
+
+- (IBAction)didTouchButton:(ZZButton *)sender
+{
+    NSLog(@"%s", __func__);
+}
+
+@end
+```
+
+然后点击 `ZZButton`，打印结果如下:
+
+```Objective-C
+-[ZZTapGestureRecognizer touchesBegan:withEvent:]
+-[ZZButton touchesBegan:withEvent:]
+-[ZZButton beginTrackingWithTouch:withEvent:]
+-[ZZTapGestureRecognizer touchesEnded:withEvent:]
+
+-[ZZButton touchesEnded:withEvent:]
+-[ZZButton endTrackingWithTouch:withEvent:]
+-[ZZControlViewController didTouchButton:]
+```
+
+若在 `ZZButton` 的父视图添加点击手势，则 `ZZButton` 能正常响应事件，父类视图的手势事件被拦截。
+
+e.g.2 给 `ZZButton` 添加点击手势
+
+```Objective-C
+@implementation ZZControlViewController
+
+- (void)viewDidLoad {
+    ...
+    ZZTapGestureRecognizer *tapGes = [[ZZTapGestureRecognizer alloc] initWithTarget:self action:@selector(didTouchSomeView)];
+    [self.btn addGestureRecognizer:tapGes];
+}
+... 
+@end
+```
+
+然后点击 `ZZButton`，打印结果如下:
+
+```Objective-C
+-[ZZTapGestureRecognizer touchesBegan:withEvent:]
+-[ZZButton touchesBegan:withEvent:]
+-[ZZButton beginTrackingWithTouch:withEvent:]
+
+-[ZZTapGestureRecognizer touchesEnded:withEvent:]
+-[ZZControlViewController didTouchYellowView]
+
+-[ZZButton touchesCancelled:withEvent:]
+-[ZZButton cancelTrackingWithEvent:]
+```
+若在 `ZZButton` 上添加点击手势，则 `UIControl` 响应事件被手势事件拦截。
+
+**对于系统提供的 `UIControl`，如 `UIbutton`、`UISwitch` 等，其事件响应优先级比其父类视图的手势事件响应优先级高。**
+
+### 0x03 自定义 `UIControl` 事件响应优先级
+
+自定义 `ZZControl` 继承自 `UIControl `，并重写 `UIControl` 和 `UIResponder` 的 4 个方法。
+
+然后在 `ZZControlViewController` 添加 `ZZControl` 的 `addTarget:` 实现，如下
+
+```Objective-C
+@implementation ZZControlViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.control = [[ZZControl alloc] initWithFrame:CGRectMake(100, 100, 100, 100)];
+    self.control.backgroundColor = UIColor.redColor;
+    [self.control addTarget:self action:@selector(didTouchCustomControl) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.control];
+    
+    ZZTapGestureRecognizer *tapGes = [[ZZTapGestureRecognizer alloc] initWithTarget:self action:@selector(didTouchSomeView)];
+    [self.view addGestureRecognizer:tapGes];
+}
+
+- (void)didTouchSomeView
+{
+    NSLog(@"%s", __func__);
+}
+
+- (void)didTouchCustomControl
+{
+    NSLog(@"%s", __func__);
+}
+@end
+```
+
+点击红色 `ZZControl`，打印结果如下：
+
+```Objective-C
+-[ZZTapGestureRecognizer touchesBegan:withEvent:]
+-[ZZControl touchesBegan:withEvent:]
+-[ZZControl beginTrackingWithTouch:withEvent:]
+
+-[ZZTapGestureRecognizer touchesEnded:withEvent:]
+-[ZZControlViewController didTouchSomeView]
+
+-[ZZControl touchesCancelled:withEvent:]
+-[ZZControl cancelTrackingWithEvent:]
+```
+
+**所以对于自定义的 `UIControl`，响应优先级比 `UIGestureRecognizer` 低。**
 
 <br>
 
