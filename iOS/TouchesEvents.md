@@ -91,7 +91,7 @@ typedef NS_ENUM(NSInteger, UIEventType) {
 
 - `source1` 回调内部触发了 `source0` 回调，`source0` 内部回调将接收到的 `IOHIDEvent` 对象封装成 `UIEvent` 对象。
 - `Soucre0` 回调内部调用 `UIApplication` 的 `+[sendEvent:]` 方法，将 `UIEvent` 传给 `UIWindow`。至此 APP 将正式开始对于触摸事件的响应。
-- source0回调内部将触摸事件添加到UIApplication对象的事件队列中。事件出队后，UIApplication开始一个寻找最佳响应者的过程，这个过程又称`hit-testing`，细节将后面详述。
+- `source0` 回调内部将触摸事件添加到 UIApplication 对象的事件队列中。事件出队后，UIApplication开始一个寻找最佳响应者的过程，这个过程又称`hit-testing`，细节将后面详述。
 - 寻找到最佳响应者后，接下来的事情便是事件在响应链中的被响应了，关于响应链相关的内容详见。
 - 事实上，事件除了被响应者消耗，还能被手势识别器或是 `target-action` 模式捕捉并消耗掉。其中涉及对触摸事件的响应优先级，详见。
 - 触摸事件历经坎坷后要么被某个响应对象捕获后释放，要么致死也没能找到能够响应的对象，最终释放。至此触摸事件的使命就算终结了。runloop 若没有其他事件需要处理，也将重归于眠，等待新的事件到来后唤醒。
@@ -158,11 +158,11 @@ UIApplication(下) -> UIWindow -> subview -> ... -> subview (上)
 
 ```Objective-C
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event{
-    //3种状态无法响应事件
+    // 3种状态无法响应事件
     if (self.userInteractionEnabled == NO || self.hidden == YES ||  self.alpha <= 0.01) return nil; 
-    //触摸点若不在当前视图上则无法响应事件
+    // 触摸点若不在当前视图上则无法响应事件
     if ([self pointInside:point withEvent:event] == NO) return nil; 
-    //从后往前遍历子视图数组 
+    // 从后往前遍历子视图数组 
     int count = (int)self.subviews.count; 
     for (int i = count - 1; i >= 0; i--) 
     { 
@@ -170,15 +170,15 @@ UIApplication(下) -> UIWindow -> subview -> ... -> subview (上)
         UIView *childView = self.subviews[i]; 
         // 坐标系的转换,把触摸点在当前视图上坐标转换为在子视图上的坐标
         CGPoint childP = [self convertPoint:point toView:childView]; 
-        //询问子视图层级中的最佳响应视图
+        // 询问子视图层级中的最佳响应视图
         UIView *fitView = [childView hitTest:childP withEvent:event]; 
         if (fitView) 
         {
-            //如果子视图中有更合适的就返回
+            // 如果子视图中有更合适的就返回
             return fitView; 
         }
     } 
-    //没有在子视图中找到更合适的响应视图，那么自身就是最合适的
+    // 没有在子视图中找到更合适的响应视图，那么自身就是最合适的
     return self;
 }
 ```
