@@ -409,8 +409,8 @@ window 会将事件优先传递给手势识别器，但若有多个手势，wind
 > In iOS 6.0 and later, default control actions prevent overlapping gesture recognizer behavior. For example, the default action for a button is a single tap. If you have a single tap gesture recognizer attached to a button’s parent view, and the user taps the button, then the button’s action method receives the touch event instead of the gesture recognizer.This applies only to gesture recognition that overlaps the default action for a control, which includes:
 
 > - A single finger single tap on a `UIButton`, `UISwitch`, `UIStepper`, `UISegmentedControl`, and `UIPageControl`.
-- A single finger swipe on the knob of a `UISlider`, in a direction parallel to the slider.
-- A single finger pan gesture on the knob of a `UISwitch`, in a direction parallel to the switch.
+> - A single finger swipe on the knob of a `UISlider`, in a direction parallel to the slider.
+> - A single finger pan gesture on the knob of a `UISwitch`, in a direction parallel to the switch.
 
 简单理解：`UIControl` 会阻止父视图上的手势识别器行为，也就是 `UIControl` 处理事件的优先级比`UIGestureRecognizer` 高，但前提是相比于父视图上的手势识别器。
 
@@ -478,7 +478,7 @@ e.g.2 给 `ZZButton` 添加点击手势
 -[ZZButton beginTrackingWithTouch:withEvent:]
 
 -[ZZTapGestureRecognizer touchesEnded:withEvent:]
--[ZZControlViewController didTouchYellowView]
+-[ZZControlViewController didTouchSomeView]
 
 -[ZZButton touchesCancelled:withEvent:]
 -[ZZButton cancelTrackingWithEvent:]
@@ -487,9 +487,11 @@ e.g.2 给 `ZZButton` 添加点击手势
 
 **对于系统提供的 `UIControl`，如 `UIbutton`、`UISwitch` 等，其事件响应优先级比其父类视图的手势事件响应优先级高。**
 
+<br>
+
 ### 0x03 自定义 `UIControl` 事件响应优先级
 
-自定义 `ZZControl` 继承自 `UIControl `，并重写 `UIControl` 和 `UIResponder` 的 4 个方法。
+自定义 `ZZControl` 继承自 `UIControl `，并重写 `UIControl` 和 `UIResponder` 的 4 个方法 (代码同 `ZZButton`)。
 
 然后在 `ZZControlViewController` 添加 `ZZControl` 的 `addTarget:` 实现，如下
 
@@ -538,10 +540,11 @@ e.g.2 给 `ZZButton` 添加点击手势
 
 <br>
 
-## 三、
+总结：
 
-<br>
+- 对于系统类来说，`UIRespnder`、`UIGestureRecognizer`、`UIControl` 事件响应优先级依次递增。
 
+- 自定义的 `UIControl` 和 `UIResponder` 的优先级相同，都比 `UIGestureRecognizer` 低。
 
 
 <br>

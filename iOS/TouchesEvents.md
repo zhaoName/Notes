@@ -1,5 +1,7 @@
 # 触摸事件
 
+本文主要介绍触摸事件的传递和响应。
+
 <br>
 
 ## 一、`UITouch`、`UIEvent`、`UIResponder`
