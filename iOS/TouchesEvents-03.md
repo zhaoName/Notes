@@ -140,7 +140,7 @@ e.g.2 还有种情况是点击范围超出父视图的范围，这样点击事�
 
 此时 `cell` 响应事件，控制器视图没有响应事件。
 
-长按的过程中，一开始事件同样被传递给手势识别器和 hit-tested view，所以手势的`ouchesBegan:withEvent:` 和 `ZZTableView` 的 `touchesBegan:withEvent:` 都会被调用。此后在长按的过程中，手势识别器一直在识别手势，直到一定时间后手势识别失败，才将事件的响应权完全交给响应链。当触摸结束的时候，`ZZTableView` 的 `touchesEnded:withEvent:` 被调用，同时 `Cell` 响应了点击事件。
+长按的过程中，一开始事件同样被传递给手势识别器和 hit-tested view，所以手势的`touchesBegan:withEvent:` 和 `ZZTableView` 的 `touchesBegan:withEvent:` 都会被调用。此后在长按的过程中，手势识别器一直在识别手势，直到一定时间后手势识别失败，才将事件的响应权完全交给响应链。当触摸结束的时候，`ZZTableView` 的 `touchesEnded:withEvent:` 被调用，同时 `Cell` 响应了点击事件。
 
 ##### e.g.3 单击 cell 打印结果如下
 
@@ -245,11 +245,124 @@ void exchangeMethod(Class aClass, SEL oldSEL, SEL newSEL) {
 
 <br>
 
-### 0x03
+### 0x03 事件集中处理
+
+假设视图控制器中有一个 tableView，cell 上有两个按钮 `firstButton`、`secondButton`，点击按钮、cell 本身都会触发事件。以前我们一般直接处理事件，或使用 delegate、closure 等回调给视图控制器处理，现在我们可以使用 `nextResponder` 将所有响应都传递到控制器处理，这样代码逻辑会更清晰，业务逻辑也变得更简单。
+
+
 
 ```Objective-C
+@implementation UIResponder (ZZHandle)
 
+- (void)routerEvent:(NSString *)event userInfo:(NSDictionary *)userInfo
+{
+    NSLog(@"%s -- %@", __func__, NSStringFromClass([self class]));
+    [self.nextResponder routerEvent:event userInfo:userInfo];
+}
+
+@end
 ```
+
+```Objective-C
+@implementation ZZHandleTableViewCell
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    
+    [self.firstBtn addTarget:self action:NSSelectorFromString(@"didTouchFirstBtn") forControlEvents:UIControlEventTouchUpInside];
+    [self.secondBtn addTarget:self action:NSSelectorFromString(@"didTouchSecondBtn") forControlEvents:UIControlEventTouchUpInside];
+}
+
+- (void)didTouchSecondBtn
+{
+    NSLog(@"%s", __func__);
+    [self routerEvent:@"secondBtn" userInfo:@{}];
+}
+
+- (void)didTouchFirstBtn
+{
+    NSLog(@"%s", __func__);
+    [self routerEvent:@"firstBtn" userInfo:@{}];
+}
+
+@end
+```
+
+
+```Objective-C
+@implementation ZZHandleViewController
+
+- (void)routerEvent:(NSString *)event userInfo:(NSDictionary *)userInfo
+{
+    if ([event isEqualToString:@"firstBtn"]) {
+        NSLog(@"%s -- %@", __func__, @"did touch First Btn");
+    } else if ([event isEqualToString:@"secondBtn"]) {
+        NSLog(@"%s -- %@", __func__, @"did touch second Btn");
+    } else {
+        NSLog(@"did touch other Btn");
+    }
+}
+@end
+```
+
+点击`firstBtn` 打印结果如下
+
+```Objective-C
+-[ZZButton touchesBegan:withEvent:]
+-[ZZButton beginTrackingWithTouch:withEvent:]
+-[ZZButton touchesEnded:withEvent:]
+-[ZZButton endTrackingWithTouch:withEvent:]
+
+-[ZZHandleTableViewCell didTouchFirstBtn]
+-[UIResponder(ZZHandle) routerEvent:userInfo:] -- ZZHandleTableViewCell
+-[UIResponder(ZZHandle) routerEvent:userInfo:] -- UITableView
+-[ZZHandleViewController routerEvent:userInfo:] -- did touch First Btn
+```
+
+这样就可以将点击 `firstBtn`、`secondBtn` 的响应方法集中在 `ZZHandleViewController` 中处理。点击 `firstBtn ` 时，触发 `routerEvent:userInfo:`方法，此时将事件转发给 `ZZHandleTableViewCell `；由于 `cell` 没有处理事件，`cell` 将事件转发给 `UITableView` 处理；`UITableView` 也没有处理事件，于是将事件转发给 `ZZHandleViewController` 的根视图`UIView`；由于`UIView`也没有处理事件，它将事件转发给 `ZZHandleViewController `，`ZZHandleViewController ` 已经处理了事件，不再进行转发。最后，也就由视图控制器统一处理。
+
+其实上述代码还可以再简化。`UIControl` 有这样一个特性：若不指定 `target`，即 `addTarget:action:forControlEvents:` 时 `target` 传空，那么当事件发生时，`Application` 会在响应链上从上往下寻找能响应 `action` 的对象。
+
+代码简化如下：
+
+```Objective-C
+@implementation ZZHandleTableViewCell
+
+- (void)awakeFromNib {
+    [super awakeFromNib];
+    
+    [self.firstBtn addTarget:nil action:NSSelectorFromString(@"didTouchFirstBtn") forControlEvents:UIControlEventTouchUpInside];
+    [self.secondBtn addTarget:nil action:NSSelectorFromString(@"didTouchSecondBtn") forControlEvents:UIControlEventTouchUpInside];
+}
+@end
+```
+
+```Objective-C
+@implementation ZZHandleViewController
+
+- (void)didTouchSecondBtn
+{
+    NSLog(@"%s", __func__);
+}
+
+- (void)didTouchFirstBtn
+{
+    NSLog(@"%s", __func__);
+}
+@end
+```
+
+点击 `secondBtn`，打印结果如下：
+
+```Objective-C
+-[ZZButton touchesBegan:withEvent:]
+-[ZZButton beginTrackingWithTouch:withEvent:]
+-[ZZButton touchesEnded:withEvent:]
+-[ZZButton endTrackingWithTouch:withEvent:]
+
+-[ZZHandleViewController didTouchSecondBtn]
+```
+
 
 <br>
 

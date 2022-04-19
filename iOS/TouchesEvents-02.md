@@ -388,7 +388,7 @@ window 会将事件优先传递给手势识别器，但若有多个手势，wind
 
 ![](../Images/iOS/TouchesEvents/ResponsePriority_04.png)
 
-另外，若不指定 `target`，即 `addTarget:action:forControlEvents:` 时 target 传空，那么当事件发生时，`Application` 会在响应链上从上往下寻找能响应 `action` 的对象。官方说明如下：
+另外，若不指定 `target`，即 `addTarget:action:forControlEvents:` 时 `target` 传空，那么当事件发生时，`Application` 会在响应链上从上往下寻找能响应 `action` 的对象。官方说明如下：
 
 > If you specify nil for the target object, the control searches the responder chain for an object that defines the specified action method.
 
