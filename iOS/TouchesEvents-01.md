@@ -18,6 +18,7 @@
 - touch 大致半径。
 - touch 压力大小（支持 3D Touch 或 Apple Pencil 的设备）。
 
+整数类型的 `tapCount` 属性表示点击屏幕的次数，`UITouch.Phase` 属性表示处于 `began`、`moved`、`ended`、`cancelled`等阶段。
 
 ```Objective-C
 typedef NS_ENUM(NSInteger, UITouchPhase) {
@@ -32,20 +33,38 @@ typedef NS_ENUM(NSInteger, UITouchPhase) {
 };
 ```
 
+下面两个属性来区分 `UITouch` 所属对象。
+
+```Objective-C
+// 事件所属 window
+@property(nullable,nonatomic,readonly,strong) UIWindow *window;
+// 事件所属 view
+@property(nullable,nonatomic,readonly,strong) UIView *view;
+```
+
 ### 0x02 `UIEvent`
 
-`UIEvent` 描述用户与 app 的单次交互
+`UIEvent` 描述用户与 app 的单次交互。
+
+应用可以接收不同类型的事件（event），包括触摸事件（touch events）、运动事件（motion events）、远程控制事件（remote-control events）和按下物理按键事件（press events）。触摸事件是最常见的事件，发送给触摸的视图。运动事件由 UIKit 触发，并与 Core Motion framework 运动事件进行区分。远程控制事件允许 responder 对象接收外部配件的指令（如耳机），以便管理音视频播放。Press events 代表与 game controller、AppleTV remote 或其他有物理按键设备的交互。可以使用 `type` 和 `subtype` 属性判断事件类型。
 
 事件类型如下：
 
 ```Objective-C
 typedef NS_ENUM(NSInteger, UIEventType) {
-    UIEventTypeTouches, // The event is related to touches on the screen.
-    UIEventTypeMotion, // The event is related to motion of the device, such as when the user shakes it.
-    UIEventTypeRemoteControl, // The event is a remote-control event
-    UIEventTypePresses API_AVAILABLE(ios(9.0)) // The event is related to the press of a physical button.
-}
+    UIEventTypeTouches,
+    UIEventTypeMotion,
+    UIEventTypeRemoteControl,
+    UIEventTypePresses API_AVAILABLE(ios(9.0)),
+    UIEventTypeScroll      API_AVAILABLE(ios(13.4), tvos(13.4)) API_UNAVAILABLE(watchos) = 10,
+    UIEventTypeHover       API_AVAILABLE(ios(13.4), tvos(13.4)) API_UNAVAILABLE(watchos) = 11,
+    UIEventTypeTransform   API_AVAILABLE(ios(13.4), tvos(13.4)) API_UNAVAILABLE(watchos) = 14,
+};
 ```
+
+Touch event 对象包含与事件相关的 touch。Touch event 对象包含一个或多个 touch，每个 touch 都由 `UITouch` 对象表示。当发生触摸事件时，系统将事件路由至合适的响应者，并调用 ` touchesBegan:withEvent:` 方法，responder 提取 touch 中的数据，并作出适当响应。
+
+在多点触摸序列中，向 app 传递更新的触摸数据时，`UIKit` 会复用 `UIEvent` 对象。因此，不要持有 `UIEvent` 对象及其中的数据。如果需要在响应者方法之外使用 `UIEvent`、`UITouch` 数据，应在响应者方法中处理数据，并复制到自定义的数据结构中。
 
 ### 0x03 `UIResponder`
 
@@ -364,8 +383,8 @@ UITextField ——> UIView ——> UIView ——> UIViewController ——> UIWin
 得到如下结果
 
 ```Objective-C
-B1View --> BView --> UIView --> ViewController --> UIDropShadowView --> 
-UITransitionView --> ZZWindow --> UIWindowScene --> UIApplication --> AppDelegate
+B1View --> BView --> UIView --> ViewController --> UIDropShadowView 
+--> UITransitionView --> ZZWindow --> UIWindowScene --> UIApplication --> AppDelegate
 ```
 
 <br>
