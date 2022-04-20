@@ -269,8 +269,8 @@ void exchangeMethod(Class aClass, SEL oldSEL, SEL newSEL) {
 - (void)awakeFromNib {
     [super awakeFromNib];
     
-    [self.firstBtn addTarget:self action:NSSelectorFromString(@"didTouchFirstBtn") forControlEvents:UIControlEventTouchUpInside];
-    [self.secondBtn addTarget:self action:NSSelectorFromString(@"didTouchSecondBtn") forControlEvents:UIControlEventTouchUpInside];
+    [self.firstBtn addTarget:self action:@selector(didTouchFirstBtn) forControlEvents:UIControlEventTouchUpInside];
+    [self.secondBtn addTarget:self action:@selector(didTouchSecondBtn) forControlEvents:UIControlEventTouchUpInside];
 }
 
 - (void)didTouchSecondBtn
