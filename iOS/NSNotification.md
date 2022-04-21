@@ -45,8 +45,129 @@
 
 ## 二、NSNotificationCenter
 
+### 0x01
+
+
+```Objective-C
+#define	CHUNKSIZE	128
+#define	CACHESIZE	16
+
+typedef struct NCTbl {
+    Observation		*wildcard;	/* Get ALL messages.		*/
+    GSIMapTable		nameless;	/* Get messages for any name.	*/
+    GSIMapTable		named;		/* Getting named messages only.	*/
+    unsigned		lockCount;	/* Count recursive operations.	*/
+    NSRecursiveLock	*_lock;		/* Lock out other threads.	*/
+    Observation		*freeList;
+    Observation		**chunks;
+    unsigned		numChunks;
+    GSIMapTable		cache[CACHESIZE];
+    unsigned short	chunkIndex;
+    unsigned short	cacheIndex;
+} NCTable;
+```
+
+
+
+```Objective-C
+/*
+ * Observation structure - One of these objects is created for
+ * each -addObserver... request.  It holds the requested selector,
+ * name and object.  Each struct is placed in one LinkedList,
+ * as keyed by the NAME/OBJECT parameters.
+ * If 'next' is 0 then the observation is unused (ie it has been
+ * removed from, or not yet added to  any list).  The end of a
+ * list is marked by 'next' being set to 'ENDOBS'.
+ *
+ * This is normally a structure which handles memory management using a fast
+ * reference count mechanism, but when built with clang for GC, a structure
+ * can't hold a zeroing weak pointer to an observer so it's implemented as a
+ * trivial class instead ... and gets managed by the garbage collector.
+ */
+
+typedef	struct	Obs {
+    id		observer;	/* Object to receive message.	*/
+    SEL		selector;	/* Method selector.		*/
+    struct Obs	*next;		/* Next item in linked list.	*/
+    int		retained;	/* Retain count for structure.	*/
+    struct NCTbl	*link;		/* Pointer back to chunk table	*/
+} Observation;
+```
+
+
+
+```Objective-C
+#if	!defined(GSI_MAP_TABLE_T)
+typedef struct _GSIMapBucket GSIMapBucket_t;
+typedef struct _GSIMapNode GSIMapNode_t;
+
+typedef GSIMapBucket_t *GSIMapBucket;
+typedef GSIMapNode_t *GSIMapNode;
+#endif
+
+struct	_GSIMapNode {
+  GSIMapNode	nextInBucket;	/* Linked list of bucket.	*/
+  GSIMapKey	key;
+#if	GSI_MAP_HAS_VALUE
+  GSIMapVal	value;
+#endif
+};
+
+struct	_GSIMapBucket {
+  uintptr_t	nodeCount;	/* Number of nodes in bucket.	*/
+  GSIMapNode	firstNode;	/* The linked list of nodes.	*/
+};
+
+#if	defined(GSI_MAP_TABLE_T)
+typedef GSI_MAP_TABLE_T	*GSIMapTable;
+#else
+typedef struct _GSIMapTable GSIMapTable_t;
+typedef GSIMapTable_t *GSIMapTable;
+
+struct	_GSIMapTable {
+  NSZone	*zone;
+  uintptr_t	nodeCount;	/* Number of used nodes in map.	*/
+  uintptr_t	bucketCount;	/* Number of buckets in map.	*/
+  GSIMapBucket	buckets;	/* Array of buckets.		*/
+  GSIMapNode	freeNodes;	/* List of unused nodes.	*/
+  uintptr_t	chunkCount;	/* Number of chunks in array.	*/
+  GSIMapNode	*nodeChunks;	/* Chunks of allocated memory.	*/
+  uintptr_t	increment;
+#ifdef	GSI_MAP_EXTRA
+  GSI_MAP_EXTRA	extra;
+#endif
+};
+```
+
+
+```Objective-C
+
+```
+
 <br>
 
+## 三、
+
+```Objective-C
+
+```
+
+
+
+```Objective-C
+
+```
+
+
+
+```Objective-C
+
+```
+
+
+```Objective-C
+
+```
 
 
 <br>
