@@ -141,7 +141,30 @@ struct	_GSIMapTable {
 
 
 ```Objective-C
-
+ *  A rough picture is include below:
+ *   
+ *  
+ *   This is the map                C - array of the buckets
+ *   +---------------+             +---------------+
+ *   | _GSIMapTable  |      /----->| nodeCount     |  
+ *   |---------------|     /       | firstNode ----+--\  
+ *   | buckets    ---+----/        | ..........    |  |
+ *   | bucketCount  =| size of --> | nodeCount     |  |
+ *   | nodeChunks ---+--\          | firstNode     |  |
+ *   | chunkCount  =-+\ |          |     .         |  | 
+ *   |   ....        || |          |     .         |  |
+ *   +---------------+| |          | nodeCount     |  |
+ *                    | |          | fistNode      |  | 
+ *                    / |          +---------------+  | 
+ *         ----------   v                             v
+ *       /       +----------+      +---------------------------+ 
+ *       |       |  * ------+----->| Node1 | Node2 | Node3 ... | a chunk
+ *   chunkCount  |  * ------+--\   +---------------------------+
+ *  is size of = |  .       |   \  +-------------------------------+
+ *               |  .       |    ->| Node n | Node n + 1 | ...     | another
+ *               +----------+      +-------------------------------+
+ *               array pointing
+ *               to the chunks
 ```
 
 <br>
