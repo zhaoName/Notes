@@ -94,7 +94,30 @@ typedef	struct	Obs {
 } Observation;
 ```
 
+### 0x01 `_GSIMapBucket`
 
+`_GSIMapBucket` 的定义如下：
+
+```Objective-C
+struct	_GSIMapNode {
+    GSIMapNode nextInBucket;	/* Linked list of bucket.	*/
+    GSIMapKey key;
+#if	GSI_MAP_HAS_VALUE
+    GSIMapVal	value;
+#endif
+};
+
+struct	_GSIMapBucket {
+    uintptr_t nodeCount;	/* Number of nodes in bucket.	*/
+    GSIMapNode firstNode;	/* The linked list of nodes.	*/
+};
+```
+
+- `_GSIMapBucket` 是一个链表，`firstNode` 是其第一个节点。
+
+- `_GSIMapNode` 是节点的类型。其成员变量 `key` 用于 hash，可算出当前 `_GSIMapBucket` 在数组中的下标。
+
+还需关注两个宏定义，如下：
 
 ```Objective-C
 #if	!defined(GSI_MAP_TABLE_T)
@@ -104,41 +127,44 @@ typedef struct _GSIMapNode GSIMapNode_t;
 typedef GSIMapBucket_t *GSIMapBucket;
 typedef GSIMapNode_t *GSIMapNode;
 #endif
+```
 
-struct	_GSIMapNode {
-  GSIMapNode	nextInBucket;	/* Linked list of bucket.	*/
-  GSIMapKey	key;
-#if	GSI_MAP_HAS_VALUE
-  GSIMapVal	value;
-#endif
-};
+- `GSIMapBucket` 可看做数组，成员为 `_GSIMapBucket` 类型
 
-struct	_GSIMapBucket {
-  uintptr_t	nodeCount;	/* Number of nodes in bucket.	*/
-  GSIMapNode	firstNode;	/* The linked list of nodes.	*/
-};
+- `GSIMapNode` 可看做数组，成员为 `_GSIMapNode ` 类型
 
-#if	defined(GSI_MAP_TABLE_T)
-typedef GSI_MAP_TABLE_T	*GSIMapTable;
-#else
+
+### 0x02 `_GSIMapTable `
+
+`_GSIMapTable` 定义如下：
+ 
+
+```Objective-C
 typedef struct _GSIMapTable GSIMapTable_t;
 typedef GSIMapTable_t *GSIMapTable;
 
 struct	_GSIMapTable {
-  NSZone	*zone;
-  uintptr_t	nodeCount;	/* Number of used nodes in map.	*/
-  uintptr_t	bucketCount;	/* Number of buckets in map.	*/
-  GSIMapBucket	buckets;	/* Array of buckets.		*/
-  GSIMapNode	freeNodes;	/* List of unused nodes.	*/
-  uintptr_t	chunkCount;	/* Number of chunks in array.	*/
-  GSIMapNode	*nodeChunks;	/* Chunks of allocated memory.	*/
-  uintptr_t	increment;
+    NSZone	*zone;
+    uintptr_t nodeCount;	/* Number of used nodes in map.	*/
+    uintptr_t bucketCount;	/* Number of buckets in map.	*/
+    // 其实是个散列表，使用 node->key 快速算出 node 对应的 bucket 在 buckets 的下标
+    GSIMapBucket buckets;	/* Array of buckets.		*/
+    GSIMapNode	freeNodes;	/* List of unused nodes.	*/
+    uintptr_t chunkCount;	/* Number of chunks in array.	*/
+    GSIMapNode *nodeChunks;	/* Chunks of allocated memory.	*/
+    uintptr_t increment;
 #ifdef	GSI_MAP_EXTRA
-  GSI_MAP_EXTRA	extra;
+    GSI_MAP_EXTRA	extra;
 #endif
 };
 ```
 
+- `buckets` 其实是个散列表，其成员是链表。使用 `node->key` 快速算出 `node` 对应的 `bucket` 在 `buckets` 中的位置
+
+- `nodeChunks` 可看做二维数组 `[[_GSIMapNode, ...], [_GSIMapNode, ...], ...]`
+- `freeNodes` 是个单向连表，存储要释放的元素
+
+所以 `_GSIMapTable` 的结构如下：
 
 ```Objective-C
  *  A rough picture is include below:
