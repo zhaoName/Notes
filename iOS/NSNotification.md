@@ -43,56 +43,7 @@
 
 <br>
 
-## 二、NSNotificationCenter
-
-### 0x01
-
-
-```Objective-C
-#define	CHUNKSIZE	128
-#define	CACHESIZE	16
-
-typedef struct NCTbl {
-    Observation		*wildcard;	/* Get ALL messages.		*/
-    GSIMapTable		nameless;	/* Get messages for any name.	*/
-    GSIMapTable		named;		/* Getting named messages only.	*/
-    unsigned		lockCount;	/* Count recursive operations.	*/
-    NSRecursiveLock	*_lock;		/* Lock out other threads.	*/
-    Observation		*freeList;
-    Observation		**chunks;
-    unsigned		numChunks;
-    GSIMapTable		cache[CACHESIZE];
-    unsigned short	chunkIndex;
-    unsigned short	cacheIndex;
-} NCTable;
-```
-
-
-
-```Objective-C
-/*
- * Observation structure - One of these objects is created for
- * each -addObserver... request.  It holds the requested selector,
- * name and object.  Each struct is placed in one LinkedList,
- * as keyed by the NAME/OBJECT parameters.
- * If 'next' is 0 then the observation is unused (ie it has been
- * removed from, or not yet added to  any list).  The end of a
- * list is marked by 'next' being set to 'ENDOBS'.
- *
- * This is normally a structure which handles memory management using a fast
- * reference count mechanism, but when built with clang for GC, a structure
- * can't hold a zeroing weak pointer to an observer so it's implemented as a
- * trivial class instead ... and gets managed by the garbage collector.
- */
-
-typedef	struct	Obs {
-    id		observer;	/* Object to receive message.	*/
-    SEL		selector;	/* Method selector.		*/
-    struct Obs	*next;		/* Next item in linked list.	*/
-    int		retained;	/* Retain count for structure.	*/
-    struct NCTbl	*link;		/* Pointer back to chunk table	*/
-} Observation;
-```
+## 二、GSIMapTable
 
 ### 0x01 `_GSIMapBucket`
 
@@ -147,7 +98,6 @@ struct	_GSIMapTable {
     NSZone	*zone;
     uintptr_t nodeCount;	/* Number of used nodes in map.	*/
     uintptr_t bucketCount;	/* Number of buckets in map.	*/
-    // 其实是个散列表，使用 node->key 快速算出 node 对应的 bucket 在 buckets 的下标
     GSIMapBucket buckets;	/* Array of buckets.		*/
     GSIMapNode	freeNodes;	/* List of unused nodes.	*/
     uintptr_t chunkCount;	/* Number of chunks in array.	*/
@@ -193,9 +143,225 @@ struct	_GSIMapTable {
  *               to the chunks
 ```
 
+### 0x03 `buckets`
+
+hash 算出对应 `bucket` 在 `buckets` 的下标
+
+```Objective-C
+GS_STATIC_INLINE GSIMapBucket
+GSIMapPickBucket(unsigned hash, GSIMapBucket buckets, uintptr_t bucketCount)
+{
+    return buckets + hash % bucketCount;
+}
+
+GS_STATIC_INLINE GSIMapBucket
+GSIMapBucketForKey(GSIMapTable map, GSIMapKey key)
+{
+    return GSIMapPickBucket(GSI_MAP_HASH(map, key), map->buckets, map->bucketCount);
+}
+
+```
+
+将 `node` 添加到 `map` 中
+
+```Objective-C
+/// insert `node` to bucket (头插法 )
+GS_STATIC_INLINE void GSIMapLinkNodeIntoBucket(GSIMapBucket bucket, GSIMapNode node)
+{
+    node->nextInBucket = bucket->firstNode;
+    bucket->firstNode = node;
+}
+
+/// insert `node` to bucket
+GS_STATIC_INLINE void GSIMapAddNodeToBucket(GSIMapBucket bucket, GSIMapNode node)
+{
+    GSIMapLinkNodeIntoBucket(bucket, node);
+    bucket->nodeCount += 1;
+}
+
+/// add `node` to map
+GS_STATIC_INLINE void GSIMapAddNodeToMap(GSIMapTable map, GSIMapNode node)
+{
+    GSIMapBucket    bucket;
+    // node->key 散列函数算出 node 所在的 bucket
+    bucket = GSIMapBucketForKey(map, node->key);
+    // 将 node 添加到对应的 bucket
+    GSIMapAddNodeToBucket(bucket, node);
+    map->nodeCount++;
+}
+```
+
+从 `map` 中删除对应的 `node`
+
+
+```Objective-C
+/// delete `node` form bucket
+GS_STATIC_INLINE void GSIMapUnlinkNodeFromBucket(GSIMapBucket bucket, GSIMapNode node)
+{
+    if (node == bucket->firstNode)
+    {
+        bucket->firstNode = node->nextInBucket;
+    }
+    else
+    {
+        GSIMapNode	tmp = bucket->firstNode;
+        
+        while (tmp->nextInBucket != node)
+        {
+            tmp = tmp->nextInBucket;
+        }
+        tmp->nextInBucket = node->nextInBucket;
+    }
+    node->nextInBucket = 0;
+}
+
+
+/// delete `node` from bucket
+GS_STATIC_INLINE void GSIMapRemoveNodeFromBucket(GSIMapBucket bucket, GSIMapNode node)
+{
+    bucket->nodeCount--;
+    GSIMapUnlinkNodeFromBucket(bucket, node);
+}
+
+/// delete `node` from map
+GS_STATIC_INLINE void
+GSIMapRemoveNodeFromMap(GSIMapTable map, GSIMapBucket bkt, GSIMapNode node)
+{
+    map->nodeCount--;
+    GSIMapRemoveNodeFromBucket(bkt, node);
+}
+```
+
+删除并释放 `node`
+
+```Objective-C
+GS_STATIC_INLINE void GSIMapFreeNode(GSIMapTable map, GSIMapNode node)
+{
+    GSI_MAP_RELEASE_KEY(map, node->key);
+    GSI_MAP_CLEAR_KEY(node);
+#if	GSI_MAP_HAS_VALUE
+    GSI_MAP_RELEASE_VAL(map, node->value);
+    GSI_MAP_CLEAR_VAL(node);
+#endif
+    
+    // 将待释放的 node 插入到 freeNodes 中 (头插法)
+    node->nextInBucket = map->freeNodes;
+    map->freeNodes = node;
+}
+
+GS_STATIC_INLINE GSIMapNode
+GSIMapRemoveAndFreeNode(GSIMapTable map, uintptr_t bkt, GSIMapNode node)
+{
+    GSIMapNode next = node->nextInBucket;
+    // delete node from map
+    GSIMapRemoveNodeFromMap(map, &(map->buckets[bkt]), node);
+    // free node that delete node from map
+    GSIMapFreeNode(map, node);
+    return next;
+}
+```
+
+根据 `key` 在 `map` 中查找对应的 `node`
+
+```Objective-C
+/// lookup node from bucket
+GS_STATIC_INLINE GSIMapNode
+GSIMapNodeForKeyInBucket(GSIMapTable map, GSIMapBucket bucket, GSIMapKey key)
+{
+    GSIMapNode    node = bucket->firstNode;
+    
+    if (GSI_MAP_ZEROED(map))
+    {
+        while ((node != 0)
+               && GSI_MAP_EQUAL(map, GSI_MAP_READ_KEY(map, &node->key), key) == NO)
+        {
+            GSIMapNode    tmp = node->nextInBucket;
+            
+            if (GSI_MAP_NODE_IS_EMPTY(map, node))
+            {
+                GSIMapRemoveNodeFromMap(map, bucket, node);
+                GSIMapFreeNode(map, node);
+            }
+            node = tmp;
+        }
+        return node;
+    }
+    while ((node != 0)
+           && GSI_MAP_EQUAL(map, GSI_MAP_READ_KEY(map, &node->key), key) == NO)
+    {
+        node = node->nextInBucket;
+    }
+    return node;
+}
+
+/// lookup node from map table
+GS_STATIC_INLINE GSIMapNode GSIMapNodeForKey(GSIMapTable map, GSIMapKey key)
+{
+    GSIMapBucket    bucket;
+    GSIMapNode    node;
+    
+    if (map->nodeCount == 0)
+    {
+        return 0;
+    }
+    bucket = GSIMapBucketForKey(map, key);
+    node = GSIMapNodeForKeyInBucket(map, bucket, key);
+    return node;
+}
+```
+
 <br>
 
-## 三、
+## 三、NSNotificationCenter
+
+### 0x01
+
+
+```Objective-C
+#define	CHUNKSIZE	128
+#define	CACHESIZE	16
+
+typedef struct NCTbl {
+    Observation		*wildcard;	/* Get ALL messages.		*/
+    GSIMapTable		nameless;	/* Get messages for any name.	*/
+    GSIMapTable		named;		/* Getting named messages only.	*/
+    unsigned		lockCount;	/* Count recursive operations.	*/
+    NSRecursiveLock	*_lock;		/* Lock out other threads.	*/
+    Observation		*freeList;
+    Observation		**chunks;
+    unsigned		numChunks;
+    GSIMapTable		cache[CACHESIZE];
+    unsigned short	chunkIndex;
+    unsigned short	cacheIndex;
+} NCTable;
+```
+
+
+
+```Objective-C
+/*
+ * Observation structure - One of these objects is created for
+ * each -addObserver... request.  It holds the requested selector,
+ * name and object.  Each struct is placed in one LinkedList,
+ * as keyed by the NAME/OBJECT parameters.
+ * If 'next' is 0 then the observation is unused (ie it has been
+ * removed from, or not yet added to  any list).  The end of a
+ * list is marked by 'next' being set to 'ENDOBS'.
+ *
+ * This is normally a structure which handles memory management using a fast
+ * reference count mechanism, but when built with clang for GC, a structure
+ * can't hold a zeroing weak pointer to an observer so it's implemented as a
+ * trivial class instead ... and gets managed by the garbage collector.
+ */
+
+typedef	struct	Obs {
+    id		observer;	/* Object to receive message.	*/
+    SEL		selector;	/* Method selector.		*/
+    struct Obs	*next;		/* Next item in linked list.	*/
+    int		retained;	/* Retain count for structure.	*/
+    struct NCTbl	*link;		/* Pointer back to chunk table	*/
+} Observation;
+```
 
 ```Objective-C
 
