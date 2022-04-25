@@ -204,7 +204,7 @@ GS_STATIC_INLINE void GSIMapUnlinkNodeFromBucket(GSIMapBucket bucket, GSIMapNode
     }
     else
     {
-        GSIMapNode	tmp = bucket->firstNode;
+        GSIMapNode tmp = bucket->firstNode;
         
         while (tmp->nextInBucket != node)
         {
@@ -255,7 +255,7 @@ GSIMapRemoveAndFreeNode(GSIMapTable map, uintptr_t bkt, GSIMapNode node)
     GSIMapNode next = node->nextInBucket;
     // delete node from map
     GSIMapRemoveNodeFromMap(map, &(map->buckets[bkt]), node);
-    // free node that delete node from map
+    // free node that deleted from map
     GSIMapFreeNode(map, node);
     return next;
 }
@@ -363,8 +363,98 @@ typedef	struct	Obs {
 } Observation;
 ```
 
-```Objective-C
 
+
+```Objective-C
+- (void)addObserver:(id)observer selector:(SEL)selector name:(NSString*)name object:(id)object
+{
+    Observation	*list;
+    Observation	*obs;
+    GSIMapTable	mapTable;
+    GSIMapNode	node;
+    
+    if (observer == nil)
+        [NSException raise: NSInvalidArgumentException format: @"Nil observer passed to addObserver ..."];
+    
+    if (selector == 0)
+        [NSException raise: NSInvalidArgumentException format: @"Null selector passed to addObserver ..."];
+    
+    if ([observer respondsToSelector: selector] == NO)
+    {
+        [NSException raise: NSInvalidArgumentException format: @"[%@-%@] Observer '%@' does not respond to selector '%@'",
+         NSStringFromClass([self class]), NSStringFromSelector(_cmd), observer, NSStringFromSelector(selector)];
+    }
+    
+    lockNCTable(TABLE);
+    
+    obs = obsNew(TABLE, selector, observer);
+    
+    /*
+     * Record the Observation in one of the linked lists.
+     *
+     * NB. It is possible to register an observer for a notification more than
+     * once - in which case, the observer will receive multiple messages when
+     * the notification is posted... odd, but the MacOS-X docs specify this.
+     */
+    
+    if (name)
+    {
+        // Locate the map table for this name - create it if not present.
+        node = GSIMapNodeForKey(NAMED, (GSIMapKey)(id)name);
+        if (node == 0)
+        {
+            // create GSIMapTable or read cache from nc table
+            mapTable = mapNew(TABLE);
+            // As this is the first observation for the given name, we take a copy of the name so it cannot be mutated while in the map.
+            name = [name copyWithZone: NSDefaultMallocZone()];
+            //
+            GSIMapAddPair(NAMED, (GSIMapKey)(id)name, (GSIMapVal)(void*)mapTable);
+            GS_CONSUMED(name)
+        }
+        else
+        {
+            mapTable = (GSIMapTable)node->value.ptr;
+        }
+        
+        // Add the observation to the list for the correct object.
+        //
+        node = GSIMapNodeForSimpleKey(mapTable, (GSIMapKey)object);
+        if (node == 0)
+        {
+            obs->next = ENDOBS;
+            GSIMapAddPair(mapTable, (GSIMapKey)object, (GSIMapVal)obs);
+        }
+        else
+        {
+            // 头插法
+            list = (Observation*)node->value.ptr;
+            obs->next = list->next;
+            list->next = obs;
+        }
+    }
+    else if (object)
+    {
+        node = GSIMapNodeForSimpleKey(NAMELESS, (GSIMapKey)object);
+        if (node == 0)
+        {
+            obs->next = ENDOBS;
+            GSIMapAddPair(NAMELESS, (GSIMapKey)object, (GSIMapVal)obs);
+        }
+        else
+        {
+            list = (Observation*)node->value.ptr;
+            obs->next = list->next;
+            list->next = obs;
+        }
+    }
+    else
+    {
+        obs->next = WILDCARD;
+        WILDCARD = obs;
+    }
+    
+    unlockNCTable(TABLE);
+}
 ```
 
 
