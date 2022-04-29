@@ -490,12 +490,13 @@ typedef struct NCTbl {
 	- 若 `node` 存在，则取出 `list = node->value.ptr`，然后用头插法将 `obs`插入到链表 `list` 中
 - 若 `name` 为空，`object` 不为空
 	- 以 `object` 为 key 在 `nameless` 中查找对应的 `node`
+	
 	- 若 `node` 不存在，则以 `object` 为 key，`obs` 为 value 存入到 `nameless ` 中
 	- 若 `node` 存在，则取出 `list = node->value.ptr`，然后用头插法将 `obs`插入到链表 `list` 中
 - 若 `name` 和 `object` 都为空
 	- 使用头插法将 `obs` 存入到链表 `wildcard` 中
 
-![](../Images/iOS/NSNotification/NSNotification_01.png)
+![](../Images/iOS/NSNotification/NSNotification_0101.png)
 
 
 ### 0x04 `postNotificationName:`
@@ -508,12 +509,11 @@ typedef struct NCTbl {
  * The GNUstep implementation calls -postNotificationName:object:userInfo: to
  * perform the actual posting.
  */
-- (void) postNotification: (NSNotification*)notification
+- (void)postNotification:(NSNotification*)notification
 {
     if (notification == nil)
     {
-        [NSException raise: NSInvalidArgumentException
-                    format: @"Tried to post a nil notification."];
+        [NSException raise: NSInvalidArgumentException format: @"Tried to post a nil notification."];
     }
     [self _postAndRelease: RETAIN(notification)];
 }
@@ -522,7 +522,7 @@ typedef struct NCTbl {
  * Creates and posts a notification using the
  * -postNotificationName:object:userInfo: passing a nil user info argument.
  */
-- (void) postNotificationName: (NSString*)name object: (id)object
+- (void)postNotificationName:(NSString*)name object:(id)object
 {
     [self postNotificationName: name object: object userInfo: nil];
 }
@@ -534,9 +534,7 @@ typedef struct NCTbl {
  * message sent to an observer.  This means that, if one observer raises
  * an exception, later observers in the lists will not get the notification.
  */
-- (void) postNotificationName: (NSString*)name
-                       object: (id)object
-                     userInfo: (NSDictionary*)info
+- (void)postNotificationName:(NSString*)name object:(id)object userInfo:(NSDictionary*)info
 {
     GSNotification	*notification;
     
@@ -551,7 +549,12 @@ typedef struct NCTbl {
 最终都会来到这里
 
 ```Objective-C
-- (void) _postAndRelease: (NSNotification*)notification
+/**
+ * Private method to perform the actual posting of a notification.
+ * Release the notification before returning, or before we raise
+ * any exception ... to avoid leaks.
+ */
+- (void)_postAndRelease:(NSNotification*)notification
 {
     Observation	*o;
     unsigned	count;
@@ -582,17 +585,13 @@ typedef struct NCTbl {
     GSIArrayInitWithZoneAndStaticCapacity(a, _zone, 64, i);
     lockNCTable(TABLE);
     
-    /*
-     * Find all the observers that specified neither NAME nor OBJECT.
-     */
+    // Find all the observers that specified neither NAME nor OBJECT.
     for (o = WILDCARD = purgeCollected(WILDCARD); o != ENDOBS; o = o->next)
     {
         GSIArrayAddItem(a, (GSIArrayItem)o);
     }
     
-    /*
-     * Find the observers that specified OBJECT, but didn't specify NAME.
-     */
+    // Find the observers that specified OBJECT, but didn't specify NAME.
     if (object)
     {
         n = GSIMapNodeForSimpleKey(NAMELESS, (GSIMapKey)object);
@@ -607,26 +606,17 @@ typedef struct NCTbl {
         }
     }
     
-    /*
-     * Find the observers of NAME, except those observers with a non-nil OBJECT
-     * that doesn't match the notification's OBJECT).
-     */
+    // Find the observers of NAME, except those observers with a non-nil OBJECT that doesn't match the notification's OBJECT).
     if (name)
     {
         n = GSIMapNodeForKey(NAMED, (GSIMapKey)((id)name));
-        if (n)
-        {
+        if (n) {
             m = (GSIMapTable)n->value.ptr;
-        }
-        else
-        {
-            m = 0;
-        }
+        } else { m = 0; }
+        
         if (m != 0)
         {
-            /*
-             * First, observers with a matching object.
-             */
+            // First, observers with a matching object.
             n = GSIMapNodeForSimpleKey(m, (GSIMapKey)object);
             if (n != 0)
             {
@@ -640,9 +630,7 @@ typedef struct NCTbl {
             
             if (object != nil)
             {
-                /*
-                 * Now observers with a nil object.
-                 */
+                // Now observers with a nil object.
                 n = GSIMapNodeForSimpleKey(m, (GSIMapKey)nil);
                 if (n != 0)
                 {
@@ -657,13 +645,10 @@ typedef struct NCTbl {
         }
     }
     
-    /* Finished with the table ... we can unlock it,
-     */
+    // Finished with the table ... we can unlock it,
     unlockNCTable(TABLE);
     
-    /*
-     * Now send all the notifications.
-     */
+    // Now send all the notifications.
     count = GSIArrayCount(a);
     while (count-- > 0)
     {
@@ -689,13 +674,17 @@ typedef struct NCTbl {
 }
 ```
 
-- 先从 `wildcard` 中通过 `observer` 取出所有的 `obs`
+- 用 `name`、`object`、`userInfo` 创建 `Notification`
 
-- 再从 `nameless` 中通过 `object` 取出所有的 `obs`
-- 最后从 `named` 中通过 `name` 取出所有的 `obs`
-- 遍历 `obs` 执行方法 `[o->observer performSelector: o->selector withObject: notification]`
-
-
+- 创建动态数组，用于保存 `obs`
+- 先从 `wildcard` 中取出所有的 `obs` 并添加到数组中
+- 再从 `nameless` 中通过 `object` 取出所有的 `obs` 并添加到数组中
+- 最后从 `named` 中通过 `name` 取出所有的 `obs` 并添加到数组中
+	- 由 `object` 找到对应的 `obs`，添加到数组中
+	
+	- 若 `object != nil`, 将 `nil` 作为 key 找到对应的 `obs` 并添加到数组中
+- 遍历数组中的 `obs` 并执行方法 `[o->observer performSelector: o->selector withObject: notification]`
+- 释放 `Notification`
 
 ### 0x05 `removeObserver:`
 
@@ -708,46 +697,39 @@ typedef struct NCTbl {
  * for the specified notifications, unless both observer and name are nil, in
  * which case nothing is done.
  */
-- (void) removeObserver: (id)observer
-                   name: (NSString*)name
-                 object: (id)object
+- (void)removeObserver:(id)observer name:(NSString*)name object:(id)object
 {
-    if (name == nil && object == nil && observer == nil)
-        return;
+    if (name == nil && object == nil && observer == nil) return;
     
     /*
      *	NB. The removal algorithm depends on an implementation characteristic
      *	of our map tables - while enumerating a table, it is safe to remove
      *	the entry returned by the enumerator.
      */
-    
     lockNCTable(TABLE);
     
-    if (name == nil && object == nil)
-    {
+    if (name == nil && object == nil) {
         WILDCARD = listPurge(WILDCARD, observer);
     }
     
     if (name == nil)
     {
         GSIMapEnumerator_t	e0;
-        GSIMapNode		n0;
+        GSIMapNode n0;
         
-        /*
-         * First try removing all named items set for this object.
-         */
+        // First try removing all named items set for this object.
         e0 = GSIMapEnumeratorForMap(NAMED);
         n0 = GSIMapEnumeratorNextNode(&e0);
         while (n0 != 0)
         {
-            GSIMapTable		m = (GSIMapTable)n0->value.ptr;
-            NSString		*thisName = (NSString*)n0->key.obj;
+            GSIMapTable m = (GSIMapTable)n0->value.ptr;
+            NSString	*thisName = (NSString*)n0->key.obj;
             
             n0 = GSIMapEnumeratorNextNode(&e0);
             if (object == nil)
             {
                 GSIMapEnumerator_t	e1 = GSIMapEnumeratorForMap(m);
-                GSIMapNode		n1 = GSIMapEnumeratorNextNode(&e1);
+                GSIMapNode n1 = GSIMapEnumeratorNextNode(&e1);
                 
                 /*
                  * Nil object and nil name, so we step through all the maps
@@ -756,15 +738,14 @@ typedef struct NCTbl {
                  */
                 while (n1 != 0)
                 {
-                    GSIMapNode	next = GSIMapEnumeratorNextNode(&e1);
-                    
+                    GSIMapNode next = GSIMapEnumeratorNextNode(&e1);
                     purgeMapNode(m, n1, observer);
                     n1 = next;
                 }
             }
             else
             {
-                GSIMapNode	n1;
+                GSIMapNode n1;
                 
                 /*
                  * Nil name, but non-nil object - we locate the map for the
@@ -777,10 +758,7 @@ typedef struct NCTbl {
                     purgeMapNode(m, n1, observer);
                 }
             }
-            /*
-             * If we removed all the observations keyed under this name, we
-             * must remove the map table too.
-             */
+            // If we removed all the observations keyed under this name, we must remove the map table too.
             if (m->nodeCount == 0)
             {
                 mapFree(TABLE, m);
@@ -788,9 +766,7 @@ typedef struct NCTbl {
             }
         }
         
-        /*
-         * Now remove unnamed items
-         */
+        // Now remove unnamed items
         if (object == nil)
         {
             e0 = GSIMapEnumeratorForMap(NAMELESS);
@@ -798,7 +774,6 @@ typedef struct NCTbl {
             while (n0 != 0)
             {
                 GSIMapNode	next = GSIMapEnumeratorNextNode(&e0);
-                
                 purgeMapNode(NAMELESS, n0, observer);
                 n0 = next;
             }
@@ -814,9 +789,9 @@ typedef struct NCTbl {
     }
     else
     {
-        GSIMapTable		m;
+        GSIMapTable m;
         GSIMapEnumerator_t	e0;
-        GSIMapNode		n0;
+        GSIMapNode n0;
         
         /*
          * Locate the map table for this name.
@@ -837,7 +812,6 @@ typedef struct NCTbl {
             while (n0 != 0)
             {
                 GSIMapNode	next = GSIMapEnumeratorNextNode(&e0);
-                
                 purgeMapNode(m, n0, observer);
                 n0 = next;
             }
@@ -863,15 +837,33 @@ typedef struct NCTbl {
  * Deregisters observer from all notifications.  This should be called before
  * the observer is deallocated.
  */
-- (void) removeObserver: (id)observer
+- (void)removeObserver:(id)observer
 {
-    if (observer == nil)
-        return;
-    
+    if (observer == nil) return;
     [self removeObserver: observer name: nil object: nil];
 }
 ```
 
+- 若 `name` 和 `object` 都为空，则删除链表 `wildcard` 中和 `observer` 相同的 `obs`
+
+- 若 `name` 为空
+	- 首先遍历 `named` 
+		-  若 `object` 为空，遍历删除所有和 `observer` 相同的 `obs`
+		
+		-  若 `object` 不为空，先以 `object` 为 key 取出对应的链表，然后删除链表中和 `observer` 相同的 `obs`
+	- 然后遍历 `nameless`
+		-  若 `object` 为空，遍历删除所有和 `observer` 相同的 `obs`
+		
+		-  若 `object` 不为空，先以 `object` 为 key 取出对应的链表，然后删除链表中和 `observer` 相同的 `obs`
+- 若 `name` 不为空，以 `name` 为 key 在 `named` 中找到 `bucket`
+	-  若 `object` 为空，遍历删除所有和 `observer` 相同的 `obs`
+		
+	-  若 `object` 不为空，先以 `object` 为 key 取出对应的链表，然后删除链表中和 `observer` 相同的 `obs`
+
+
+**总结：**
+
+- 通知要先 `addObserver:` 再 `postNotificationName:`， 才能正常接收通知并响应方法。因为需要先在 `addObserver:` 方法中存储 `observer` 和 `selector`，再从 `postNotificationName:` 取出 `observer` 和 `selector` 并执行。
 
 
 <br>
