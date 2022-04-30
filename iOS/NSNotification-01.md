@@ -675,7 +675,7 @@ typedef struct NCTbl {
 }
 ```
 
-- 用 `name`、`object`、`userInfo` 创建 `Notification`
+- 用 `name`、`object`、`userInfo` 实例化 `Notification`
 
 - 创建动态数组，用于保存 `obs`
 - 先从 `wildcard` 中取出所有的 `obs` 并添加到数组中
@@ -964,7 +964,7 @@ typedef struct NCTbl {
 	-  若 `object` 不为空，先以 `object` 为 key 取出对应的链表，然后删除链表中和 `observer` 相同的 `obs`
 
 	
-再引用一段官方文档中关于移动通知的话：
+再引用一段官方文档中关于移除通知的描述：
 
 > Removing the observer stops it from receiving notifications.
 >
@@ -978,7 +978,7 @@ typedef struct NCTbl {
 
 - 若是用 `addObserverForName:object:queue:usingBlock:` 方法监听通知，则需要自己手动调用 `removeObserver:` 来移除通知
 
-- 若是用 `addObserver:selector:name:object:` 方法监听通知，iOS 9 之后系统会自动在 `observer` 释放时移除通知
+- 若是用 `addObserver:selector:name:object:` 方法监听通知，iOS 9 之后系统会在 `observer` 释放时自动移除通知
 - 若手动移除通知，则要尽可能的使用更具体的方法来移除 `removeObserver:name:object:` 。
 
 
