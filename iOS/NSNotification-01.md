@@ -1,5 +1,6 @@
-# NSNotification
+# NSNotificationCenter
 
+本文主要介绍 `NSNotificationCenter ` 的底层实现。
 
 <br>
 
@@ -686,7 +687,107 @@ typedef struct NCTbl {
 - 遍历数组中的 `obs` 并执行方法 `[o->observer performSelector: o->selector withObject: notification]`
 - 释放 `Notification`
 
-### 0x05 `removeObserver:`
+<br>
+
+### 0x05 总结
+
+通知要先 `addObserver:` 再 `postNotificationName:`， 才能正常接收通知并响应方法。因为需要先在 `addObserver:` 方法中存储 `observer` 和 `selector`，再通过 `postNotificationName:`方法取出 `observer` 和 `selector` 并执行。
+
+```Objective-C
+[[NSNotificationCenter defaultCenter] postNotificationName:Test_Notification_Name object:self];
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(actionTestNotifition:) name:Test_Notification_Name object:self];
+
+// 将不会有任何打印，也就是没监听到通知。
+```
+
+以如下代码为例，解释 `addObserver:` 方法中 `name` 和 `object` 是否有值时，监听通知：
+
+```Objective-C
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(actionTestNotifition:) name:nil object:nil];
+}
+
+- (void)actionTestNotifition:(NSNotification *)noti
+{
+    NSLog(@"%s --- %@", __func__, noti.name);
+    NSLog(@"%@--- %@", noti.object, noti.userInfo);
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    [[NSNotificationCenter defaultCenter] postNotificationName:Test_Notification_Name object:self.obj];
+    [[NSNotificationCenter defaultCenter] postNotificationName:Test_Notification_Name object:self];
+    [[NSNotificationCenter defaultCenter] postNotificationName:Test_Notification_Name object:nil userInfo:@{@"key": @"value"}];
+}
+```
+
+若 `addObserver:` 方法中 `name` 和 `object` 都为空，则会监听所有通知
+
+```Objective-C
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(actionTestNotifition:) name:nil object:nil];
+
+// 打印结果
+-[ViewController actionTestNotifition:] --- UIApplicationResumedEventsOnlyNotification
+<UIApplication: 0x7f9673604ac0>--- (null)
+
+-[ViewController actionTestNotifition:] --- UIDeviceOrientationDidChangeNotification
+<UIDevice: 0x600002eb6020>--- {
+    UIDeviceOrientationRotateAnimatedUserInfoKey = 1;
+}
+
+-[ViewController actionTestNotifition:] --- _UIApplicationDidRemoveDeactivationReasonNotification
+<UIApplication: 0x7f9673604ac0>--- {
+    "_UIApplicationDeactivationReasonUserInfoKey" = 12;
+}
+
+-[ViewController actionTestNotifition:] --- UIApplicationDidBecomeActiveNotification
+<UIApplication: 0x7f9673604ac0>--- (null)
+```
+
+若 `addObserver:` 方法中 `name` 为空，`object` 不为空，则会监听所有 `object` 相同的通知
+
+```Objective-C
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(actionTestNotifition:) name:nil object:self.obj];
+
+// 打印结果
+-[ViewController actionTestNotifition:] --- ZZ_Test_Notification_Name
+<NSObject: 0x6000038e0500>--- (null)
+```
+
+若 `addObserver:` 方法中 `name` 不为空，`object` 为空，则会监听所有 `name` 相同的通知，不管 `object` 是否有值
+
+```Objective-C
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(actionTestNotifition:) name:Test_Notification_Name object:nil];
+
+// 打印结果
+-[ViewController actionTestNotifition:] --- ZZ_Test_Notification_Name
+<NSObject: 0x600001890580>--- (null)
+
+-[ViewController actionTestNotifition:] --- ZZ_Test_Notification_Name
+<ViewController: 0x7f8900c07d90>--- (null)
+
+-[ViewController actionTestNotifition:] --- ZZ_Test_Notification_Name
+(null)--- {
+    key = value;
+}
+```
+
+若 `addObserver:` 方法中 `name` 和 `object` 都不为空，则会监听所有 `name` 和 `object` 都相同的通知
+
+```Objective-C
+[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(actionTestNotifition:) name:Test_Notification_Name object:self];
+
+// 打印结果
+-[ViewController actionTestNotifition:] --- ZZ_Test_Notification_Name
+<ViewController: 0x7fe77bc091f0>--- (null)
+```
+
+
+
+<br>
+
+### 0x06 `removeObserver:`
 
 ```Objective-C
 /**
@@ -844,6 +945,8 @@ typedef struct NCTbl {
 }
 ```
 
+**通知的移除是以 `observer` 为维度**，要遍历散列表中所有和 `observer` 相同的 `obs`，然后移除。
+
 - 若 `name` 和 `object` 都为空，则删除链表 `wildcard` 中和 `observer` 相同的 `obs`
 
 - 若 `name` 为空
@@ -860,10 +963,25 @@ typedef struct NCTbl {
 		
 	-  若 `object` 不为空，先以 `object` 为 key 取出对应的链表，然后删除链表中和 `observer` 相同的 `obs`
 
+	
+再引用一段官方文档中关于移动通知的话：
 
-**总结：**
+> Removing the observer stops it from receiving notifications.
+>
+> If you used `addObserverForName:object:queue:usingBlock:` to create your observer, you should call this method or `removeObserver:` before the system deallocates any object that `addObserverForName:object:queue:usingBlock:` specifies.
+>
+> If your app targets iOS 9.0 and later or macOS 10.11 and later, and you used `addObserver:selector:name:object:` to create your observer, you do not need to unregister the observer. If you forget or are unable to remove the observer, the system cleans up the next time it would have posted to it.
+>
+> When unregistering an observer, use the most specific detail possible. For example, if you used a name and object to register the observer, use `removeObserver:name:object:` with the name and object.
 
-- 通知要先 `addObserver:` 再 `postNotificationName:`， 才能正常接收通知并响应方法。因为需要先在 `addObserver:` 方法中存储 `observer` 和 `selector`，再从 `postNotificationName:` 取出 `observer` 和 `selector` 并执行。
+大致意思是：
+
+- 若是用 `addObserverForName:object:queue:usingBlock:` 方法监听通知，则需要自己手动调用 `removeObserver:` 来移除通知
+
+- 若是用 `addObserver:selector:name:object:` 方法监听通知，iOS 9 之后系统会自动在 `observer` 释放时移除通知
+- 若手动移除通知，则要尽可能的使用更具体的方法来移除 `removeObserver:name:object:` 。
+
+
 
 
 <br>
