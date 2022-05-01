@@ -684,7 +684,7 @@ typedef struct NCTbl {
 	- 由 `object` 找到对应的 `obs`，添加到数组中
 	
 	- 若 `object != nil`, 将 `nil` 作为 key 找到对应的 `obs` 并添加到数组中
-- 遍历数组中的 `obs` 并执行方法 `[o->observer performSelector: o->selector withObject: notification]`
+- 遍历数组中的 `obs` 并执行方法 `[o->observer performSelector:o->selector withObject:notification]`
 - 释放 `Notification`
 
 <br>
@@ -981,10 +981,117 @@ typedef struct NCTbl {
 - 若是用 `addObserver:selector:name:object:` 方法监听通知，iOS 9 之后系统会在 `observer` 释放时自动移除通知
 - 若手动移除通知，则要尽可能的使用更具体的方法来移除 `removeObserver:name:object:` 。
 
+<br>
 
+### 0x07 `GSNotificationObserver`
+
+`NSNotificationCenter` 还有个添加监听通知方法 `addObserverForName:object:queue:usingBlock:`。此方法可以实现**在收到通知后在指定线程中响应**。
+
+`addObserverForName:object:queue:usingBlock:` 的具体实现如下：
+
+```Objective-C
+/**
+ * <p>Returns a new observer added to the notification center, in order to
+ * observe the given notification name posted by an object or any object (if
+ * the object argument is nil).</p>
+ *
+ * <p>For the name and object arguments, the constraints and behavior described
+ * in -addObserver:name:selector:object: remain valid.</p>
+ *
+ * <p>For each notification received by the center, the observer will execute
+ * the notification block. If the queue is not nil, the notification block is
+ * wrapped in a NSOperation and scheduled in the queue, otherwise the block is
+ * executed immediately in the posting thread.</p>
+ */
+- (id)addObserverForName:(NSString *)name
+                   object:(id)object
+                    queue:(NSOperationQueue *)queue
+               usingBlock:(GSNotificationBlock)block
+{
+    GSNotificationObserver *observer = [[GSNotificationObserver alloc] initWithQueue:queue block:block];
+    
+    [self addObserver:observer selector:@selector(didReceiveNotification:) name:name object:object];
+    return observer;
+}
+```
+
+将 `queue` 和 `block` 包装在观察者 `GSNotificationObserver ` 中。通过上面分析可知当收到通知时会调用 `[o->observer performSelector:o->selector withObject:notification];`，也就是调用 `GSNotificationObserver` 的 `didReceiveNotification:` 方法。
+
+`GSNotificationObserver ` 的实现如下:
+
+```Objective-C
+@implementation GSNotificationObserver
+
+- (id)initWithQueue:(NSOperationQueue *)queue block:(GSNotificationBlock)block
+{
+    self = [super init];
+    if (self == nil) return nil;
+    
+    ASSIGN(_queue, queue);
+    _block = Block_copy(block);
+    return self;
+}
+
+- (void) dealloc
+{
+    DESTROY(_queue);
+    Block_release(_block);
+    [super dealloc];
+}
+
+- (void)didReceiveNotification:(NSNotification *)notif
+{
+    if (_queue != nil)
+    {
+        GSNotificationBlockOperation *op = [[GSNotificationBlockOperation alloc] initWithNotification:notif block:_block];
+        // 添加到队列
+        [_queue addOperation: op];
+    }
+    else
+    {
+        CALL_BLOCK(_block, notif);
+    }
+}
+
+@end
+```
+
+在 `didReceiveNotification:` 方法中会将 `block` 传到在 `GSNotificationBlockOperation` 中，并添加到指定的队列中。`GSNotificationBlockOperation` 是继承自 `NSOperation` 的类。
+
+```Objective-C
+@implementation GSNotificationBlockOperation
+
+- (id)initWithNotification:(NSNotification *)notif block:(GSNotificationBlock)block
+{
+    self = [super init];
+    if (self == nil) return nil;
+    
+    ASSIGN(_notification, notif);
+    _block = Block_copy(block);
+    return self;   
+}
+
+- (void)dealloc
+{
+    DESTROY(_notification);
+    Block_release(_block);
+    [super dealloc];
+}
+
+// 自定义继承自 NSOperation 的类需重写 main 或 start 方法
+- (void)main
+{
+    CALL_BLOCK(_block, _notification);
+}
+
+@end
+```
+
+从代码可以看出是在接收通知之后，将 `block` 转到指定线程中。所以通知还是在 `postNotificationName:` 方法所在的线程收到的，并没有跨线程。
 
 
 <br>
+
 
 **Reference**
 
