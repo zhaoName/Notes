@@ -532,7 +532,7 @@ add_to_queue(NSNotificationQueueList *queue, NSNotification *notification, NSArr
 - 两者都会记录 `NSNotificationCenter`，并初始化两个双向链表 `_asapQueue `、`_idleQueue `
 
 - 通过 `defaultQueue` 得到的 `NSNotificationQueue` 对象都是链表的头结点
-- 通过 `initWithNotificationCenter` 得到将当前的 `NSNotificationQueue` 对象都是一个全新的，并会将其插入到单链表 `NotificationQueueList ` 中。
+- 通过 `initWithNotificationCenter` 得到的都是一个全新 `NSNotificationQueue` 对象，并会将其插入到单链表 `NotificationQueueList ` 中。
 
 <br>
 
@@ -750,6 +750,8 @@ BOOL GSPrivateNotifyMore(NSString *mode)
     return NO;
 }
 ```
+
+![](../Images/iOS/NSNotification/NSNotification_0201.png)
 
 <br>
 
