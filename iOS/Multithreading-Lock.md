@@ -1,5 +1,5 @@
 
-# GCD - Lock
+# iOS中各种锁
 
 <br>
 
@@ -7,7 +7,7 @@
 
 下面以卖票为例，总共有15张票，3个窗口一起买票
 
-```
+```Objective-C
 - (void)ticket
 {
     self.totalTicketCount = 15;
@@ -64,11 +64,13 @@
 
 下面来介绍 iOS 中常用的锁。
 
+<br>
+
 ## 一、`OSSpinLock`
 
 `OSSpinLock `自旋锁，等待锁的线程会处于忙等 (busy-wait) 状态，一直占用着 CPU 资源。
 
-```
+```Objective-C
 #import <libkern/OSAtomic.h>
 
 // 初始化
@@ -92,13 +94,14 @@ self.spinLock = OS_SPINLOCK_INIT;
 
 具体来说就是当一个优先级比较低的线程已获得锁并访问共享资源，同时还有一个优先级较高的线程也尝试获得这个锁访问共享资源。低优先级线程无法与高优先级线程争夺 CPU 时间，CPU 会一直调用高优先级的线程，但锁已被低优先级占用，执行到加锁代码就会暂停。这样就会导致任务迟迟无法完成，低优先级线程中的锁也无法释放，线程卡死。
 
+<br>
 
 ## 二、`os_unfair_lock`
 
 
 `os_unfair_lock`是 iOS10 之后推出替代`OSSpinLock`的锁。从底层调用看，等待`os_unfair_lock`锁的线程会处于休眠状态，并非忙等。使用方式和`OSSpinLock`类似
 
-```
+```Objective-C
 #import <os/lock.h>
 
 self.unfairLock = OS_UNFAIR_LOCK_INIT;
@@ -117,6 +120,7 @@ self.unfairLock = OS_UNFAIR_LOCK_INIT;
 }
 ```
 
+<br>
 
 ## 三、`pthread_mutex`
 
@@ -125,7 +129,7 @@ self.unfairLock = OS_UNFAIR_LOCK_INIT;
 
 ### 0x01 常规使用
 
-```
+```Objective-C
 #import <pthread.h>
 
 // 初始化 pthread_mutex 属性
@@ -158,7 +162,7 @@ pthread_mutex_init(&_mutex, &mutexattr);
 
 `pthread_mutex`有个类型为`PTHREAD_MUTEX_RECURSIVE`，在解释前我们先看段代码
 
-```
+```Objective-C
 - (void)ticket
 { 
     // 初始化 pthread_mutex 属性
@@ -188,7 +192,7 @@ pthread_mutex_init(&_mutex, &mutexattr);
 
 递归锁：允许同一线程对一把锁进行重复加锁。
 
-```
+```Objective-C
 // pthread_mutexattr_settype(&_mutexattr, PTHREAD_MUTEX_NORMAL);
 
 pthread_mutexattr_settype(&_mutexattr, PTHREAD_MUTEX_RECURSIVE);
@@ -206,7 +210,7 @@ pthread_mutexattr_settype(&_mutexattr, PTHREAD_MUTEX_RECURSIVE);
 
 > 条件变量是利用线程间共享的全局变量进行同步的一种机制，主要包括两个动作：一个线程等待"条件变量的条件成立"而挂起；另一个线程使"条件成立"（给出条件成立信号）。为了防止竞争，条件变量的使用总是和一个互斥锁结合在一起。
 
-```
+```Objective-C
 - (void)ticket
 {   
     // 初始化 pthread_mutex 属性
@@ -261,7 +265,7 @@ pthread_mutexattr_settype(&_mutexattr, PTHREAD_MUTEX_RECURSIVE);
 
 当然最后不要忘记销毁
 
-```
+```Objective-C
 - (void)dealloc
 {
     pthread_cond_destroy(&_cond);
@@ -270,12 +274,14 @@ pthread_mutexattr_settype(&_mutexattr, PTHREAD_MUTEX_RECURSIVE);
 }
 ```
 
+<br>
+
 ### 四、`NSLock`
 
 
 `NSLock`是对`PTHREAD_MUTEX_ERRORCHECK 类型的``pthread_mutex`的封装。遵守`NSLocking`协议。
 
-```
+```Objective-C
 // NSLock.m
 
 pthread_mutexattr_init(&attr_reporting);
@@ -294,7 +300,7 @@ pthread_mutexattr_settype(&attr_reporting, PTHREAD_MUTEX_ERRORCHECK);
 
 用法很简单
 
-```
+```Objective-C
 self.lock = [[NSLock alloc] init];
 
 - (void)saleTicket
@@ -310,11 +316,13 @@ self.lock = [[NSLock alloc] init];
 }
 ```
 
+<br>
+
 ## 五、`NSRecursiveLock `
 
 `NSRecursiveLock `是对`PTHREAD_MUTEX_ERRORCHECK 类型的``pthread_mutex`的封装。遵守`NSLocking`协议。
 
-```
+```Objective-C
 // NSLock.m
 
 pthread_mutexattr_init(&attr_recursive);
@@ -333,7 +341,7 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 
 用法很简单 和`NSLock`很相似。
 
-```
+```Objective-C
 - (void)ticket
 {
     self.recursiveLock = [[NSRecursiveLock alloc] init];
@@ -357,12 +365,13 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 ...
 ```
 
+<br>
 
 ## 六、`NSCondition`
 
 `NSCondition`是对`pthread_mutex`和`cond`的封装。
 
-```
+```Objective-C
 // NSLock.m
 
 - (id) init
@@ -395,7 +404,7 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 }
 ```
 
-```
+```Objective-C
 - (void)addObject
 {
     NSLog(@"addObject---begin");
@@ -421,13 +430,14 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 }
 ```
 
+<br>
 
 ## 七、`NSConditionLock`
 
 
 `NSConditionLock`是对`NSCondition`的进一步封装，可以设置具体的条件值。
 
-```
+```Objective-C
 - (id)init
 {
 	return [self initWithCondition:0];
@@ -475,7 +485,7 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 
 `NSConditionLock `能让线程按顺序执行。
 
-```
+```Objective-C
 - (void)ticket
 {
     self.condLock = [[NSConditionLock alloc] init];
@@ -525,6 +535,7 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 2019-07-20 00:16:30.072612+0800 GCD-Lock[15461:968971] -[ViewController thread3]----<NSThread: 0x600001cad500>{number = 5, name = (null)}
 ```
 
+<br>
 
 ## 八、`dispatch_semaphore_t`
 
@@ -533,7 +544,7 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 
 - 简单源码解析
 
-```
+```Objective-C
 // libdispatch   semaphore.c
 
 // 返回 0 表示成功，返回非 0 表示超时
@@ -568,7 +579,7 @@ intptr_t dispatch_semaphore_signal(dispatch_semaphore_t dsema)
 
 - 用法
 
-```
+```Objective-C
 self.semaphore =  dispatch_semaphore_create(1);
 
 - (void)saleTicket
@@ -592,6 +603,8 @@ self.semaphore =  dispatch_semaphore_create(1);
 ...
 ```
 
+<br>
+
 ## 九、`@synchronized`
 
 
@@ -599,7 +612,7 @@ self.semaphore =  dispatch_semaphore_create(1);
 
  - 用法
 
-```
+```Objective-C
 - (void)saleTicket
 {
     @synchronized (self) {
@@ -618,7 +631,7 @@ self.semaphore =  dispatch_semaphore_create(1);
 
 ![](../Images/iOS/GCD-Lock/GCD_images0202.png)
 
-```
+```Objective-C
 // objc4-750  objc-sync.mm
 
 // Begin synchronizing on 'obj'. 
@@ -666,12 +679,13 @@ int objc_sync_exit(id obj)
 }
 ```
 
+<br>
 
 ## 十、`atomic`
 
 `atomic`用于保证属性`setter`、`getter`的原子性操作，相当于在`getter`和`setter`内部加了线程同步的锁。
 
-```
+```Objective-C
 // objc4-750 objc-accessors.mm
 static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t offset, bool atomic, bool copy, bool mutableCopy)
 {
@@ -694,9 +708,6 @@ static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t o
 
 且一个项目来说会声明很多属性，若每个属性都是`atomic`的，性能太低。所以一般不使用`atomic`，而是在需要保证线程安全时直接加锁。
 
-
-<br>
-
 <br>
 
 线程安全不只是在访问同一变量上，还可能会多线程读写同一文件。有一种读写安全方案 - 多读单写。
@@ -709,10 +720,12 @@ static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t o
 
 下面介绍两种常用的读写安全锁。
 
+<br>
+
 ## 十一、`pthread_rwlock_t`
 
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     // 初始化
@@ -766,11 +779,12 @@ static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t o
 
 从打印时间来看`readFile `在并发执行，而`writeFile `在同步执行。
 
+<br>
 
 ## 十二、`dispatch_barrier_sync`
 
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
