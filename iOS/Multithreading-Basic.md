@@ -1,4 +1,4 @@
-# GCD - 基础
+# 多线程基础
 
 <br>
 
@@ -11,7 +11,7 @@
 
 `pthread` 是一套通用的多线程的`API`，可以在`Unix / Linux / Windows `等系统跨平台使用，使用 C 语言编写，需要程序员自己管理线程的生命周期，使用难度较大，我们在 iOS 开发中几乎不使用`pthread`。
 
-```
+```Objective-C
 #import <pthread.h>
 
 - (void)viewDidLoad {
@@ -41,7 +41,7 @@ void* testPThread(void * arg)
 
 `NSThread` 是苹果官方提供的，面向对象的多线程方案。使用起来比`pthread ` 更简单易用，可以直接操作线程对象。也需要程序员自己管理线程的生命周期。开发中偶尔使用 `NSThread`，我们最常用的是调用`[NSThread currentThread]`来显示当前的线程信息。
 
-``` 
+```Objective-C
 NSThread *thread = [[NSThread alloc] initWithBlock:^{
     NSLog(@"NSThread===%@", [NSThread currentThread]);
 }];
@@ -61,7 +61,7 @@ NSThread *thread = [[NSThread alloc] initWithBlock:^{
 
 - `dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)` 全局并发队列
 
-``` 
+```Objective-C
 dispatch_async(dispatch_get_global_queue(0, 0), ^{
     NSLog(@"GCD===%@", [NSThread currentThread]);
 });
@@ -75,7 +75,7 @@ dispatch_async(dispatch_get_global_queue(0, 0), ^{
 
 `NSOperation`也是苹果在 iOS4 之后推出的，基于`GCD`的、面向对象的多线程方案。它可以设置队列的最大并发数，还可以设置线程之间的依赖关系，方便控制执行顺序。但我们不会直接使用`NSOperation `，而是使用它的子类`NSBlockOperation`和`NSInvocationOperation`。还需要借助`NSOperationQueue `来开启新线程。
 
-```
+```Objective-C
 NSOperationQueue *opQueue = [[NSOperationQueue alloc] init];
 [opQueue addOperationWithBlock:^{
     NSLog(@"addOperationWithBlock===%@", [NSThread currentThread]);
@@ -96,6 +96,7 @@ NSOperationQueue *opQueue = [[NSOperationQueue alloc] init];
 2019-07-18 09:58:01.719724+0800 GCD[98567:1962591] addOperation===<NSThread: 0x600001d40d40>{number = 3, name = (null)}
 ```
 
+<br>
 
 ## 二、同步、异步、串行、并发
 
@@ -112,7 +113,7 @@ NSOperationQueue *opQueue = [[NSOperationQueue alloc] init];
 
 ### 0x01 同步 串行
 
-```
+```Objective-C
 dispatch_queue_t serialQueue = dispatch_queue_create("SyncAndSerial", DISPATCH_QUEUE_SERIAL);
 dispatch_sync(serialQueue, ^{
     NSLog(@"任务1===%@", [NSThread currentThread]);
@@ -135,7 +136,7 @@ dispatch_sync(serialQueue, ^{
 
 ### 0x02 同步 并发
 
-```
+```Objective-C
 dispatch_queue_t concurrentQueue = dispatch_queue_create("SyncAndConcurrent", DISPATCH_QUEUE_CONCURRENT);
 dispatch_sync(concurrentQueue, ^{
     NSLog(@"任务4===%@", [NSThread currentThread]);
@@ -159,7 +160,7 @@ dispatch_sync(concurrentQueue, ^{
 
 ### 0x03 同步 主队列
 
-```
+```Objective-C
 dispatch_queue_t concurrentQueue = dispatch_queue_create("SyncAndConcurrent", DISPATCH_QUEUE_CONCURRENT);
 dispatch_async(concurrentQueue, ^{
     dispatch_sync(dispatch_get_main_queue(), ^{
@@ -184,7 +185,7 @@ dispatch_async(concurrentQueue, ^{
 
 ### 0x04 异步 串行
 
-```
+```Objective-C
 dispatch_queue_t serialQueue = dispatch_queue_create("SyncAndSerial", DISPATCH_QUEUE_SERIAL);
 dispatch_async(serialQueue, ^{
     NSLog(@"任务1===%@", [NSThread currentThread]);
@@ -206,7 +207,7 @@ dispatch_async(serialQueue, ^{
 
 ### 0x05 异步 并发
 
-```
+```Objective-C
 dispatch_queue_t concurrentQueue = dispatch_queue_create("SyncAndConcurrent", DISPATCH_QUEUE_CONCURRENT);
 for (int i=0; i<10; i++) {
     dispatch_async(concurrentQueue, ^{
@@ -231,7 +232,7 @@ for (int i=0; i<10; i++) {
 
 ### 0x06 异步 主队列
 
-```
+```Objective-C
 dispatch_async(dispatch_get_main_queue(), ^{
     NSLog(@"任务1===%@", [NSThread currentThread]);
 });
@@ -251,6 +252,8 @@ dispatch_async(dispatch_get_main_queue(), ^{
 异步 主队列不会开启新线程。
 
 ![](../Images/iOS/GCD-Basic/GCD_images0101.png)
+
+<br>
 
 ## 三、死锁
 
