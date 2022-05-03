@@ -46,7 +46,7 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 <br>
 
-## 二、KCV设置原理
+## 二、KCV设值原理
 
 官方文档中 [Search Pattern for the Basic Setter](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueCoding/SearchImplementation.html) 中给出`setValue:forKey:`的方法查找顺序
 
@@ -173,6 +173,12 @@ The default implementation of valueForKey:, given a key parameter as input, carr
 
 
 <br>
+
+**Reference:**
+
+- [About Key-Value Coding](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueCoding/index.html)
+
 写于2019-04-17
+
 <br>
 
