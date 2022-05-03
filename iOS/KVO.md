@@ -9,7 +9,7 @@
 
 - 通过`setValue:forKey:`或`setValue:forKeyPath:`设置新值
 
-上面两种方法都可触发`KVO`，实现属性值的监听。本文测试工程中只用第一种方法触发`KVO`。关于`KVC`触发`KVO`可参考[这里](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/KVC.md)
+上面两种方法都可触发`KVO`，实现属性值的监听。本文测试工程中只用第一种方法触发`KVO`。关于`KVC`触发`KVO`可参考[这里](https://github.com/zhaoName/Notes/blob/master/iOS/KVC.md)
 
 
 ## 一、准备工作
@@ -17,7 +17,7 @@
 - 创建名为`KVO`的工程，新建`KVOPerson`类
 
 
-```
+```Objective-C
 // KVOPerson.h
 @property (nonatomic, assign) NSInteger age;
 
@@ -29,10 +29,9 @@
 }
 ```
 
-- `ViewController`
+`ViewController` 中代码如下：
 
-
-```
+```Objective-C
 // ViewController.m
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -63,18 +62,20 @@
 }
 ```
 
+<br>
+
 ## 二、猜测
 
 - 执行上述工程，可得到如下打印
 
-```
+```Objective-C
 2019-04-15 22:58:43.904011+0800 KVO[61199:5633209] 当前Person:<KVOPerson: 0x60000283a290>, age:10
 2019-04-15 22:58:43.904176+0800 KVO[61199:5633209] 当前Person:<KVOPerson: 0x60000283a2b0>, age:20
 ```
 
 - 点击屏幕，触发`KVO` 打印如下
 
-```
+```Objective-C
 2019-04-15 22:58:43.904673+0800 KVO[61199:5633209] 当前Person:<KVOPerson: 0x60000283a290>, age:11
 2019-04-15 22:58:43.904922+0800 KVO[61199:5633209] <KVOPerson: 0x60000283a290>的age属性值发送变动:{
     kind = 1;
@@ -90,6 +91,7 @@
 
 **这里可以大胆猜测下，`KVO`的底层实现应该和类本身有关。**
 
+<br>
 
 ## 三、本质分析、验证
 
@@ -99,7 +101,7 @@
 
 下面来打印下`person`对象在添加`KVO`前后类对象的变化
 
-```
+```Objective-C
 NSLog(@"添加KVO之前类对象:%@ %@", object_getClass(self.person1), object_getClass(self.person2));
 NSLog(@"添加KVO之前person1的父类%@", [object_getClass(self.person1) superclass]);
 
@@ -132,7 +134,7 @@ NSLog(@"添加KVO之后person1的父类%@", [object_getClass(self.person1) super
 
 我们来验证下`person1`在添加`KVO`之后，调用`setAge:`方法其实调用`_NSSetIntValueAndNotify()`函数.
 
-```
+```Objective-C
 // 获取添加KVO前后调用setAge:的方法实现
 NSLog(@"添加KVO之前方法实现:%p %p",
           [self.person1 methodForSelector:@selector(setAge:)],
@@ -149,7 +151,7 @@ NSLog(@"添加KVO之后方法实现:%p %p",
 
 可以看到`person2`在添加前后调用`setAge:`的方法实现没有改变，但`person1`变了。在`touchesBegan:withEvent:`中添加断点，点击屏幕触发断点
 
-```
+```Objective-C
 (lldb) po (IMP)0x108d52460
 (KVO`-[KVOPerson setAge:] at KVOPerson.m:13)
 
@@ -161,7 +163,7 @@ NSLog(@"添加KVO之后方法实现:%p %p",
 
 细心的你可能会发现`_NSSetLongLongValueAndNotify()`函数中的`LongLong`对应着声明`age`属性时使用的`NSInteger`类型，意思就是若你声明个`NSString`类型的属性，那就会调用`_NSSetObjectValueAndNotify()`函数等。
 
-```
+```Objective-C
 $ cd ~/Library/Developer/Xcode/iOS DeviceSupport/12.2 (16E227)/Symbols/System/Library/Frameworks/Foundation.framework
 
 $ nm Foundation | grep ValueAndNotify
@@ -189,7 +191,7 @@ $ nm Foundation | grep ValueAndNotify
 
 从流程图中到`NSKVONotifying_KVOPerson`中有四个对象方法，下面来证明下
 
-```
+```Objective-C
 // 打印某个类对象中的全部对象方法
 - (void)printfInstanceMethod:(Class)cls
 {
@@ -218,7 +220,7 @@ $ nm Foundation | grep ValueAndNotify
 
 由于`_NSSetIntValueAndNotify()`是`Foundation`框架下的函数，所以我们不能看到其内部实现。在这只是写`NSKVONotifying_KVOPerson`的伪代码
 
-```
+```Objective-C
 // NSKVONotifying_KVOPerson.m
 
 - (Class)class
@@ -248,6 +250,8 @@ void _NSSetLongLongValueAndNotify()
 }
 ```
 
+<br>
+
 ## 四、面试题
 
 ### 0x01 KVO 本质
@@ -272,5 +276,14 @@ void _NSSetLongLongValueAndNotify()
 - 手动调用`willChangeValueForKey:`和`didChangeValueForKey:`方法就可手动触发`KVO`
 
 <br>
+
+**Reference**
+
+- [Introduction to Key-Value Observing Programming Guide
+](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueObserving/KeyValueObserving.html)
+
+
 写于2019-04-15 完成于2019-04-17
+
+
 <br>
