@@ -188,6 +188,7 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 
 ### 0x01 `NSOperation` 和 `NSOperationQueue` 配合使用
 
+添加到主队列中的`operation`都会放到主线程中执行，添加到自定义队列中的 `operation` 都是在子线程中执行，且默认是并发执行。
 
 ```Objective-C
 - (void)addOperationToQueue
@@ -218,7 +219,7 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 
 ```
 
-添加到队列的
+打印结果如下：
 
 ```Objective-C
 2022-05-03 23:04:34.308751+0800 ZZFoundation[7284:3885668] operationTask1---<NSThread: 0x600002e5cdc0>{number = 5, name = (null)}
@@ -270,7 +271,63 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 2022-05-03 23:03:47.526808+0800 ZZFoundation[7259:3884823] addOperationWithBlock3---<NSThread: 0x600001ea6a40>{number = 3, name = (null)}
 ```
 
-### 0x02 操作依赖
+### 0x02 `maxConcurrentOperationCount`
+
+`maxConcurrentOperationCount`：做最大并发操作数，控制一个队列中可以有多少个`operation`并发执行。默认值为 `NSOperationQueueDefaultMaxConcurrentOperationCount ` 即 -1。这个值会根据系统来动态确定最大并发操作数。
+
+`maxConcurrentOperationCount = 1` 时，所有`operation`串行执行
+
+`maxConcurrentOperationCount > 1`时，`operation`并发执行，当然这个值不能超过系统限定，过大系统会自动调整 `min(系统限定值, 自定义值)`
+
+```Obejctive-C
+- (void)setMaxConcurrentOperationCount
+{
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    queue.maxConcurrentOperationCount = 2;
+    
+    [queue addOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"maxConcurrentOperationCount1---%@", [NSThread currentThread]);
+        }
+    }];
+    
+    [queue addOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"maxConcurrentOperationCount2---%@", [NSThread currentThread]);
+        }
+    }];
+    
+    [queue addOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"maxConcurrentOperationCount3---%@", [NSThread currentThread]);
+        }
+    }];
+    [queue addOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"maxConcurrentOperationCount4---%@", [NSThread currentThread]);
+        }
+    }];
+}
+```
+
+打印结果如下：这样也能看出 `addOperation:` 默认 `operation` 是 FIFO（若未添加依赖关系）
+
+```Objective-C
+2022-05-04 00:09:12.307023+0800 ZZFoundation[8616:3925530] maxConcurrentOperationCount2---<NSThread: 0x6000016d7a80>{number = 6, name = (null)}
+2022-05-04 00:09:12.307018+0800 ZZFoundation[8616:3925527] maxConcurrentOperationCount1---<NSThread: 0x600001690d40>{number = 7, name = (null)}
+2022-05-04 00:09:14.310257+0800 ZZFoundation[8616:3925527] maxConcurrentOperationCount1---<NSThread: 0x600001690d40>{number = 7, name = (null)}
+2022-05-04 00:09:14.310272+0800 ZZFoundation[8616:3925530] maxConcurrentOperationCount2---<NSThread: 0x6000016d7a80>{number = 6, name = (null)}
+2022-05-04 00:09:16.310826+0800 ZZFoundation[8616:3925526] maxConcurrentOperationCount3---<NSThread: 0x6000016cfbc0>{number = 5, name = (null)}
+2022-05-04 00:09:16.310826+0800 ZZFoundation[8616:3925527] maxConcurrentOperationCount4---<NSThread: 0x600001690d40>{number = 7, name = (null)}
+2022-05-04 00:09:18.316436+0800 ZZFoundation[8616:3925526] maxConcurrentOperationCount3---<NSThread: 0x6000016cfbc0>{number = 5, name = (null)}
+2022-05-04 00:09:18.316436+0800 ZZFoundation[8616:3925527] maxConcurrentOperationCount4---<NSThread: 0x600001690d40>{number = 7, name = (null)}
+```
+
+### 0x03 操作依赖
 
 操作依赖可以控制操作的执行顺序。 默认情况下，具有依赖关系的操作对象在其所依赖的所有操作对象都完成执行之前不会被视为准备就绪状态。 然而，一旦最后一个所依赖的操作完成，操作对象就准备好并能够执行。
 
@@ -373,109 +430,158 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 2022-05-03 23:57:06.807139+0800 ZZFoundation[8341:3917348] ope4---<NSThread: 0x600003309100>{number = 4, name = (null)}
 ```
 
-<br />
+### 0x04 `queuePriority`
 
-**4、maxConcurrentOperationCount**
+`NSOperation` 提供了`queuePriority`（优先级）属性，`queuePriority` 属性适用于同一操作队列中的操作，不适用于不同操作队列中的操作。默认情况下，所有新创建的操作对象优先级都是`NSOperationQueuePriorityNormal`。
 
+```Objective-C
+typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
+	NSOperationQueuePriorityVeryLow = -8L,
+	NSOperationQueuePriorityLow = -4L,
+	NSOperationQueuePriorityNormal = 0,
+	NSOperationQueuePriorityHigh = 4,
+	NSOperationQueuePriorityVeryHigh = 8
+};
 ```
-// maxConcurrentOperationCount，叫做最大并发操作数 控制一个队列中可以有多少个operation并发执行
-// maxConcurrentOperationCount 默认为NSOperationQueueDefaultMaxConcurrentOperationCount即-1，即不限制 可并发
-// maxConcurrentOperationCount = 1时，所有operation串行执行
-// maxConcurrentOperationCount > 1时，operation并发执行，当然这个值不能超过系统限定，过大系统会自动调整min(系统限定值, 自定义值)
- 1. (void)setMaxConcurrentOperationCount
-{
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    //queue.maxConcurrentOperationCount = 1;
-    queue.maxConcurrentOperationCount = 2;
-    
-    [queue addOperationWithBlock:^{
-        for (int i=0; i<2; i++) {
-            sleep(2);
-            NSLog(@"operationTask13---%@", [NSThread currentThread]);
-        }
-    }];
-    
-    [queue addOperationWithBlock:^{
-        for (int i=0; i<2; i++) {
-            sleep(2);
-            NSLog(@"operationTask14---%@", [NSThread currentThread]);
-        }
-    }];
-    
-    [queue addOperationWithBlock:^{
-        for (int i=0; i<2; i++) {
-            sleep(2);
-            NSLog(@"operationTask15---%@", [NSThread currentThread]);
-        }
-    }];
-    [queue addOperationWithBlock:^{
-        for (int i=0; i<2; i++) {
-            sleep(2);
-            NSLog(@"operationTask16---%@", [NSThread currentThread]);
-        }
-    }];
-}
-```
-![这里写图片描述](https://img-blog.csdnimg.cn/img_convert/bd27caafdee0b3ee9b810b58478d76bf.png)
-<br />
 
-**5、queuePriority**
 
-```
-// 高优先级的线程并不一定会比低优先级的线程先执行,并且优先级多用于串行队列
-// 想要高优先级的operation先被调度 那你要有足够多的operation
+```Objective-C
 - (void)setQueuePriority
 {
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     queue.maxConcurrentOperationCount = 2;
     
-    for (int i=0; i<20; i++)
+    for (int i=0; i<10; i++)
     {
         NSBlockOperation *op = [NSBlockOperation blockOperationWithBlock:^{
-            for (int j=0; j<2; j++) {
-                sleep(2);
-                NSLog(@"operationTask%d---%@",i, [NSThread currentThread]);
-            }
+            sleep(2);
+            NSLog(@"operationTask%d---%@", i, [NSThread currentThread]);
         }];
-        op.queuePriority = i > 10 ? (i%2==0 ? NSOperationQueuePriorityVeryLow : NSOperationQueuePriorityVeryHigh) : NSOperationQueuePriorityNormal;
+        op.queuePriority = i < 5 ? NSOperationQueuePriorityVeryLow : NSOperationQueuePriorityVeryHigh;
         [queue addOperation:op];
     }
 }
 ```
 
-![这里写图片描述](https://img-blog.csdnimg.cn/img_convert/058b434c6ce1aadcbace8dfb5937e6c5.png)
+打印结果如下：
+
+```Objective-C
+2022-05-04 10:19:24.525595+0800 ZZFoundation[17996:4142112] operationTask0---<NSThread: 0x6000027a6c40>{number = 4, name = (null)}
+2022-05-04 10:19:24.525595+0800 ZZFoundation[17996:4142111] operationTask1---<NSThread: 0x6000027d04c0>{number = 6, name = (null)}
+2022-05-04 10:19:26.530875+0800 ZZFoundation[17996:4142110] operationTask5---<NSThread: 0x6000027a2380>{number = 3, name = (null)}
+2022-05-04 10:19:26.530874+0800 ZZFoundation[17996:4142112] operationTask6---<NSThread: 0x6000027a6c40>{number = 4, name = (null)}
+2022-05-04 10:19:28.532884+0800 ZZFoundation[17996:4142112] operationTask8---<NSThread: 0x6000027a6c40>{number = 4, name = (null)}
+2022-05-04 10:19:28.532912+0800 ZZFoundation[17996:4142113] operationTask7---<NSThread: 0x6000027d94c0>{number = 7, name = (null)}
+2022-05-04 10:19:30.533368+0800 ZZFoundation[17996:4142112] operationTask2---<NSThread: 0x6000027a6c40>{number = 4, name = (null)}
+2022-05-04 10:19:30.533368+0800 ZZFoundation[17996:4142110] operationTask9---<NSThread: 0x6000027a2380>{number = 3, name = (null)}
+2022-05-04 10:19:32.538526+0800 ZZFoundation[17996:4142112] operationTask3---<NSThread: 0x6000027a6c40>{number = 4, name = (null)}
+2022-05-04 10:19:32.538557+0800 ZZFoundation[17996:4142113] operationTask4---<NSThread: 0x6000027d94c0>{number = 7, name = (null)}
+```
+
+### 0x05 依赖和优先级
+
+当一个操作的所有依赖都已经完成时，操作对象通常会进入准备就绪状态，等待执行。
+
+`queuePriority` 属性决定了进入准备就绪状态下的操作之间的开始执行顺序。并且，优先级不能取代依赖关系。
+
+如果一个队列中既包含高优先级操作，又包含低优先级操作，并且两个操作都已经准备就绪，那么队列先执行高优先级操作。
+
+如果，一个队列中既包含了准备就绪状态的操作，又包含了未准备就绪的操作，未准备就绪的操作优先级比准备就绪的操作优先级高。那么，虽然准备就绪的操作优先级低，也会优先执行。优先级不能取代依赖关系。如果要控制操作间的启动顺序，则必须使用依赖关系。
+
+
+```Objective-C
+- (void)operationAddDependency
+{
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    queue.maxConcurrentOperationCount = 1;
+    
+    NSBlockOperation *ope1 = [NSBlockOperation blockOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"ope1---%@", [NSThread currentThread]);
+        }
+    }];
+    NSBlockOperation *ope2 = [NSBlockOperation blockOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"ope2---%@", [NSThread currentThread]);
+        }
+        
+    }];
+    NSBlockOperation *ope3 = [NSBlockOperation blockOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"ope3---%@", [NSThread currentThread]);
+        }
+    }];
+    NSBlockOperation *ope4 = [NSBlockOperation blockOperationWithBlock:^{
+        for (int i=0; i<2; i++) {
+            sleep(2);
+            NSLog(@"ope4---%@", [NSThread currentThread]);
+        }
+    }];
+    
+    // 先添加依赖关系
+    [ope2 addDependency:ope1];
+    [ope3 addDependency:ope1];
+    
+    ope2.queuePriority = NSOperationQueuePriorityLow;
+    ope3.queuePriority = NSOperationQueuePriorityHigh;
+    
+    [ope4 addDependency:ope2];
+    [ope4 addDependency:ope3];
+    
+    [queue addOperation:ope4];
+    [queue addOperation:ope3];
+    [queue addOperation:ope2];
+    [queue addOperation:ope1];
+}
+```
+
+打印结果如下：
+
+```Objective-C
+2022-05-04 10:33:43.747564+0800 ZZFoundation[18316:4152159] ope1---<NSThread: 0x600003989f00>{number = 4, name = (null)}
+2022-05-04 10:33:45.750100+0800 ZZFoundation[18316:4152159] ope1---<NSThread: 0x600003989f00>{number = 4, name = (null)}
+2022-05-04 10:33:47.754802+0800 ZZFoundation[18316:4152161] ope3---<NSThread: 0x6000039c8940>{number = 5, name = (null)}
+2022-05-04 10:33:49.760038+0800 ZZFoundation[18316:4152161] ope3---<NSThread: 0x6000039c8940>{number = 5, name = (null)}
+2022-05-04 10:33:51.764869+0800 ZZFoundation[18316:4152159] ope2---<NSThread: 0x600003989f00>{number = 4, name = (null)}
+2022-05-04 10:33:53.767601+0800 ZZFoundation[18316:4152159] ope2---<NSThread: 0x600003989f00>{number = 4, name = (null)}
+2022-05-04 10:33:55.773155+0800 ZZFoundation[18316:4152159] ope4---<NSThread: 0x600003989f00>{number = 4, name = (null)}
+2022-05-04 10:33:57.776049+0800 ZZFoundation[18316:4152159] ope4---<NSThread: 0x600003989f00>{number = 4, name = (null)}
+```
+
+- 没有依赖关系的是 `op1`，先执行。
+
+- `op2`、`op3` 都依赖 `op1`，当 `op1` 执行完成后，`op2`、`op3`进入准备就绪状态。因为 `op3` 的优先级比 `op2` 高，所以 `op3` 先执行。
+
+- `op4` 依赖于 `op2`、`op3`。当 `op2`、`op3` 都执行完成，`op4`才会执行。
 
 <br />
 
-**6、线程之前的通信**
+### 0x06 线程之前的通信
+
+如子线程中下载图片 完成后回到主线程刷新界面。
 
 ```
-// 如子线程中下载图片 完成后回到主线程刷新界面
 - (void)threadCommunication
 {
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     
     NSBlockOperation *ope1 = [NSBlockOperation blockOperationWithBlock:^{
-        for (int i = 0; i < 2; i++) {
-            [NSThread sleepForTimeInterval:2];
-            NSLog(@"子线程下载图片1---%@", [NSThread currentThread]);
-        }
+        [NSThread sleepForTimeInterval:2];
+        NSLog(@"子线程下载图片1---%@", [NSThread currentThread]);
     }];
     
     NSBlockOperation *ope2 = [NSBlockOperation blockOperationWithBlock:^{
-        for (int i = 0; i < 2; i++) {
-            [NSThread sleepForTimeInterval:2];
-            NSLog(@"子线程下载图片2---%@", [NSThread currentThread]);
-        }
+        [NSThread sleepForTimeInterval:2];
+        NSLog(@"子线程下载图片2---%@", [NSThread currentThread]);
     }];
     NSBlockOperation *ope3 = [NSBlockOperation blockOperationWithBlock:^{
-        for (int i = 0; i < 2; i++) {
-            [NSThread sleepForTimeInterval:2];
-            NSLog(@"回到主线程 合并图片---%@", [NSThread currentThread]);
-        }
+        [NSThread sleepForTimeInterval:2];
+        NSLog(@"回到主线程 合并图片---%@", [NSThread currentThread]);
     }];
     // 不同队列的operation可以相互依赖
-    // 不同队列之间的operation也可以添加依赖，但不能循环依赖
     [ope3 addDependency:ope2];
     [ope3 addDependency:ope1];
     
@@ -486,11 +592,16 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
     [[NSOperationQueue mainQueue] addOperation:ope3];
 }
 ```
-![这里写图片描述](https://img-blog.csdnimg.cn/img_convert/ecc66af353e96f0bdd235d28c1215e70.png)
 
-<br />
+打印结果如下：
 
-**7、线程安全**
+```
+2022-05-04 10:39:27.272761+0800 ZZFoundation[18440:4156173] 子线程下载图片2---<NSThread: 0x6000005cdf40>{number = 5, name = (null)}
+2022-05-04 10:39:27.272761+0800 ZZFoundation[18440:4156170] 子线程下载图片1---<NSThread: 0x600000593b40>{number = 6, name = (null)}
+2022-05-04 10:39:29.274200+0800 ZZFoundation[18440:4156076] 回到主线程 合并图片---<NSThread: 0x6000005d0240>{number = 1, name = main}
+```
+
+### 0x07 线程安全
 
 涉及到多线程，肯定会想到线程安全，以保证数据的正确性。苹果提供了NSLock、@synchronized（这个东西耗性能，不提倡使用。苹果都不给代码自动补全）等线程锁来保证线程安全。下面引用常用的卖票的例子说明
 
@@ -540,57 +651,125 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 }
 ```
 
-![这里写图片描述](https://img-blog.csdnimg.cn/img_convert/b11841e8cde2bd54e76e6c6fa07d7cc3.png)
+打印结果如下：
 
+```
+2022-05-04 10:45:05.811493+0800 ZZFoundation[18592:4161534] 剩余票数:49 窗口:<NSThread: 0x600003df8c40>{number = 6, name = (null)}
+2022-05-04 10:45:06.313315+0800 ZZFoundation[18592:4161535] 剩余票数:48 窗口:<NSThread: 0x600003d83100>{number = 4, name = (null)}
+...
+2022-05-04 10:45:30.509002+0800 ZZFoundation[18592:4161534] 剩余票数:0 窗口:<NSThread: 0x600003df8c40>{number = 6, name = (null)}
+2022-05-04 10:45:30.509000+0800 ZZFoundation[18592:4161535] 所有车票都已出售
+2022-05-04 10:45:31.013914+0800 ZZFoundation[18592:4161534] 所有车票都已出售
+```
 
 <br>
 
+## 三、自定义 `NSOperation` 的子类
+
+首先引用官方文档上的一段话
+
+> The NSOperation class provides the basic logic to track the execution state of your operation but otherwise must be subclassed to do any real work. How you create your subclass depends on whether your operation is designed to execute concurrently or non-concurrently.
+
+大概意思是 `NSOperation` 提供一些跟踪执行状态基本的操作，但是如何创建子类，或者说创建子类要重写父类那些方法取决于你创建的 `operation` 是并发的还是非并发的。
+
+### 0x01 非并发的 `operation`
+
+当你创建的是非并发的 `operation` 时，只需重写 `main` 方法。
+
+> The default implementation of this method does nothing. You should override this method to perform the desired task. In your implementation, do not invoke super. This method will automatically execute within an autorelease pool provided by NSOperation, so you do not need to create your own autorelease pool block in your implementation.
+>
+> If you are implementing a concurrent operation, you are not required to override this method but may do so if you plan to call it from your custom start method.
+
+大概意思是：`main`方法默认不做任何操作，你可以重写此方法做你想要做的事。再此方法中不要调`super`,不用自己创建`autorelease pool `。但是要注意当前的 `operation` 是否被取消或正在执行。
+
+自定义继承自 `NSOperation` 的子类 `ZZNonConcurrentOperation`
+
+```Objective-C
+@interface ZZNonConcurrentOperation : NSOperation
+@end
+
+@implementation ZZNonConcurrentOperation
+
+- (void)main
+{
+    sleep(2);
+    NSLog(@"%s---%@", __func__, NSThread.currentThread);
+}
+
+@end
+```
+
+将自定义的 `operation` 添加到队列中，并用 KVO 观察 `finished` 属性。如下：
+
+```Objective-C
+- (void)nonconcurrentOperation
+{
+    ZZNonConcurrentOperation *ope = [[ZZNonConcurrentOperation alloc] init];
+    
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [queue addOperation:ope];
+    
+    [ope addObserver:self forKeyPath:@"finished" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:(__bridge void * _Nullable)(queue)];
+    NSLog(@"%@", queue.operations);
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context
+{
+    NSOperationQueue*queue = (__bridge NSOperationQueue *)(context);
+    NSOperation *ope = (NSOperation *)object;
+    NSLog(@"ope.isExecuting: %d", ope.isExecuting);
+    NSLog(@"queue.operations: %@", queue.operations);
+    NSLog(@"%@ -- %@", change[NSKeyValueChangeNewKey], change[NSKeyValueChangeOldKey]);
+}
+```
+
+自定义的 `operation` 执行完成后，`queue` 会将其从队列中移除，状态标记为已完成。
+
+```Objective-C
+2022-05-04 16:57:39.039656+0800 ZZFoundation[24841:4314448] (
+    "<ZZNonConcurrentOperation: 0x6000008c6b00>"
+)
+2022-05-04 16:57:41.041553+0800 ZZFoundation[24841:4314780] -[ZZNonConcurrentOperation main]---<NSThread: 0x6000021925c0>{number = 4, name = (null)}
+2022-05-04 16:57:41.041846+0800 ZZFoundation[24841:4314780] ope.isExecuting: 0
+2022-05-04 16:57:41.042060+0800 ZZFoundation[24841:4314780] queue.operations: (
+)
+2022-05-04 16:57:41.042229+0800 ZZFoundation[24841:4314780] 1 -- 0
+```
 
 
-<br>
+### 0x02 并发的 `operation`
 
-## 二、自定义的 `NSOperation`
 
-首先引用官方文档上NSOperation的Subclassing Notes
-
->The NSOperation class provides the basic logic to track the execution state of your operation but otherwise must be subclassed to do any real work. How you create your subclass depends on whether your operation is designed to execute concurrently or non-concurrently.
-
-大概意思是`NSOperation`提供一些跟踪执行状态基本的操作，但是如何创建子类，或者说创建子类要重写父类那些方法取决于你创建的operation是并发的还是非并发的。
-
-**1、非并发的operation**
-
-当你创建的是非并发的operation时，一般只需重写`main`方法。
->The default implementation of this method does nothing. You should override this method to perform the desired task. In your implementation, do not invoke super. This method will automatically execute within an autorelease pool provided by NSOperation, so you do not need to create your own autorelease pool block in your implementation.
-
->If you are implementing a concurrent operation, you are not required to override this method but may do so if you plan to call it from your custom start method.
-
-大概意思是：`main`方法默认不做任何操作，你可以重写此方法做你想要做的事。再此方法中不要调`super`,不用自己创建`autorelease pool `。但是要注意当前的operation是否被取消或正在执行。
-<br />
-
-**2、并发的operation**
-
-如果你需要一个并发的operation，则需要至少要重写`start` `asynchronous` `executing` `finished`四个方法。
+如果你需要一个并发的 `operation`，则需要至少要重写`start`、`asynchronous`、`executing`、`finished` 四个方法。
 
 `start`
 
-- 此方法默认实现更新operation的执行状态和调用`main`方法，这个方法还会执行一些检查来确保operation是否可以真正运行起来。如当operation被取消或已经完成，此方法只是返回而不调用`main`
+- 此方法默认实现更新 `operation` 的执行状态和调用 `main` 方法，这个方法还会执行一些检查来确保 `operation`是否可以真正运行起来。
+
+- 如当 `operation` 被取消或已经完成，此方法只是返回而不调用 `main`。若当前操作正在执行或尚未准备好执行，则此方法会引发 `NSInvalidArgumentException` 异常。
  
-- 如果正在实现一个并发队列，我们必须重写此方法，且在此方法中来initiate your operation。任何时候都不动能调`super`。还要为`isExecuting`和`isFinished`提供KVO通知。
-<br />
+- 如果正在实现一个并发队列，我们必须重写此方法，且在此方法中来 initiate your operation。任何时候都不动能调`super`。还要为 `isExecuting` 和 `isFinished` 提供 KVO 通知。
+
 
 `asynchronous`
 
-- 只读属性 默认是NO，即operation在当前线程中同步执行；当其为YES的时候表示operation当前线程中异步执行。
-<br />
+- 只读属性 默认是 `NO`，即`operation`在当前线程中同步执行；当其为`YES`的时候表示`operation`当前线程中异步执行。
 
-`executing`和`finished`
+`executing`
 
-- 只读属性，如果operation正在执行main task或operation已经完成，则返回YES否则为NO
+- 只读属性，如果 `operation` 正在执行 main task，则返回 `YES`，否则为 `NO`
 
-- 当实现一个并发的operation时，你必须重写此方法以便你清楚的知道operation的执行状态。在您的自定义实现中，只要操作对象的执行状态更改，就必须为isExecuting键路径生成KVO通知。
+- 当实现一个并发的 `operation` 时，你必须重写此方法以便你清楚的知道 `operation` 的执行状态。在您的自定义实现中，只要 `operation` 对象的 `executing ` 状态更改，就必须为 `isExecuting` 生成 KVO 通知。
 
-- 当你实现一个非并发的operation时，不需要重写此方法。
+`finished`
 
+- 若 `operation` 已完成 main task，则返回 `YES`，若 `operation` 正在执行或还没开始则返回 `NO`
+
+- 在实现并发操作对象时，您必须重写此属性的实现，以便可以自定义的 `operation` 返回 `finished ` 状态。在您的自定义实现中，每当您的 `operation` 对象的 `finished` 状态发生变化时，您都必须为 `isFinished` 生成 KVO 通知。
+
+```Objective-C
+
+```
 
 
 **三、NSOperation NSOperationQueue部分属性方法解读**
@@ -643,7 +822,8 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 - 对于排队等候的operation，在确认它已被取消并将其移至完成状态之前，队列必须仍然尝试执行operation。 
 
 - 对于已经执行的operation，操作对象本身必须检查取消操作并停止正在执行的操作，以便它可以移动到完成状态。 在这两种情况下，完成（或取消）的操作仍然有机会在从队列中移除之前执行`completeBlock`
-<br/>
+
+
 
 `@property(getter=isSuspended) BOOL suspended`
 
@@ -651,31 +831,21 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 
 - 由于暂停队列不会启动任何新操作，因此它不会删除当前正在排队并且未执行的任何操作（包括取消的操作）。
 
-<br/>
 
-
-
-1. `NSOperation` 是一个抽象的基类，不能直接使用它，可以使用系统提供的两个子类:`NSInvocationOperation`、`NSBlockOperation`，也可自定义继承自 `NSOperation ` 的类。
-
-2. `NSOperationQueue` 操作队列，系统提供两种队列：`mainQueue` 和自定义队列。`mainQueue`运行在主线程上，自定义队列运行在子线程上。
-
-3. 单独使用`NSOperation`时，默认是在当前线程中执行，不会开辟新的线程。有种例外当调用`NSBlockOperation`的`addExecutionBlock: `时，添加的block超过一定个数时operation会在子线程中执行。
-
-4. `NSOperation` 和 `NSOperationQueue` 配合使用就会开启新的线程。
-
-- 创建 operation， 将你要执行的耗时操作放在 `NSOperation` 代码块中
-
-- 创建操作队列，开启新的线程要用自定义的 queue：`[[NSOperationQueue alloc] init]`
-
-- 将创建 operation 加在 queue 中，系统就会自动将 operation 拿出来，开辟线程来执行耗时操作。
-
+<br>
 
 **Reference**：
+
+- [Threading Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/Introduction/Introduction.html)
+
+- [Concurrency Programming Guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ConcurrencyProgrammingGuide/Introduction/Introduction.html)
 
 - [NSOperation](https://developer.apple.com/documentation/foundation/nsoperation)
 
 - [NSOperationQueue](https://developer.apple.com/documentation/foundation/nsoperationqueue)
 
 - [iOS多线程：『NSOperation、NSOperationQueue』详尽总结](https://bujige.net/blog/iOS-Complete-learning-NSOperation.html)
+
+- [并发编程：API 及挑战](https://objccn.io/issue-2-1/)
 
 <br>

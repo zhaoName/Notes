@@ -60,7 +60,7 @@
 
 > 线程同步：即当有一个线程在对内存进行操作时，其他线程都不可以对这个内存地址进行操作，直到该线程完成操作， 其他线程才能对该内存地址进行操作，而其他线程又处于等待状态，实现线程同步的方法有很多，加锁就是其中一种。
 
-![](../Images/iOS/GCD-Lock/GCD_images0201.png)
+![](../Images/iOS/Multithreading/Lock_01.png)
 
 下面来介绍 iOS 中常用的锁。
 
@@ -629,7 +629,7 @@ self.semaphore =  dispatch_semaphore_create(1);
 
 在`@synchronized`出下断点，Xcode 进入汇编模式。可以开到`@synchronized`的底层实现以`objc_sync_enter`开始，以`objc_sync_exit`结束。
 
-![](../Images/iOS/GCD-Lock/GCD_images0202.png)
+![](../Images/iOS/Multithreading/Lock_02.png)
 
 ```Objective-C
 // objc4-750  objc-sync.mm
