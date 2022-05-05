@@ -738,28 +738,7 @@ typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
 2022-05-04 16:57:41.042229+0800 ZZFoundation[24841:4314780] 1 -- 0
 ```
 
-
-
-### 0x02 维护操作对象的状态
-
-操作对象在内部维护状态信息，以确定何时可以安全执行，并通知外部客户端操作生命周期的进展情况。自定义子类需维护此状态信息以确保正确执行代码中的操作。
-
-![](../Images/iOS/Multithreading/NSOperation_01.png)
-
-
-`isReady`
-
-`isReady` 表示此 `operation` 是否可以被执行。当操作准备好现在执行时，`ready` 属性值 `true`，如果仍然存在依赖于它的未完成操作，则包含值 `false`
-
-
-
-- 当 `operation` 还未执行时，比如说依赖其他 `operation` 正在等待的时候，此时调用 `cancel()` 方法时，会将 `isCancelled` 设置为 `true`，`isReady` 设置为 `true`。因为 `isReady` 为 `true` 了，因此也无需等待其依赖的 `operation` 执行完毕，会执行 `start()` 方法。自定义 `operation` 中 `start()` 的实现，需判断 `isCancelled` 是否为 `true`，为 `true` 就不执行 `mian()` 方法了，也就将取消掉了当前 `operation`
-
-- 对于已经执行的 `operation`，调用 `cancel()` 方法并不会将当前 `operation` 取消，它只会将 `isCancelled` 标记为 `true`。那么对于 `main()` 中的任务的取消需要我们手动根据 `isCancelled` 去取消。同时取消了任务后，还是需要将 `isFinished` 标记为 `true`。
-
-- `operation`在被取消后，除了简单退出之外，还需要将 `finished` 的值修改为`YES`，`executing` 的值改为 `NO`。即使是在 `start()` 方法中取消的 `operation`
-
-### 0x03 并发的 `operation`
+### 0x02 并发的 `operation`
 
 
 如果你需要一个并发的 `operation`，则需要至少要重写`start`、`asynchronous`、`executing`、`finished` 四个方法。
@@ -791,68 +770,48 @@ typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
 
 若还需要自定义操作的依赖性，则还需要重写 `ready` 属性，并为 `ready` 属性提供 KVO。
 
+
+### 0x03 维护操作对象的状态
+
+操作对象在内部维护状态信息，以确定何时可以安全执行，并通知外部客户端操作生命周期的进展情况。自定义子类需维护此状态信息以确保正确执行代码中的操作。
+
+![](../Images/iOS/Multithreading/NSOperation_01.png)
+
+
+`isReady`
+
+`isReady` 表示此 `operation` 是否可以被执行。当操作准备好现在执行时，`ready` 属性值 `true`，如果仍然存在依赖于它的未完成操作，此属性值值 `false`。
+
+若 `operation` 在等待其所依赖的操作完成时被取消，则会忽略依赖关系，直接进去准备就绪状态，以便操作队列快速将其从队列中移除。
+
+`isExecuting`
+
+`isExecuting` 表示 `operation` 是否正在执行。若重写了 `start` 方法，则必须重写此属性，并在 `operation` 的状态发生变化时生成 KVO 通知。
+
+`isFinished`
+
+`isFinished` 表示 `operation` 已成功完成，或已被取消且正在退出。在 `isFinished` 的值更改为 `true` 之前，操作对象不会清除依赖关系，操作队列也不会使操作出队。
+
+若重写了 `start` 方法，则必须重写 `isFinished` 属性，并在 `operation` 的状态发生变化时生成 KVO 通知。
+
+`isCancelled`
+
+`isCancelled` 表示 `operation` 是否已被取消。不需要为其生成 KVO 通知。
+
+
+### 0x04 响应取消
+
+- 当 `operation` 还未执行时，比如说依赖其他 `operation` 正在等待的时候，此时调用 `cancel` 方法时，会将 `isCancelled` 设置为 `true`，`isReady` 设置为 `true`。因为 `isReady` 为 `true` 了，也就无需等待其依赖的 `operation` 执行完毕，会执行 `start` 方法。自定义 `operation` 中 `start` 的实现，需判断 `isCancelled` 是否为 `true`，为 `true` 就不执行 `mian` 方法了，也就将取消掉了当前 `operation`
+
+- 对于已经执行的 `operation`，调用 `cancel` 方法并不会将当前 `operation` 取消，它只会将 `isCancelled` 标记为 `true`。那么对于 `main` 方法中的任务的取消需要我们手动根据 `isCancelled` 去取消。同时取消了任务后，还是需要将 `isFinished` 标记为 `true`。
+
+- `operation`在被取消后，除了简单退出之外，还需要将 `finished` 的值修改为`YES`，`executing` 的值改为 `NO`。即使是在 `start` 方法中取消的 `operation` 。
+
+
+
 ```Objective-C
 
 ```
-
-**三、NSOperation NSOperationQueue部分属性方法解读**
-
-**1、NSOperation部分属性、方法**
-
-`@property (readonly, getter=isCancelled) BOOL cancelled`
-
-- 只读属性，表示当前operation是否已经被取消，默认值是NO；
-
-- 当调用`cancel`方法时此属性将会被置为YES；一旦canceled，operation将会被标记为finished状态；
-
-- 正在执行的operation并不会马上停止执行代码，但operation要定期调用此方法并停止它；
-
-- 在自定义`mian`方法中检查此属性的值。因为在operation执行之前或operation执行的任何时候，此operation都可能被cancel，所以在`main`检查此属性的值，能让被取消的operation尽快的退出。
-<br/>
-
-`- (void)cancel`
-
-- 此方法不会强制停止你的operation代码。相反，它会更新对象的内部标志以反映operation状态的变化。如果操作已经完成执行，则此方法不起作用。取消当前在操作队列中但尚未执行的操作，可以比平时更快地从队列中删除操作；
-
-- 在macOS 10.6及更高版本中，如果某个操作处于队列中，但正在等待未完成的从属操作，那么这些操作将被忽略。因为它已被取消，所以此行为允许操作队列更快地调用operation的`start`方法并将对象清除出队列。如果取消不在队列中的operation，则此方法会立即将对象标记为已完成。在每种情况下，将对象标记为就绪或已完成的结果都会产生适当的KVO通知
-<br/>
-
-`@property (readonly, getter=isReady) BOOL ready`
-
-- 只读属性，表示operation现在是否能被执行；
-
-- operation的isReady的值取决于是否有依赖的operation没有完成，也可能由你自定义的条件来决定的；
-
-- 当我们cancel某个因依赖关系正在等待的operation时，系统将忽略依赖关系，直接将operation的isReady值置成YES，其目的是为了让操作队列快递清理此operation。
-<br/>
-
-`@property(copy) void (^completionBlock)(void)`
-
-- operation的main task执行完成后的回调
-
-- 当operation的isFinish为YES时，此方法会被调用。但是要注意operation真的完成或被取消，其isFinish的值都会被置为YES，这里要做好判断！
-
-<br/>
-
-**2、NSOperationQueue的部分属性、方法**
-
-`- (void)cancelAllOperations`
-
-- 取消所有排队和正在执行的operation
-
-- 取消operation并不会自动将Operation从queue中移除，或停止其正在进行operation。
-
-- 对于排队等候的operation，在确认它已被取消并将其移至完成状态之前，队列必须仍然尝试执行operation。 
-
-- 对于已经执行的operation，操作对象本身必须检查取消操作并停止正在执行的操作，以便它可以移动到完成状态。 在这两种情况下，完成（或取消）的操作仍然有机会在从队列中移除之前执行`completeBlock`
-
-
-
-`@property(getter=isSuspended) BOOL suspended`
-
-- 默认值NO，表示queue会执行queue中准备好的operation，当其为YES时，表示阻止队列启动排队的operation，已经在执行的还会继续执行。你也可以向queue中继续添加operation，但不会执行知道其为NO；
-
-- 由于暂停队列不会启动任何新操作，因此它不会删除当前正在排队并且未执行的任何操作（包括取消的操作）。
 
 
 <br>
