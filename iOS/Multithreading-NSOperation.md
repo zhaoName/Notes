@@ -6,12 +6,12 @@
 
 - 操作（operation）：
 
-	- 执行操作的意思，换句话说就是你在线程中执行的那段代码。
+	- 操作，换句话说就是你在线程中执行的那段代码。
 	
-	- 在 GCD 中是放在 block 中的。在 `NSOperation` 中，我们使用 `NSOperation`的子类`NSInvocationOperation`、`NSBlockOperation`，或者自定义继承自 `NSOperation `的子类来封装操作。
+	- 在 `NSOperation` 中，我们使用 `NSOperation`的子类`NSInvocationOperation`、`NSBlockOperation`，或者自定义继承自 `NSOperation `的子类来执行任务。
 
 - 操作队列（operation queue）：
-	- 这里的队列指操作队列，即用来存放操作的队列。不同于 GCD 中的调度队列 FIFO（先进先出）的原则。`NSOperationQueue` 对于添加到队列中的操作，首先进入准备就绪的状态（就绪状态取决于操作之间的依赖关系），然后进入就绪状态的操作的开始执行顺序（非结束执行顺序）由操作之间相对的优先级决定（优先级是操作对象自身的属性）。
+	- 用来存放操作的队列。默认情况调度队列遵循 FIFO（先进先出）的原则。但已入队的 `operation` 执行顺序受到 `queuePriority` 和依赖关系的影响。
 	
 	- 操作队列通过设置最大并发操作数（`maxConcurrentOperationCount`）来控制并发、串行。
 	- `NSOperationQueue` 为我们提供了两种不同类型的队列：主队列和自定义队列。主队列运行在主线程之上，而自定义队列在子线程执行。
@@ -20,15 +20,15 @@
 
 ## 一、`NSOperationQueue`
 
-`NSOperationQueue` 是规范 `NSOperation` 执行的队列
+`NSOperationQueue` 是规范 `NSOperation` 执行的队列。
 
-`NSOperationQueue` 根据优先级和准备情况调用其当前已入队的 `NSOperation` 对象。将操作添加到队列后，它会一直保留在队列中，直到操作完成其任务。添加操作后，您不能直接从队列中删除操作。
+`NSOperationQueue` 根据优先级和准备情况调用其当前已入队的 `NSOperation` 对象。将操作添加到队列后，它会一直保留在队列中，直到操作完成其任务。添加操作后，您不能手动从队列中执行删除操作。
 
 `NSOperationQueue` 保留操作直到操作完成，并且队列本身保留到所有操作完成。使用未完成的操作挂起操作队列可能会导致内存泄漏。
 
 #### 确定执行顺序
 
-操作队列根据其准备情况、优先级和相互依赖性来组织和调用其操作。 如果所有已入队的 `operation` 都具有相同的 `queuePriority` 并且 `ready` 属性返回 `YES`，则队列会按照您添加它们的顺序调用它们。 否则，操作队列总是调用相对于其他就绪操作具有最高优先级的操作。
+操作队列根据其准备情况、优先级和相互依赖性来组织和调用已入队的 `operation`。 如果所有已入队的 `operation` 都具有相同的 `queuePriority` 并且 `ready` 属性返回 `YES`，则队列会按照您添加它们的顺序调用它们。 否则，操作队列总是调用相对于其他准备就绪操作具有最高优先级的操作。
 
 但是不要依赖队列语义来确保操作的执行顺序，因为操作准备情况的变化可能会改变结果执行顺序。 `operation` 的相互依赖关系为 `operation` 提供了绝对的执行顺序，即使这些 `operation` 位于不同的操作队列中。 一个 `operation` 对象在其所依赖 `operation` 完成运行之后才会准备运行。
 
@@ -45,6 +45,9 @@
 操作队列使用 `Dispatch` 框架来启动其操作的执行。 因此，队列总是在单独的线程上调用操作，而不管操作是同步的还是异步的。
 
 `NSOperationQueue` 就是个队列，单独使用没有意义。队列里需要放"东西"才有其意思，而这个"东西"就是接下来要介绍的 `NSOperation `。
+
+
+
 
 <br>
 
@@ -160,8 +163,6 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 
 如果添加的操作多的话，`blockOperationWithBlock:` 中的操作也可能会在其他线程（非当前线程）中执行，这是由系统决定的，并不是说添加到 `blockOperationWithBlock:` 中的操作一定会在当前线程中执行。
 
-一般情况下，如果一个 `NSBlockOperation` 对象封装了多个操作。`NSBlockOperation` 是否开启新线程，取决于操作的个数。如果添加的操作的个数多，就会自动开启新线程。当然开启的线程数是由系统来决定的。
-
 ```Objective-C
 // `blockOperationWithBlock:` 中的操作在其他线程,即不是在主线程中执行
 2022-05-03 23:35:25.659277+0800 ZZFoundation[7834:3901084] operationTask3---<NSThread: 0x600001002940>{number = 4, name = (null)}
@@ -216,7 +217,6 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
     [queue addOperation:blockOpe1];
     [queue addOperation:blockOpe2];
 }
-
 ```
 
 打印结果如下：
@@ -331,15 +331,16 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
 
 操作依赖可以控制操作的执行顺序。 默认情况下，具有依赖关系的操作对象在其所依赖的所有操作对象都完成执行之前不会被视为准备就绪状态。 然而，一旦最后一个所依赖的操作完成，操作对象就准备好并能够执行。
 
-`NSOperation` 支持的依赖项不区分依赖操作是否成功完成。换句话说，取消操作类似地将其标记为已完成。
+`NSOperation` 支持的依赖项不区分依赖操作是否成功完成。换句话说，已取消操作也会将其标记为已完成。
 
 可以使用 `addDependency:` 和 `removeDependency:` 方法为操作添加和删除依赖项。还可以用 `dependencies` 属性来获取当前 `operation` 所依赖的所有操作。
+
+操作依赖对不同队列的 `operation` 同样有效。
 
 ```Objective-C
 - (void)operationAddDependency
 {
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    
+    NSOperationQueue *queue1 = [[NSOperationQueue alloc] init];
     NSBlockOperation *ope1 = [NSBlockOperation blockOperationWithBlock:^{
         for (int i=0; i<2; i++) {
             sleep(2);
@@ -353,6 +354,8 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
         }
         
     }];
+    
+    NSOperationQueue *queue2 = [[NSOperationQueue alloc] init];
     NSBlockOperation *ope3 = [NSBlockOperation blockOperationWithBlock:^{
         for (int i=0; i<2; i++) {
             sleep(2);
@@ -366,68 +369,67 @@ operationTask2---<NSThread: 0x600003f9d6c0>{number = 5, name = (null)}
         }
     }];
     
-    [queue addOperation:ope4];
-    [queue addOperation:ope3];
-    [queue addOperation:ope2];
-    [queue addOperation:ope1];
+    [queue1 addOperation:ope4];
+    [queue1 addOperation:ope3];
+    [queue2 addOperation:ope2];
+    [queue2 addOperation:ope1];
 }
 ```
 
 如上代码，操作 `op4`、`op3`、`op2`、`op1` 并发执行。打印结果如下：
 
 ```Objective-C
-22022-05-03 23:56:09.701774+0800 ZZFoundation[8316:3916591] ope4---<NSThread: 0x60000230a080>{number = 4, name = (null)}
-2022-05-03 23:56:09.701978+0800 ZZFoundation[8316:3916593] ope3---<NSThread: 0x6000023775c0>{number = 6, name = (null)}
-2022-05-03 23:56:09.702171+0800 ZZFoundation[8316:3916589] ope1---<NSThread: 0x60000237d600>{number = 3, name = (null)}
-2022-05-03 23:56:09.702059+0800 ZZFoundation[8316:3916596] ope2---<NSThread: 0x600002371a40>{number = 5, name = (null)}
-2022-05-03 23:56:11.706807+0800 ZZFoundation[8316:3916591] ope4---<NSThread: 0x60000230a080>{number = 4, name = (null)}
-2022-05-03 23:56:11.706890+0800 ZZFoundation[8316:3916589] ope1---<NSThread: 0x60000237d600>{number = 3, name = (null)}
-2022-05-03 23:56:11.706807+0800 ZZFoundation[8316:3916593] ope3---<NSThread: 0x6000023775c0>{number = 6, name = (null)}
-2022-05-03 23:56:11.706935+0800 ZZFoundation[8316:3916596] ope2---<NSThread: 0x600002371a40>{number = 5, name = (null)}
+2022-05-05 22:07:56.583949+0800 ZZFoundation[44496:4797239] ope1---<NSThread: 0x600001424740>{number = 8, name = (null)}
+2022-05-05 22:07:56.583929+0800 ZZFoundation[44496:4797240] ope3---<NSThread: 0x600001429940>{number = 4, name = (null)}
+2022-05-05 22:07:56.583928+0800 ZZFoundation[44496:4797241] ope4---<NSThread: 0x600001420b00>{number = 7, name = (null)}
+2022-05-05 22:07:56.583933+0800 ZZFoundation[44496:4797242] ope2---<NSThread: 0x60000142d740>{number = 3, name = (null)}
+2022-05-05 22:07:58.584999+0800 ZZFoundation[44496:4797241] ope4---<NSThread: 0x600001420b00>{number = 7, name = (null)}
+2022-05-05 22:07:58.584999+0800 ZZFoundation[44496:4797242] ope2---<NSThread: 0x60000142d740>{number = 3, name = (null)}
+2022-05-05 22:07:58.584999+0800 ZZFoundation[44496:4797239] ope1---<NSThread: 0x600001424740>{number = 8, name = (null)}
+2022-05-05 22:07:58.584999+0800 ZZFoundation[44496:4797240] ope3---<NSThread: 0x600001429940>{number = 4, name = (null)}
 ```
 
-添加依赖后, 能控制 `op1`、`op2`、`op3`、`op4` 顺序执行
+添加依赖后, 能控制 `op1`、`op2`、`op3`、`op4` 执行顺序
 
 ```Objective-C
 - (void)operationAddDependency
 {
     ...
     
-    // 先添加依赖关系
     [ope2 addDependency:ope1];
-    [ope3 addDependency:ope2];
+    [ope3 addDependency:ope1];
     NSLog(@"%@ -- %@", ope1.dependencies, ope2.dependencies);
 
     [ope4 addDependency:ope2];
     [ope4 addDependency:ope3];
     NSLog(@"%@", ope4.dependencies);
     
-    [queue addOperation:ope4];
-    [queue addOperation:ope3];
-    [queue addOperation:ope2];
-    [queue addOperation:ope1];
+    [queue1 addOperation:ope4];
+    [queue1 addOperation:ope3];
+    [queue2 addOperation:ope2];
+    [queue2 addOperation:ope1];
 }
 ```
 
 打印结果如下：
 
 ```Objective-C
-2022-05-03 23:56:50.782620+0800 ZZFoundation[8341:3917269] (
+2022-05-05 22:09:31.934086+0800 ZZFoundation[44535:4798414] (
 ) -- (
-    "<NSBlockOperation: 0x7fda00e06e20>"
+    "<NSBlockOperation: 0x7fb12c606750>"
 )
-2022-05-03 23:56:50.782829+0800 ZZFoundation[8341:3917269] (
-    "<NSBlockOperation: 0x7fda00e082d0>",
-    "<NSBlockOperation: 0x7fda00e083e0>"
+2022-05-05 22:09:31.934345+0800 ZZFoundation[44535:4798414] (
+    "<NSBlockOperation: 0x7fb12c608180>",
+    "<NSBlockOperation: 0x7fb12c608490>"
 )
-2022-05-03 23:56:52.784822+0800 ZZFoundation[8341:3917348] ope1---<NSThread: 0x600003309100>{number = 4, name = (null)}
-2022-05-03 23:56:54.789595+0800 ZZFoundation[8341:3917348] ope1---<NSThread: 0x600003309100>{number = 4, name = (null)}
-2022-05-03 23:56:56.791018+0800 ZZFoundation[8341:3917347] ope2---<NSThread: 0x60000337d300>{number = 6, name = (null)}
-2022-05-03 23:56:58.796297+0800 ZZFoundation[8341:3917347] ope2---<NSThread: 0x60000337d300>{number = 6, name = (null)}
-2022-05-03 23:57:00.798518+0800 ZZFoundation[8341:3917347] ope3---<NSThread: 0x60000337d300>{number = 6, name = (null)}
-2022-05-03 23:57:02.799017+0800 ZZFoundation[8341:3917347] ope3---<NSThread: 0x60000337d300>{number = 6, name = (null)}
-2022-05-03 23:57:04.803855+0800 ZZFoundation[8341:3917348] ope4---<NSThread: 0x600003309100>{number = 4, name = (null)}
-2022-05-03 23:57:06.807139+0800 ZZFoundation[8341:3917348] ope4---<NSThread: 0x600003309100>{number = 4, name = (null)}
+2022-05-05 22:09:33.939431+0800 ZZFoundation[44535:4798481] ope1---<NSThread: 0x60000009d500>{number = 3, name = (null)}
+2022-05-05 22:09:35.940097+0800 ZZFoundation[44535:4798481] ope1---<NSThread: 0x60000009d500>{number = 3, name = (null)}
+2022-05-05 22:09:37.942762+0800 ZZFoundation[44535:4798485] ope2---<NSThread: 0x6000000cb980>{number = 6, name = (null)}
+2022-05-05 22:09:37.942762+0800 ZZFoundation[44535:4798484] ope3---<NSThread: 0x600000094740>{number = 4, name = (null)}
+2022-05-05 22:09:39.943689+0800 ZZFoundation[44535:4798485] ope2---<NSThread: 0x6000000cb980>{number = 6, name = (null)}
+2022-05-05 22:09:39.943731+0800 ZZFoundation[44535:4798484] ope3---<NSThread: 0x600000094740>{number = 4, name = (null)}
+2022-05-05 22:09:41.944432+0800 ZZFoundation[44535:4798485] ope4---<NSThread: 0x6000000cb980>{number = 6, name = (null)}
+2022-05-05 22:09:43.945972+0800 ZZFoundation[44535:4798485] ope4---<NSThread: 0x6000000cb980>{number = 6, name = (null)}
 ```
 
 ### 0x04 `queuePriority`
@@ -486,7 +488,7 @@ typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
 
 如果一个队列中既包含高优先级操作，又包含低优先级操作，并且两个操作都已经准备就绪，那么队列先执行高优先级操作。
 
-如果，一个队列中既包含了准备就绪状态的操作，又包含了未准备就绪的操作，未准备就绪的操作优先级比准备就绪的操作优先级高。那么，虽然准备就绪的操作优先级低，也会优先执行。优先级不能取代依赖关系。如果要控制操作间的启动顺序，则必须使用依赖关系。
+如果一个队列中既包含了准备就绪状态的操作，又包含了未准备就绪的操作，未准备就绪的操作优先级比准备就绪的操作优先级高。那么，虽然准备就绪的操作优先级低，也会优先执行。优先级不能取代依赖关系。如果要控制操作间的启动顺序，则必须使用依赖关系。
 
 
 ```Objective-C
@@ -737,7 +739,27 @@ typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
 ```
 
 
-### 0x02 并发的 `operation`
+
+### 0x02 维护操作对象的状态
+
+操作对象在内部维护状态信息，以确定何时可以安全执行，并通知外部客户端操作生命周期的进展情况。自定义子类需维护此状态信息以确保正确执行代码中的操作。
+
+![](../Images/iOS/Multithreading/NSOperation_01.png)
+
+
+`isReady`
+
+`isReady` 表示此 `operation` 是否可以被执行。当操作准备好现在执行时，`ready` 属性值 `true`，如果仍然存在依赖于它的未完成操作，则包含值 `false`
+
+
+
+- 当 `operation` 还未执行时，比如说依赖其他 `operation` 正在等待的时候，此时调用 `cancel()` 方法时，会将 `isCancelled` 设置为 `true`，`isReady` 设置为 `true`。因为 `isReady` 为 `true` 了，因此也无需等待其依赖的 `operation` 执行完毕，会执行 `start()` 方法。自定义 `operation` 中 `start()` 的实现，需判断 `isCancelled` 是否为 `true`，为 `true` 就不执行 `mian()` 方法了，也就将取消掉了当前 `operation`
+
+- 对于已经执行的 `operation`，调用 `cancel()` 方法并不会将当前 `operation` 取消，它只会将 `isCancelled` 标记为 `true`。那么对于 `main()` 中的任务的取消需要我们手动根据 `isCancelled` 去取消。同时取消了任务后，还是需要将 `isFinished` 标记为 `true`。
+
+- `operation`在被取消后，除了简单退出之外，还需要将 `finished` 的值修改为`YES`，`executing` 的值改为 `NO`。即使是在 `start()` 方法中取消的 `operation`
+
+### 0x03 并发的 `operation`
 
 
 如果你需要一个并发的 `operation`，则需要至少要重写`start`、`asynchronous`、`executing`、`finished` 四个方法。
@@ -746,20 +768,20 @@ typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
 
 - 此方法默认实现更新 `operation` 的执行状态和调用 `main` 方法，这个方法还会执行一些检查来确保 `operation`是否可以真正运行起来。
 
-- 如当 `operation` 被取消或已经完成，此方法只是返回而不调用 `main`。若当前操作正在执行或尚未准备好执行，则此方法会引发 `NSInvalidArgumentException` 异常。
- 
-- 如果正在实现一个并发队列，我们必须重写此方法，且在此方法中来 initiate your operation。任何时候都不动能调`super`。还要为 `isExecuting` 和 `isFinished` 提供 KVO 通知。
+- 如当 `operation` 被取消或已经完成，此方法只是返回而不调用 `main`。若当前操作正在执行或尚未准备好执行，调用此方法会引发 `NSInvalidArgumentException` 异常。
+- 如果正在实现一个并发队列，我们必须重写此方法且在此方法中来启动你的 `operation`。任何时候都不动能调`super`。还要为 `isExecuting` 和 `isFinished` 提供 KVO 通知。
+-  `start()` 方法还应该在实际开始任务之前检查 `operation` 本身是否已取消。
 
 
 `asynchronous`
 
-- 只读属性 默认是 `NO`，即`operation`在当前线程中同步执行；当其为`YES`的时候表示`operation`当前线程中异步执行。
+- 只读属性，默认是 `NO`，即`operation`在当前线程中同步执行；当其为`YES`的时候表示`operation`当前线程中异步执行。
 
 `executing`
 
 - 只读属性，如果 `operation` 正在执行 main task，则返回 `YES`，否则为 `NO`
 
-- 当实现一个并发的 `operation` 时，你必须重写此方法以便你清楚的知道 `operation` 的执行状态。在您的自定义实现中，只要 `operation` 对象的 `executing ` 状态更改，就必须为 `isExecuting` 生成 KVO 通知。
+- 当实现一个并发的 `operation` 时，你必须重写此方法以便你清楚的知道 `operation` 的执行状态。在您的自定义实现中，只要 `operation` 对象的 `executing` 状态更改，就必须为 `isExecuting` 生成 KVO 通知。
 
 `finished`
 
@@ -767,10 +789,11 @@ typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
 
 - 在实现并发操作对象时，您必须重写此属性的实现，以便可以自定义的 `operation` 返回 `finished ` 状态。在您的自定义实现中，每当您的 `operation` 对象的 `finished` 状态发生变化时，您都必须为 `isFinished` 生成 KVO 通知。
 
+若还需要自定义操作的依赖性，则还需要重写 `ready` 属性，并为 `ready` 属性提供 KVO。
+
 ```Objective-C
 
 ```
-
 
 **三、NSOperation NSOperationQueue部分属性方法解读**
 
