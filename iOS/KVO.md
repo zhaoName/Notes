@@ -252,7 +252,81 @@ void _NSSetLongLongValueAndNotify()
 
 <br>
 
-## 四、面试题
+
+## 四、`keyPathsForValuesAffectingValueForKey:`
+
+有时候一个属性的值依赖于另一对象中的一个或多个属性，若这个对象的任一属性的值发生变更，被依赖的属性值也应当为其变更进行标记。
+
+如 `KVOPerson` 类中有三个属性 `fullName`、`firstName`、`lastName`。`fullName` 的值由 `firstName`、`lastName` 构成。
+
+```Objective-C
+// KVOPerson.m
+
+- (NSString *)fullName
+{
+    return [NSString stringWithFormat:@"%@.%@", self.firstName, self.lastName];
+}
+```
+
+当`firstName` 或 `lastName` 发生变化时，都要通过 KVO 通知`fullName` 发生变化。这就需要重写 `keyPathsForValuesAffectingValueForKey:`
+
+```Objective-C
+// KVOPerson.m
+
++ (NSSet<NSString *> *)keyPathsForValuesAffectingValueForKey:(NSString *)key
+{
+    NSSet *keyPaths = [super keyPathsForValuesAffectingValueForKey:key];
+
+    if ([key isEqualToString:@"fullName"]) {
+        keyPaths = [keyPaths setByAddingObjectsFromArray:@[@"firstName", @"lastName"]];
+    }
+    return  keyPaths;
+}
+```
+
+或者重写 `keyPathsForValuesAffecting<Key>`，`<Key>`是需要监听的属性的名字(代码会自动补充)
+
+```Objective-C
+// KVOPerson.m
+
++ (NSSet<NSString *> *)keyPathsForValuesAffectingFullName
+{
+    return [NSSet setWithArray:@[@"firstName", @"lastName"]];
+}
+```
+
+示例：
+
+```Objective-C
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.per = [[KVOPerson alloc] init];
+    self.per.firstName = @"san";
+    self.per.lastName = @"zhang";
+    
+    [self.per addObserver:self forKeyPath:@"fullName" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context
+{
+    NSLog(@"new:%@ --- old:%@", change[NSKeyValueChangeNewKey], change[NSKeyValueChangeOldKey]);
+}
+
+- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    self.per.firstName = @"name";
+    self.per.lastName = @"zhao";
+}
+
+// 打印结果
+2022-05-06 22:53:34.698670+0800 ZZFoundation[58228:5124965] new:name.zhang --- old:san.zhang
+2022-05-06 22:53:34.698880+0800 ZZFoundation[58228:5124965] new:name.zhao --- old:name.zhang
+```
+
+<br>
+
+## 五、面试题
 
 ### 0x01 KVO 本质
 
