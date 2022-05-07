@@ -780,23 +780,23 @@ typedef NS_ENUM(NSInteger, NSOperationQueuePriority) {
 
 `isReady`
 
-`isReady` 表示此 `operation` 是否可以被执行。当操作准备好现在执行时，`ready` 属性值 `true`，如果仍然存在依赖于它的未完成操作，此属性值值 `false`。
+- `isReady` 表示此 `operation` 是否可以被执行。当操作准备好现在执行时，`ready` 属性值 `true`，如果仍然存在依赖于它的未完成操作，此属性值值 `false`。
 
-若 `operation` 在等待其所依赖的操作完成时被取消，则会忽略依赖关系，直接进去准备就绪状态，以便操作队列快速将其从队列中移除。
+- 若 `operation` 在等待其所依赖的操作完成时被取消，则会忽略依赖关系，直接进去准备就绪状态，以便操作队列快速将其从队列中移除。
 
 `isExecuting`
 
-`isExecuting` 表示 `operation` 是否正在执行。若重写了 `start` 方法，则必须重写此属性，并在 `operation` 的状态发生变化时生成 KVO 通知。
+- `isExecuting` 表示 `operation` 是否正在执行。若重写了 `start` 方法，则必须重写此属性，并在 `operation` 的状态发生变化时生成 KVO 通知。
 
 `isFinished`
 
-`isFinished` 表示 `operation` 已成功完成，或已被取消且正在退出。在 `isFinished` 的值更改为 `true` 之前，操作对象不会清除依赖关系，操作队列也不会使操作出队。
+- `isFinished` 表示 `operation` 已成功完成，或已被取消且正在退出。在 `isFinished` 的值更改为 `true` 之前，操作对象不会清除依赖关系，操作队列也不会使操作出队。
 
-若重写了 `start` 方法，则必须重写 `isFinished` 属性，并在 `operation` 的状态发生变化时生成 KVO 通知。
+- 若重写了 `start` 方法，则必须重写 `isFinished` 属性，并在 `operation` 的状态发生变化时生成 KVO 通知。
 
 `isCancelled`
 
-`isCancelled` 表示 `operation` 是否已被取消。不需要为其生成 KVO 通知。
+- `isCancelled` 表示 `operation` 是否已被取消。不需要为其生成 KVO 通知。
 
 
 ### 0x04 响应取消
