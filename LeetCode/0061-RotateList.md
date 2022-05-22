@@ -25,9 +25,7 @@ rotate 2 steps to the right: 4->5->1->2->3->NULL
 
 ### Python
 
-- 第一思路
-
-```python3
+```python
 ## Time Complexity:O(n)   Space Complexity:O(1)
 def rotateRight(self, head: ListNode, k: int) -> ListNode:
 	if not head: return None
@@ -43,8 +41,8 @@ def rotateRight(self, head: ListNode, k: int) -> ListNode:
 	## kNode 为链表后面 k 个节点
 	## 遍历到第 listLen-k-1 个节点，将其next 置为空
 	i, kNode, tempNd = 0, ListNode(0), head
-	while i<listLen-k:
-		if i == listLen-k-1: 
+	while i < listLen - k:
+		if i == listLen - k - 1:
 			kNode = tempNd.next
 			tempNd.next = None
 			break
@@ -52,7 +50,7 @@ def rotateRight(self, head: ListNode, k: int) -> ListNode:
 		i += 1
 
 	resultNd = kNode;
-	while kNode.next: 
+	while kNode.next:
 		kNode = kNode.next
 	kNode.next = head
 	return resultNd
