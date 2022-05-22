@@ -21,7 +21,7 @@ Constraints:
 
 - 快排
 
-```
+```python3
 def _sortArray_quick(self, nums, left, right) -> None:
 	if left >= right: return
 	key, i, j = nums[left], left, right
@@ -45,7 +45,7 @@ def sortArray_quick(self, nums: list) -> list:
 
 - 堆排序
 
-```
+```python3
 ## 构建大顶堆
 def heapify_max(self, nums:list, i, ln) -> None:
 	largest = i
@@ -55,6 +55,7 @@ def heapify_max(self, nums:list, i, ln) -> None:
 		largest = l
 	if r < ln and nums[r] > nums[largest]:
 		largest = r
+
 	if largest != i:
 		nums[i], nums[largest] = nums[largest], nums[i]
 		self.heapify_max(nums, largest, ln)
@@ -72,5 +73,5 @@ def sortArray_heap(self, nums: list) -> list:
 		nums[0], nums[l-1] = nums[l-1], nums[0]
 		l -= 1
 		self.heapify_max(nums, 0, l)
-	return nums
-```
+	print(nums)
+	return nums```

@@ -36,4 +36,40 @@ def minMoves2(self, nums: List[int]) -> int:
     return ans
 ```
 
+```python3
+# 借助快速选择排序(TopK问题)，查找第 K 大的数
+def partition(self, nums: List[int], left: int, right: int) -> int:
+    pivot = nums[left]
+    i, j = left, right
+    while i < j:
+        while i < j and nums[j] >= pivot:
+            j -= 1
+        nums[i], nums[j] = nums[j], nums[i]
+
+        while i < j and nums[i] <= pivot:
+            i += 1
+        nums[i], nums[j] = nums[j], nums[i]
+    nums[i] = pivot
+    return i
+
+def k_split(self, nums: List[int], k: int, left: int, right: int):
+    index = self.partition(nums, left, right)
+    if index == k:
+        return
+    elif index > k:
+        self.k_split(nums, k, left, index-1)
+    else:
+        self.k_split(nums, k, index+1, right)
+
+def quickSelect(self, nums: List[int], k: int) -> int:
+    self.k_split(nums, k, 0, len(nums)-1)
+    return nums[k]
+
+# time:O(n) space:O(logn)
+def minMoves2(self, nums: List[int]) -> int:
+    # 查找第 K 大的数
+    target = self.quickSelect(nums, len(nums) // 2)
+    return sum(abs(num - target) for num in nums)
+```
+
 <br>
