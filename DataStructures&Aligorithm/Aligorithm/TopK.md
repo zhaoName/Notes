@@ -41,9 +41,9 @@ topk 切分
 ```python
 def topk_split(nums, k, left, right):
     #寻找到第k个数停止递归，使得nums数组中index左边是前k个小的数，index右边是后面n-k个大的数
-    if (left<right):
+    if left < right:
         index = partition(nums, left, right)
-        if index==k:
+        if index == k:
             return 
         elif index < k:
             topk_split(nums, k, index+1, right)
@@ -82,9 +82,10 @@ print(arr)
 ### 0x03 获得第 k 小的数
 
 ```python
-def topk_small(nums, k-1):
-    topk_split(nums, k, 0, len(nums)-1)
-    return nums[k] 
+def topk_small(nums, k):
+    topk_split(nums, k-1, 0, len(nums)-1)
+    # 第 1 小的数是数组的第一个元素，即下标为0
+    return nums[k-1] 
 
 arr = [1,3,2,3,0,-19]
 k = 3
