@@ -81,6 +81,35 @@ class Solution:
         print(nums)
 ```
 
+```python
+# Time: O(n), space: O(1)
+def wiggleSort_vi(self, nums: List[int]) -> None:
+    midIndex = len(nums) // 2
+    self.split(nums, 0, len(nums)-1, midIndex)
+    mid = nums[midIndex]
+
+    # i是虚拟地址，(1+2*(i)) % (n|1)是实际地址。
+    # 其中n为数组长度，如果n为偶数，(n|1)为n+1，如果n为奇数，(n|1)仍为n。
+    def actIndex(i):
+        n = len(nums)
+        return (1 + 2 * i) % (n | 1)
+
+    # 3-way-partition
+    # 大数排在左边，小数排在右边
+    i, j, k = 0, 0, len(nums)-1
+    while j <= k:
+        if nums[actIndex(j)] < mid:
+            nums[actIndex(j)], nums[actIndex(k)] = nums[actIndex(k)], nums[actIndex(j)]
+            k -= 1
+        elif nums[actIndex(j)] > mid:
+            nums[actIndex(j)], nums[actIndex(i)] = nums[actIndex(i)], nums[actIndex(j)]
+            i += 1
+            j += 1
+        else:
+            j += 1
+        print(nums, mid)
+```
+
 <br>
 
 
