@@ -42,7 +42,7 @@
 - [Block本质(一)](https://github.com/zhaoName/Notes/blob/master/iOS/Block-01.md)
 - [Block本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/Block-02.md)
 
-- [Categary - 底层实现](https://github.com/zhaoName/Notes/blob/master/iOS/Category-imp.md)
+- [Category - 底层实现](https://github.com/zhaoName/Notes/blob/master/iOS/Category-imp.md)
 - [Categoty - load、initialize](https://github.com/zhaoName/Notes/blob/master/iOS/Categoty-load-initialize.md)
 - [Category - 关联对象](https://github.com/zhaoName/Notes/blob/master/iOS/Categoty-load-initialize.md)
 
