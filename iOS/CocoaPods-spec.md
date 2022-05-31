@@ -1,5 +1,5 @@
 
-# CocoaPods(三) - spec
+# CocoaPods - spec
 
 
 <br>

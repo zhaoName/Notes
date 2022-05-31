@@ -1,4 +1,4 @@
-# Cocoapods(四) - Private Pods
+# Cocoapods - Private Pods
 
 <br>
 

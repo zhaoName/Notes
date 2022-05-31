@@ -1,5 +1,5 @@
 
-# CocoaPods(二) - Podfile
+# CocoaPods - Podfile
 
 <br>
 

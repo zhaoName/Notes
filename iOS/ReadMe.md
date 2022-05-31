@@ -8,14 +8,14 @@
 - [iOS获取任意线程调用栈(二) - ARM64下栈帧简介](https://github.com/zhaoName/Notes/blob/master/iOS/iOS%E8%8E%B7%E5%8F%96%E4%BB%BB%E6%84%8F%E7%BA%BF%E7%A8%8B%E8%B0%83%E7%94%A8%E6%A0%88(%E4%BA%8C)%20-%20ARM64%E4%B8%8B%E6%A0%88%E5%B8%A7%E7%AE%80%E4%BB%8B.md)
 - [iOS获取任意线程调用栈(三) - 在Mach-O中查找对应的符号(方法名)](https://github.com/zhaoName/Notes/blob/master/iOS/iOS%E8%8E%B7%E5%8F%96%E4%BB%BB%E6%84%8F%E7%BA%BF%E7%A8%8B%E8%B0%83%E7%94%A8%E6%A0%88(%E4%B8%89)%20-%20%E5%9C%A8Mach-O%E4%B8%AD%E6%9F%A5%E6%89%BE%E5%AF%B9%E5%BA%94%E7%9A%84%E7%AC%A6%E5%8F%B7(%E6%96%B9%E6%B3%95%E5%90%8D).md)
 
-- [CocoaPods(一) - Uninstall And Install](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods(%E4%B8%80)%20-%20Uninstall%20And%20Install.md)
+- [CocoaPods - Uninstall And Install](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods-Uninstall%20And%20Install.md)
 
-- [CocoaPods(二) - Podfile](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods(%E4%BA%8C)%20-%20Podfile.md)
+- [CocoaPods - Podfile](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods-Podfile.md)
 
-- [CocoaPods(三) - spec](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods(%E4%B8%89)%20-%20spec.md)
+- [CocoaPods - spec](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods-spec.md)
 
-- [Cocoapods(四) - Private Pods](https://github.com/zhaoName/Notes/blob/master/iOS/Cocoapods(%E5%9B%9B)%20-%20Private%20Pods.md)
-- [CocoaPods(五) - PublicPods](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods(%E4%BA%94)-PublicPods.md)
+- [Cocoapods - Private Pods](https://github.com/zhaoName/Notes/blob/master/iOS/Cocoapods-PrivatePods.md)
+- [CocoaPods - PublicPods](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods-PublicPods.md)
 - [组件化(一) - 私有库使用](https://github.com/zhaoName/Notes/blob/master/iOS/%E7%BB%84%E4%BB%B6%E5%8C%96(%E4%B8%80)%20-%20%E7%A7%81%E6%9C%89%E5%BA%93%E4%BD%BF%E7%94%A8.md)
 - [组件化(二) - 细节处理](https://github.com/zhaoName/Notes/blob/master/iOS/%E7%BB%84%E4%BB%B6%E5%8C%96(%E4%BA%8C)%20-%E7%BB%86%E8%8A%82%E5%A4%84%E7%90%86.md)
 - [组件化(三) - 加载资源文件](https://github.com/zhaoName/Notes/blob/master/iOS/%E7%BB%84%E4%BB%B6%E5%8C%96(%E4%B8%89)-%E5%8A%A0%E8%BD%BD%E8%B5%84%E6%BA%90%E6%96%87%E4%BB%B6.md)
@@ -82,6 +82,6 @@
 
 | 模块 | | 文章目录 |
 | --- | --- | --- |
-| runtime | | [编译 & 运行 objc4-750](https://github.com/zhaoName/Notes/blob/master/iOS/compile%26run-objc4-750.md) <br> [isa](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-isa) <br> [methods cache](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-isa) <br> [objc_msgSend](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-objc_msgSend.md) <br> [super](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-super.md) <br> [API](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-API.md) |
+| runtime | | [编译 & 运行 objc4-750](https://github.com/zhaoName/Notes/blob/master/iOS/compile%26run-objc4-750.md) <br> [isa](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-isa.md) <br> [methods cache](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-methodCache.md) <br> [objc_msgSend](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-objc_msgSend.md) <br> [super](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-super.md) <br> [API](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-API.md) |
 
 <br>
