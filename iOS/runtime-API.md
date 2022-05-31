@@ -7,7 +7,7 @@
 
 - `object_getClass`
 
-```
+```Objctive-C
 ZNPerson *per = [[ZNPerson alloc] init];
 NSLog(@"类对象：%p==%p，元类对象：%p", [ZNPerson class], object_getClass(per), object_getClass([NSObject class]));
 
@@ -17,7 +17,7 @@ NSLog(@"类对象：%p==%p，元类对象：%p", [ZNPerson class], object_getCla
 
 - `object_isClass`、`class_isMetaClass`
 
-```
+```Objctive-C
 NSLog(@"是否是类对象:%d==%d, 是否是元类对象：%d",
           object_isClass(per),
           object_isClass(object_getClass(per)),
@@ -29,7 +29,7 @@ NSLog(@"是否是类对象:%d==%d, 是否是元类对象：%d",
 
 - `object_setClass`
 
-```
+```Objective-C
 // 将实例对象 per 的 isa 指向 ZNStudent
 object_setClass(per, [ZNStudent class]);
 // ZNStudent 必须要有和 ZNPerson 同名的方法
@@ -41,7 +41,7 @@ object_setClass(per, [ZNStudent class]);
 
 - 动态创建类
 
-```
+```Objective-C
 - (void)testAddMethod
 {
     NSLog(@"%@==%@", self, NSStringFromSelector(_cmd));
@@ -86,7 +86,7 @@ object_setClass(per, [ZNStudent class]);
 
 - `class_getInstanceVariable`
 
-```
+```Objective-C
 // 获取特定的成员变量
 Ivar nameIvar = class_getInstanceVariable([ZNPerson class], "_name");
 Ivar ageIvar = class_getInstanceVariable([ZNPerson class], "_age");
@@ -102,7 +102,7 @@ NSLog(@"ageIvar:%s====%s", ivar_getName(ageIvar), ivar_getTypeEncoding(ageIvar))
 
 - `object_setIvar`、`object_getIvar`
 
-```
+```Objective-C
 // 给成员变量赋值 取值
 object_setIvar(per, nameIvar, @"zhao");
 object_setIvar(per, ageIvar, @10);
@@ -114,7 +114,7 @@ NSLog(@"%@===%@", object_getIvar(per, nameIvar), object_getIvar(per, ageIvar));
 
 - `class_copyIvarList`
 
-```
+```Objective-C
 // 获取所有成员变量
 NSInteger count = 0;
 Ivar *ivarList = class_copyIvarList([ZNPerson class], &count);
@@ -134,7 +134,7 @@ free(ivarList);
 
 - `class_replaceMethod`
 
-```
+```Objective-C
 // 替换方法实现
 // 参数: 要替换的Class、要替换的方法名、新的方法实现、新方法的方法签名
 class_replaceMethod([ZNPerson class], @selector(testPerson), class_getMethodImplementation([self class], @selector(testAddMethod)), "v@:");
@@ -171,12 +171,12 @@ for (int i=0; i<count; i++) {
 
 - `method_exchangeImplementations`
 
-```
+```Objective-C
 // UIControl+Extension.m
 
 + (void)load
 {
-	// 拦截所有 UIButton 的点击事件
+    // 拦截所有 UIButton 的点击事件
     Method method1 = class_getInstanceMethod(self, @selector(sendAction:to:forEvent:));
     Method method2 = class_getInstanceMethod(self, @selector(zn_sendAction:to:forEvent:));
     method_exchangeImplementations(method1, method2);

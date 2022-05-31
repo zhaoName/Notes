@@ -33,18 +33,18 @@
 
 `OC`中方法调用默认有两个参数：方法调用者和方法名(`_cmd`)
 
-![](../Images/iOS/runtime(四)-super/runtime_image0401.png)
+![](../Images/iOS/runtime/runtime_image0401.png)
 
 - 局部变量
 
-```
+```Objctive-C
 // 打印结果
 2019-07-04 23:42:22.072280 runtime-super[1574:615708] 0x16fd49e90 0x16fd49e88 0x16fd49e80 0x16fd49e78
 ```
 
 `a b c d`四个局部变量依次存储在连续的栈空间上，先声明的局部变量存储在高地址。
 
-![](../Images/iOS/runtime(四)-super/runtime_image0402.png)
+![](../Images/iOS/runtime/runtime_image0402.png)
 
 
 ## 二、`super`调方法本质
@@ -54,7 +54,7 @@
 
 在说明`super`调方法本质我们先来看到面试题
 
-```
+```Objctive-C
 // ZNStudent : ZNPerson : NSObject
 
 // ZNStudent.m
@@ -83,7 +83,7 @@
 
 我们来运行程序看看最终打印结果
 
-```
+```Objctive-C
 2019-07-04 10:44:42.543912 runtime-super[11689:1192675] [self class]===ZNStudent
 2019-07-04 10:44:42.544082 runtime-super[11689:1192675] [self superclass]===ZNPerson
 
@@ -93,13 +93,13 @@
 
 看到上述打印结果是不是感觉有点难以接受？想看清本质问题还是要看底层代码，用下面命令将代码转成`C/C++`代码
 
-```
+```Objctive-C
 $ xcrun -sdk iphoneos clang -arch arm64 -rewrite-objc  ZNStudent.m
 ```
 
 可以看到`[super class]`和`[super superclass]`最终转成如下代码
 
-```
+```Objctive-C
 objc_msgSendSuper((__rw_objc_super){(id)self, (id)class_getSuperclass(objc_getClass("ZNStudent"))}, sel_registerName("class"))
 
 objc_msgSendSuper((__rw_objc_super){(id)self, (id)class_getSuperclass(objc_getClass("ZNStudent"))}, sel_registerName("superclass"))
@@ -107,7 +107,7 @@ objc_msgSendSuper((__rw_objc_super){(id)self, (id)class_getSuperclass(objc_getCl
 
 结构有点复杂，简化下
 
-```
+```Objctive-C
 struct __rw_objc_super sp1 = {self, class_getSuperclass(objc_getClass("ZNStudent"))};
 objc_msgSendSuper(sp1, sel_registerName("class"));
     
@@ -119,7 +119,7 @@ objc_msgSendSuper(sp2, sel_registerName("superclass"))
 
 在`objc4-750`中可以找到`objc_msgSendSuper `和`objc_super `的定义
 
-```
+```Objctive-C
 // message.h
 
 struct objc_super {
@@ -157,7 +157,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 实例方法`class`在`NSObject`中声明，在`objc4-750`中`NSObject.mm`查看其实现
 
-```
+```Objctive-C
 // NSObject.mm
 
 - (Class)class {
@@ -180,7 +180,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 再来看个有意思的事，在`ZNPerson`中声明并实现`test`实例方法，在子类`ZNStudent`中重写`test`方法并调用`[super test]`，并下断点，`Xcode -> Debug -> Debug Workflow -> Always show Disassmebly`进入汇编模式。
 
-```
+```Objctive-C
 // ZNStudent.m
 - (void)test
 {
@@ -188,7 +188,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 }
 ```
 
-![](../Images/iOS/runtime(四)-super/runtime_image0403.png)
+![](../Images/iOS/runtime/runtime_image0403.png)
 
 在`test`方法中只有`[super test]`方法调用，也就是截图上的`bl 0x100016afc`，但其后标记的是跳转到`objc_msgSendSuper2`，而不是`objc_msgSendSuper`。这是为啥呢？
 
@@ -196,30 +196,30 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 我们还可用另外一种方法验证`[super xxx]`底层实现调用的`objc_msgSendSuper2`函数，而不是`objc_msgSendSuper`函数。`Xcode`中选中要调成汇编模式的文件， `Product -> Perform Action -> Assemble "xxxx"`，将代码转成汇编
 
-![](../Images/iOS/runtime(四)-super/runtime_image0404.png)
+![](../Images/iOS/runtime/runtime_image0404.png)
 
-```
+```Objctive-C
 ...
 Ltmp0:
-	.loc	3 16 5 prologue_end     ; ~/Desktop/runtime-super/runtime-super/ZNStudent.m:16:5
-	ldur	x0, [x29, #-8]
-	str	x0, [sp]
-	ldr	x9, [x9]
-	str	x9, [sp, #8]
-	ldr	x1, [x8]
-	mov	x0, sp
-	// 也是 _objc_msgSendSuper2
-	bl	_objc_msgSendSuper2
-	.loc	3 17 1                  ; ~/Desktop/runtime-super/runtime-super/ZNStudent.m:17:1
-	ldp	x29, x30, [sp, #32]     ; 8-byte Folded Reload
-	add	sp, sp, #48             ; =48
-	ret
+    .loc    3 16 5 prologue_end     ; ~/Desktop/runtime-super/runtime-super/ZNStudent.m:16:5
+    ldur    x0, [x29, #-8]
+    str    x0, [sp]
+    ldr    x9, [x9]
+    str    x9, [sp, #8]
+    ldr    x1, [x8]
+    mov    x0, sp
+    // 也是 _objc_msgSendSuper2
+    bl    _objc_msgSendSuper2
+    .loc    3 17 1                  ; ~/Desktop/runtime-super/runtime-super/ZNStudent.m:17:1
+    ldp    x29, x30, [sp, #32]     ; 8-byte Folded Reload
+    add    sp, sp, #48             ; =48
+    ret
 ...
 ```
 
 - 定义
 
-```
+```Objctive-C
 struct objc_super2 {
     id receiver;
     Class current_class;
@@ -246,7 +246,7 @@ END_ENTRY _objc_msgSendSuper2
 
 - 证明`[super xxx]`底层调用的是`objc_msgSendSuper2`函数
 
-```
+```Objctive-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -272,12 +272,12 @@ END_ENTRY _objc_msgSendSuper2
 
 局部变量`arg1`、`arg2`、`a`在栈上的内存分配大致如下
 
-![](../Images/iOS/runtime(四)-super/runtime_image0405.png)
+![](../Images/iOS/runtime/runtime_image0405.png)
 
 
 在`NSLog`出下断点，用`lldb`查看三个局部变量的值
 
-![](../Images/iOS/runtime(四)-super/runtime_image0406.png)
+![](../Images/iOS/runtime/runtime_image0406.png)
 
 这也就证明了`[super xxx]`在底层调用的是`objc_msgSendSuper2`。
 
@@ -286,7 +286,7 @@ END_ENTRY _objc_msgSendSuper2
 
 先看面试题
 
-```
+```Objctive-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -306,7 +306,7 @@ END_ENTRY _objc_msgSendSuper2
 
 - 实例方法
 
-```
+```Objctive-C
 // NSObject.mm
 
 - (BOOL)isMemberOfClass:(Class)cls {
@@ -329,7 +329,7 @@ END_ENTRY _objc_msgSendSuper2
 
 - 类方法
 
-```
+```Objctive-C
 // NSObject.mm
 
 + (BOOL)isMemberOfClass:(Class)cls {
@@ -354,7 +354,7 @@ END_ENTRY _objc_msgSendSuper2
 
 ## 四、面试题
 
-```
+```Objctive-C
 // ZNPerson.h
 @property (nonatomic, copy) NSString *name;
 - (void)test;
@@ -388,7 +388,7 @@ END_ENTRY _objc_msgSendSuper2
 
 ### 0x01 正常方法调用
 
-```
+```Objctive-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -402,32 +402,32 @@ END_ENTRY _objc_msgSendSuper2
 
 通过以前的学习我们知道实例对象在底层是一个`ZNPerson_IMPL`类型的结构体，它有两个成员。
 
-```
+```Objective-C
 struct ZNPerson_IMPL {
-	Class isa;
-	id _name;
+    Class isa;
+    id _name;
 };
 ```
 
 方法调用是由`per`对象的`isa`指针找到对应的`class`对象，再找到存储在`class`对象中的实例方法`test`进行调用。而取成员变量的值，就是找`ZNPerson_IMPL`结构体的成员。如我们取`_name`的值，其实就是找紧跟着`isa`后的8个字节中存储的内容。
 
-![](../Images/iOS/runtime(四)-super/runtime_image0407.png)
+![](../Images/iOS/runtime/runtime_image0407.png)
 
 方法调用我们也可以认为只要找到`isa`指针就可以找到`class`对象，进行方法调用。方法调用和`_name`是没关系的。而`per`中存储的是结构体指针也就是`isa`的地址值，那上图我们可以简化下
 
-![](../Images/iOS/runtime(四)-super/runtime_image0408.png)
+![](../Images/iOS/runtime/runtime_image0408.png)
 
 
 ### 0x02 为什么`[(__bridge id)obj test]`方法能调用成功 ？
 
 将下面两句代码也用画图表示
 
-```
+```Objctive-C
 id cls = [ZNPerson class];
 void *obj = &cls;
 ```
 
-![](../Images/iOS/runtime(四)-super/runtime_image0409.png)
+![](../Images/iOS/runtime/runtime_image0409.png)
 
 通过`obj`(相当于`per`)找到了`cls`(相当于`isa`)进而找到了类对象，然后找到存储在类对象中的`test`方法。
 
@@ -437,7 +437,7 @@ void *obj = &cls;
 前面说过方法中的局部变量存储在连续的栈空间上，先声明的局部变量在高地址。
 
 
-![](../Images/iOS/runtime(四)-super/runtime_image0410.png)
+![](../Images/iOS/runtime/runtime_image0410.png)
 
 
 `obj`相当于`per`，`cls`相当于`isa`。而`_name`和`isa`组成一个结构体，所以紧跟着`isa`后的8个字节就是`_name`。在这里我们可以认为紧跟着`cls`后的8个字节是`_name`。所以我们取`self.name`的值就是取紧跟着`cls`后的8个字节存储的值，也就是`reveiver`。这也就解释了为什么`self.name`的值是`<ViewController: 0x0100305810>`。

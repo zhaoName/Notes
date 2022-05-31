@@ -1,5 +1,5 @@
 
-# runtime(一) - isa
+# runtime - isa
 
 
 <br>
@@ -35,7 +35,7 @@
 
 - 负数的补码是其反码加1，反码是对原码按位取反 只是其最高位(符号位)不变。
 
-```
+```Objective-C
 int a = 2;
 int b = ~a;
 NSLog(@"%d", b);
@@ -65,7 +65,7 @@ NSLog(@"%d", b);
 
 在`OC`常用的位运算符应该是在使用枚举类型中常用到的`|`。如`KVO`中监听某个属性值变化时
 
-```
+```Objective-C
 // NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld 可以知道新老属性值
 [@"xxx" addObserver:self forKeyPath:@"xxx" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
 
@@ -77,7 +77,7 @@ NSLog(@"%d", b);
 
 我们自己来实现一个枚举类型。
 
-```
+```Objective-C
 typedef NS_OPTIONS(NSInteger, ZNOrientation) {
     
     ZNOrientationUnknow = 0,   // 0b0000
@@ -103,7 +103,7 @@ typedef NS_OPTIONS(NSInteger, ZNOrientation) {
 
 比如说我想知道传进来的值包不包含`ZNOrientationNorth `，那我们将结果`& ZNOrientationNorth `看看会有什么情况。
 
-```
+```Objective-C
 // 包含 其他位不管 &0 结果肯定为0
 0b1000 & 0b1000 = 0b1000
 
@@ -113,7 +113,7 @@ typedef NS_OPTIONS(NSInteger, ZNOrientation) {
 
 也就是说我们只要将结果`&`上某个枚举值就可以知道传进来的值，到底包不包含这个枚举值。
 
-```
+```Objective-C
 - (void)testOrienta:(ZNOrientation)ori
 {
     if (ori & ZNOrientationEast) {
@@ -139,7 +139,7 @@ typedef NS_OPTIONS(NSInteger, ZNOrientation) {
 
 - 想要取某个(或几个)二进制位的值只要`& `上一个对应二进制位为1 其余二进制位为0的二进制数
 
-```
+```Objective-C
 // 取 0b10100011 第三位和第五位的值
 
   1010 0011
@@ -178,7 +178,7 @@ typedef NS_OPTIONS(NSInteger, ZNOrientation) {
 ### 0x01 初始化
  
 
-```
+```Objective-C
 union ZNData {
     int year;
     short int month;
@@ -193,7 +193,7 @@ union ZNData date = {10};
 
 ### 0x02 大小
 
-```
+```Objective-C
 NSLog(@"sizeof：%ld", sizeof(date));
 
 // 打印结果
@@ -204,7 +204,7 @@ NSLog(@"sizeof：%ld", sizeof(date));
 
 ### 0x03 修改值
 
-```
+```Objective-C
 union ZNData date = {10};
 NSLog(@"初始化==year:%d, month:%d, day:%ld", date.year, date.month, date.day);
     
@@ -223,7 +223,7 @@ NSLog(@"改值后==year:%d, month:%d, day:%ld", date.year, date.month, date.day)
 
 ### 0x01 声明
 
-```
+```Objective-C
 struct {
     char x1:2;
     char x2:2;
@@ -236,7 +236,7 @@ struct {
 
 - 成员变量都是有类型的，这个类型限制了成员变量的最大位宽，`:`后面的数字不能超过这个长度。
 
-![](../Images/iOS/runtime(一)-isa/runtime_image0101.png)
+![](../Images/iOS/runtime/runtime_image0101.png)
 
 ### 0x02 位域成员的类型
 
@@ -253,7 +253,7 @@ struct {
 
 - 若位域结构所有成员的位宽之和 小于等于最大成员的类型长度时，位域结构的大小等于该类型长度。且每个成员都紧挨着存储。
 
-```
+```Objective-C
 struct {
     char  x1:2;
     short x2:4;
@@ -270,12 +270,12 @@ NSLog(@"========%d", sizeof(test));
 2019-06-23 22:19:43.110143+0800 runtime-isa[2496:173094] ========2
 ```
 
-![](../Images/iOS/runtime(一)-isa/runtime_image0102.png)
+![](../Images/iOS/runtime/runtime_image0102.png)
 
 
 - 若位域结构所有成员的位宽之和 大于最大成员的类型长度时，位域结构的大小等于该类型长度的倍数。
 
-```
+```Objective-C
 struct {
     char  x1:2;
     short x2:4;
@@ -295,14 +295,14 @@ NSLog(@"========%d", sizeof(test));
 
 `x1``x2``x3``x4`的位宽之和为`2+4+8+6 = 20`，大于`short`类型的长度16。所以在存储`x4`的时候会新开辟两个字节长度。 
 
-![](../Images/iOS/runtime(一)-isa/runtime_image0103.png)
+![](../Images/iOS/runtime/runtime_image0103.png)
 
 
 ### 0x04 使用
 
 自定义一个`ZNGirl`类，它有三个`BOOL`类型的成员`white`、`rich`、`beautiful`。按照以前的做法是直接声明三个`BOOL`的属性变量，学过位域后我们可以尝试下。
 
-```
+```Objective-C
 // ZNGirl.h
 - (void)setWhite:(BOOL)white;
 - (void)setRich:(BOOL)rich;
@@ -369,7 +369,7 @@ NSLog(@"white:%d, rich:%d, beautiful:%d",  girl.white, girl.rich, girl.beautiful
 
 我们还可以用共用体和位域结合的方式解决上面的问题。
 
-```
+```Objective-C
 // ZNGirl.h
 - (void)setWhite:(BOOL)white;
 - (void)setRich:(BOOL)rich;
@@ -385,14 +385,14 @@ NSLog(@"white:%d, rich:%d, beautiful:%d",  girl.white, girl.rich, girl.beautiful
 #define ZN_BEAUTIFUL_MASK (1 << 2)
 
 union {
-	char bits;
-	// 这个结构体只是为了增加代码可读性，去掉后代码也能正常运行
-	struct {
-	    char white : 1;
-	    char rich : 1;
-	    char beautiful :1;
-	    
-	};
+    char bits;
+    // 这个结构体只是为了增加代码可读性，去掉后代码也能正常运行
+    struct {
+        char white : 1;
+        char rich : 1;
+        char beautiful :1;
+        
+    };
 }_whiteRichBeautiful;
 
 - (void)setWhite:(BOOL)white
@@ -457,7 +457,7 @@ NSLog(@"white:%d, rich:%d, beautiful:%d",  girl.white, girl.rich, girl.beautiful
 
 我们知道`OC`中的类本质上是个`objc_class`类型的结构体，`isa`指针存储在其中，但没有声明。`isa`声明在`objc_class `的父类`objc_object`结构体中。在`objc4-750`源码中搜索`objc_object {`就可查看`isa`指针的结构。
 
-```
+```Objective-C
 //  objc-private.h
 struct objc_object {
 private:
@@ -520,7 +520,7 @@ union isa_t {
 
 简化下：去掉`x86`架构、替换掉宏定义
 
-```
+```Objective-C
 typedef unsigned long  uintptr_t;
 
 union isa_t {

@@ -40,15 +40,15 @@
 
 - [RunLoop](https://github.com/zhaoName/Notes/blob/master/iOS/RunLoop.md)
 
-- [runtime(一) - isa](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%B8%80)%20-%20isa.md)
+- [runtime-isa](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-isa.md)
 
-- [runtime(二) - 方法缓存](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%BA%8C)%20-%20%E6%96%B9%E6%B3%95%E7%BC%93%E5%AD%98.md)
+- [runtime-methodCache](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-methodCache.md)
 
-- [runtime(三) - objc_msgSend](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%B8%89)%20-%20objc_msgSend.md)
+- [runtime-objc_msgSend](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-objc_msgSend.md)
 
-- [runtime(四) - super](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E5%9B%9B)%20-%20super.md)
+- [runtime-super](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-super.md)
 
-- [runtime(五) - API](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%BA%94)%20-%20API.md)
+- [runtime-API](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-API.md)
 
 - [Block本质(一)](https://github.com/zhaoName/Notes/blob/master/iOS/Block%E6%9C%AC%E8%B4%A8(%E4%B8%80).md)
 

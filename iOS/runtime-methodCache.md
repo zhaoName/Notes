@@ -1,11 +1,11 @@
 
-# runtime(二) - 方法缓存
+# runtime - 方法缓存
 
 <br>
 
 在[OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)我们知道实例方法存储在`class`对象中，类方法存储在`meta-class`对象中。当调用实例方法时，先通过实例对象的`isa`找到`class`对象，再找到存储在`class`对象中的对象方法进行调用。若当前`class`对象中没找到对应的实例方法，会一层层遍历他的父类`class`对象(类方法也一样)。如下图
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0201.png)
+![](../Images/iOS/runtime/runtime_image0201.png)
 
 其实这样说有点问题，苹果为了提高方法调用速度在`struct objc_class`结构体中添加一个方法缓存成员`cache_t cache`。调用过的方法都会缓存在这个结构体中(结构体数组未扩容，扩容会清空缓存)，下次调用会优先查找缓存，若找到就直接调用，不会再去`class`对象中或父类的`class`对象中遍历查找方法调用。
 
@@ -17,19 +17,19 @@
 
 直接用[OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)中的图片展示`Class`的结构
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0202.png)
+![](../Images/iOS/runtime/runtime_image0202.png)
 
 `class_to_t`中的`baseMethodList`、`baseProtocols`、`ivars`、`baseProperties`是一维数组，是只读的，包含了类的初始内容。
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0203.png)
+![](../Images/iOS/runtime/runtime_image0203.png)
 
 `class_rw_t`中的`methods`、`properties`、`protocols`是二维数组，是可读可写的，包含了类的初始内容、分类的内容。
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0204.png)
+![](../Images/iOS/runtime/runtime_image0204.png)
 
 我们来从源码来看两者之间的关系
 
-```
+```Objective-C
 // objc-runtime-new.mm
 
 /***********************************************************************
@@ -82,7 +82,7 @@ static Class realizeClass(Class cls)
 
 无论是`class_ro_t`中的一维数组`baseMethodList `还是`class_rw_t`中的二维数组`methods `，他们里面最终存储的都是`struct method_t`类型。也就是说所有的方法在底层都会包装成`struct method_t`。
 
-```
+```Objective-C
 // objc-runtime-new.mm
 
 struct method_t {
@@ -101,19 +101,19 @@ struct method_t {
 
 - 用`@selector()`或`sel_registerName()`获取方法名
 
-```
+```Objective-C
 NSLog(@"获取方法名:%s %s", @selector(testGirl), sel_registerName("testGirl"));
 ```
 
 - 用`sel_getName()`或`NSStringFromSelector()`将`SEL`转成字符串
 
-```
+```Objective-C
 NSLog(@"方法名转字符串:%@ %s", NSStringFromSelector(@selector(testGirl)), sel_getName(@selector(testGirl)));
 ```
 
 - 不同类中相同名字的方法，所对应的方法选择器是相同的
 
-```
+```Objective-C
 // 为防止和系统 objc_method 重名，这里加个前缀
 struct zn_objc_method {
     SEL _Nonnull method_name;
@@ -129,7 +129,7 @@ NSLog(@"不同类同方法名:%p %p", sel_registerName("testGirl"), meth->method
 
 打印结果
 
-```
+```Objective-C
 2019-06-27 17:39:51.786009 runtime-isa[6397:816234] 获取方法名:testGirl testGirl
 2019-06-27 17:39:51.786208 runtime-isa[6397:816234] 方法名转字符串:testGirl testGirl
 2019-06-27 17:39:51.786287 runtime-isa[6397:816234] 不同类同方法名:0x1000329b0 0x1000329b0
@@ -140,7 +140,7 @@ NSLog(@"不同类同方法名:%p %p", sel_registerName("testGirl"), meth->method
 
 `types `包含了函数返回值、参数类型编码的字符串，也称方法签名。
 
-```
+```Objective-C
 NSLog(@"testGirl types：%s", meth->method_types);
 
 // 打印结果
@@ -169,7 +169,7 @@ NSLog(@"testGirl types：%s", meth->method_types);
 
 `imp`是指向函数的指针，也称方法实现。
 
-```
+```Objective-C
 Method me = class_getInstanceMethod([ViewController class], @selector(testGirl));
 struct zn_objc_method *meth = (struct zn_objc_method *)me;
     
@@ -179,7 +179,7 @@ NSLog(@"testGirl方法地址：%p", meth->method_imp);
 
 在`ViewController `中的`testGirl`方法中下断点，在`Xcode`的`Debug -> Debug Workflow -> Always Show Disassembly`模式下查看方法的起始地址。
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0205.png)
+![](../Images/iOS/runtime/runtime_image0205.png)
 
 ## 三、`cache_t`
 
@@ -188,7 +188,7 @@ NSLog(@"testGirl方法地址：%p", meth->method_imp);
 
 ### 0x01 `cache_t` 结构
 
-```
+```Objective-C
 // objc-runtime-new.mm
 
 // arm64 简化版
@@ -216,7 +216,7 @@ struct cache_t {
 
 ### 0x02 散列表设计方案
 
-```
+```Objective-C
 // objc-cache.mm
 
 mask_t cache_t::mask() 
@@ -337,7 +337,7 @@ static void cache_fill_nolock(Class cls, SEL sel, IMP imp, id receiver)
 
 ### 0x03 证明
 
-```
+```Objective-C
 // ZNPerson.m
 - (void)testPerson
 {
@@ -367,18 +367,18 @@ mj_objc_class *girlClass = (__bridge mj_objc_class *)[ZNGirlFriend class];
 [girl testGirlFriend];
 ```
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0206.png)
+![](../Images/iOS/runtime/runtime_image0206.png)
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0207.png)
+![](../Images/iOS/runtime/runtime_image0207.png)
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0208.png)
+![](../Images/iOS/runtime/runtime_image0208.png)
 
-![](../Images/iOS/runtime(二)-MethodCache/runtime_image0209.png)
+![](../Images/iOS/runtime/runtime_image0209.png)
 
 
 遍历`_buckets`，并用上面讲解的散列表算法取出特定的方法缓存
 
-```
+```Objective-C
 ZNGirlFriend *girl = [[ZNGirlFriend alloc] init];
 mj_objc_class *girlClass = (__bridge mj_objc_class *)[ZNGirlFriend class];
     

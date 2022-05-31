@@ -1,5 +1,5 @@
 
-# runtime(三) - objc_msgSend
+# runtime - objc_msgSend
 
 <br>
 
@@ -17,7 +17,7 @@
 在`objc4-750`中搜索`objc_msgSend`，你会发现最终在`objc-msg-arm64.s`中找到`_objc_msgSend `的汇编实现。
 
 
-```
+```Objective-C
 ENTRY _objc_msgSend
     UNWIND _objc_msgSend, NoFrame
 
@@ -48,47 +48,47 @@ END_ENTRY _objc_msgSend
 
 上面是对消息接收者防空判断，并将`isa`和对应的`calss`对象放到相应的寄存器中。然后去`CacheLookup NORMAL`中查找缓存。
 
-```
+```Objective-C
 .macro CacheLookup
-	// p1 = SEL, p16 = isa
+    // p1 = SEL, p16 = isa
     // p10 = buckets, p11 = occupied|mask
-	ldp	p10, p11, [x16, #CACHE]
+    ldp    p10, p11, [x16, #CACHE]
 #if !__LP64__
-	and	w11, w11, 0xffff	// p11 = mask
+    and    w11, w11, 0xffff    // p11 = mask
 #endif
     // x12 = _cmd & mask
-	and	w12, w1, w11
+    and    w12, w1, w11
     // p12 = buckets + ((_cmd & mask) << (1+PTRSHIFT))
-	add	p12, p10, p12, LSL #(1+PTRSHIFT)
-	......
-	
+    add    p12, p10, p12, LSL #(1+PTRSHIFT)
+    ......
+    
     // {imp, sel} = *bucket
-	ldp	p17, p9, [x12]
+    ldp    p17, p9, [x12]
     // if (bucket->sel != _cmd)
-1:	cmp	p9, p1
+1: cmp    p9, p1
     // scan more
     // 方法名不同 则遍历下一个方法缓存中的元素
-	b.ne  2f
+    b.ne  2f
     // call or return imp
     // 在方法缓存中找到 imp
-	CacheHit $0
-	
-2:	// not hit: p12 = not-hit bucket
+    CacheHit $0
+    
+2: // not hit: p12 = not-hit bucket
     // miss if bucket->sel == 0
-	CheckMiss $0
+    CheckMiss $0
     // wrap if bucket == buckets
-	cmp	p12, p10
-	b.eq	3f
+    cmp    p12, p10
+    b.eq    3f
     // {imp, sel} = *--bucket
     // 循环遍历方法缓存
     // objc-cache.mm 中的 bucket_t * cache_t::find(cache_key_t k, id receiver)
-	ldp	p17, p9, [x12, #-BUCKET_SIZE]!
+    ldp    p17, p9, [x12, #-BUCKET_SIZE]!
     // loop
-	b	1b
+    b    1b
 
-3:	// double wrap
-	JumpMiss $0
-	
+3: // double wrap
+    JumpMiss $0
+    
 .endmacro
 ```
 
@@ -99,17 +99,16 @@ END_ENTRY _objc_msgSend
 - 循环遍历后没找到调用`CheckMiss $0`，去方法列表中查找。
 
 
-```
+```Objective-C
 .macro CheckMiss
-	// miss if bucket->sel == 0
+    // miss if bucket->sel == 0
 .if $0 == GETIMP
-	cbz	p9, LGetImpMiss
+    cbz    p9, LGetImpMiss
 .elseif $0 == NORMAL
     // 记得上面 CacheLookup NORMAL， 所以走这个判断
-	cbz	p9, __objc_msgSend_uncached
+    cbz    p9, __objc_msgSend_uncached
 ......
 .endmacro
-
 
 STATIC_ENTRY __objc_msgSend_uncached
 UNWIND __objc_msgSend_uncached, FrameWithNoSaves
@@ -122,15 +121,12 @@ TailCallFunctionPointer x17
 
 END_ENTRY __objc_msgSend_uncached
 
-
 .macro MethodTableLookup
-	......
-	
-	// receiver and selector already in x0 and x1
-	mov	x2, x16
-	bl	__class_lookupMethodAndLoadCache3
-	
-	......
+    ......
+    // receiver and selector already in x0 and x1
+    mov    x2, x16
+    bl    __class_lookupMethodAndLoadCache3
+    ......
 .endmacro
 ```
 
@@ -144,7 +140,7 @@ END_ENTRY __objc_msgSend_uncached
 这是因为`C/C++`中的函数在转成汇编调用时，函数名会多一个下划线如`main -> _main`。所以我们要搜索`_class_lookupMethodAndLoadCache3 `，就会在`objc-runtime-new.mm`中找到其具体实现。
 
 
-```
+```Objective-C
 // objc-runtime-new.mm
 
 IMP _class_lookupMethodAndLoadCache3(id obj, SEL sel, Class cls)
@@ -256,7 +252,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,  bool initialize, bool cache
 
 当从方法缓存和方法列表(当前类、父类)中都没找到对应的方法，系统还会给两次机会去继续调用方法。我们先看第一次机会。
 
-```
+```Objective-C
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, bool initialize, bool cache, bool resolver)
 {
     ......
@@ -325,7 +321,7 @@ static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
 
 在`OC`中动态添加实例方法或类方法
 
-```
+```Objective-C
 // ZNPerson.m
 void c_testObject(id self, SEL sel)
 {
@@ -379,7 +375,7 @@ void c_testObject(id self, SEL sel)
 
 当消息发送和动态方法解析都未成功，会进入消息转发阶段。
 
-```
+```Objective-C
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, bool initialize, bool cache, bool resolver)
 {
     ......
@@ -409,7 +405,7 @@ END_ENTRY __objc_msgForward
 
 接下来的代码苹果就不开源了，外国有个大佬一步步调试汇编，将接下来的代码反汇编出来
 
-```
+```Objective-C
 // 伪代码
 int __forwarding__(void *frameStackPointer, int isStret) {
     id receiver = *(id *)frameStackPointer;
@@ -512,7 +508,7 @@ int __forwarding__(void *frameStackPointer, int isStret) {
 
 - `forwardingTargetForSelector:`
 
-```
+```Objective-C
 // ZNPerson.m
 - (id)forwardingTargetForSelector:(SEL)aSelector
 {
@@ -546,7 +542,7 @@ int __forwarding__(void *frameStackPointer, int isStret) {
 
 - `methodSignatureForSelector:`和`forwardInvocation:`
 
-```
+```Objective-C
 // ZNPerson.m
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector
 {
@@ -577,7 +573,7 @@ int __forwarding__(void *frameStackPointer, int isStret) {
 2019-07-02 23:43:38.813649 runtime-isa[1271:481872] ----testPerson-----
 ```
 
-![](../Images/iOS/runtime(三)-objc_msgSend/objcMsgSend_image0301.png)
+![](../Images/iOS/runtime/runtime_image0301.png)
 
 
 <br>
