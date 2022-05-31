@@ -1,4 +1,4 @@
-# Categoty本质(二)load、initialize方法
+# Categoty - load、initialize方法
 
 <br>
 
@@ -456,9 +456,9 @@ void callInitialize(Class cls)
 
 **相关内容**
 
-- [Categary本质(一)底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Categary本质(一)底层实现.md)
+- [Categary - 底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category-imp.md)
 
-- [Category本质(三)关联对象](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category本质(三)关联对象.md)
+- [Category - 关联对象](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category-AssociationObject.md)
 
 <br>
 

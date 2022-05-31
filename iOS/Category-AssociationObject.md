@@ -1,4 +1,4 @@
-# Category本质(三)关联对象
+# Category - 关联对象
 
 <br>
 
@@ -16,7 +16,7 @@
 
 ### 0x01 常用API
 
-```
+```Objective-C
 // 添加关联对象
 objc_setAssociatedObject(id object, const void *key, id value, objc_AssociationPolicy policy)
 
@@ -31,7 +31,7 @@ objc_removeAssociatedObjects(id object)
 
 给`NSObject`添加的`name`属性
 
-```
+```Objective-C
 // NSObject+Add.h
 @property (nonatomic, strong) NSString *name;
 
@@ -53,7 +53,7 @@ static const char *NameKey = "NameKey";
 
 但这样每次声明属性都要维护写一个类似`static const char *NameKey = "NameKey";`这样的`key `很麻烦！我们改进下
 
-```
+```Objective-C
 // 使用属性的 getter 方法的 @selector 作为 key，既能保证唯一又不用维护
 - (void)setName:(NSString *)name
 {
@@ -70,7 +70,7 @@ static const char *NameKey = "NameKey";
 
 `objc_AssociationPolicy`指的是使用什么策略关联对象。相当于声明属性时使用`strong`之类的修饰符。
 
-![](../Images/iOS/Category本质(三)/AssociationObject_image0301.png)
+![](../Images/iOS/Category/AssociationObject_image0301.png)
 
 ## 二、原理
 
@@ -78,7 +78,7 @@ static const char *NameKey = "NameKey";
 
 在`objc4-750`的`objc-runtime.mm`找到`objc_setAssociatedObject()`的实现.
 
-```
+```Objective-C
 // objc-runtime.mm
 void objc_setAssociatedObject(id object, const void *key, id value, objc_AssociationPolicy policy) {
     _object_set_associative_reference(object, (void *)key, value, policy);
@@ -151,7 +151,7 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 用一幅图来解释
 
-![](../Images/iOS/Category本质(三)/AssociationObject_image0302.png)
+![](../Images/iOS/Category/AssociationObject_image0302.png)
 
 
 - `AssociationsHashMap`和`ObjectAssociationMap`可以看做`OC`中的字典。
@@ -165,7 +165,7 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 关联对象没有`weak`效果，也就是说当关联对象的`value`所指向的内存被释放，不能将其置为`nil`，再去获取`value`的值就会造成坏内存访问(野指针)。
 
-![](../Images/iOS/Category本质(三)/AssociationObject_image0303.png)
+![](../Images/iOS/Category/AssociationObject_image0303.png)
 
 ## 总结
 
@@ -178,9 +178,9 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 **相关内容**
 
-- [Categary本质(一)底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Categary本质(一)底层实现.md)
+- [Categary - 底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category-imp.md)
 
-- [Categoty本质(二)load,initialize方法](https://gitee.com/zhaoName0x01/Notes/edit/master/iOS/Categoty本质(二)load,initialize方法.md)
+- [Categoty - load,initialize](https://gitee.com/zhaoName0x01/Notes/edit/master/iOS/Categoty-load-initialize.md)
 
 <br>
 

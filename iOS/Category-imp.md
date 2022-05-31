@@ -1,4 +1,4 @@
-# Categary本质(一) 底层实现
+# Categary - 底层实现
 
 <br>
 
@@ -60,11 +60,11 @@ void *memmove(void *dest, const void *source, size_t count)
 
 **下面只讨论"右复制",（"左复制"肯定不会出现数据覆盖的情况）**
 
-![](../Images/iOS/Categary本质(一)/AssociationObject_image0101.png)
+![](../Images/iOS/Category/AssociationObject_image0101.png)
 
 - `memcpy()`是从前往后一个一个复制内存数据，所以当出现区域重叠时，会导致本身数据更改，没有达到想要的效果
 
-![](../Images/iOS/Categary本质(一)/AssociationObject_image0102.png)
+![](../Images/iOS/Category/AssociationObject_image0102.png)
 
 - `memmove()`是从后往前一个一个复制内存数据，当出现区域重叠时，优先复制重叠区域的数据，不会出现数据覆盖的情况。
 
@@ -471,14 +471,14 @@ void attachLists(List* const * addedLists, uint32_t addedCount)
 
 文件编译顺序在下图位置中调整
 
-![](../Images/iOS/Categary本质(一)/AssociationObject_image0103.png)
+![](../Images/iOS/Category/AssociationObject_image0103.png)
 
 
 **相关内容**
 
-- [Categoty本质(二)load,initialize方法](https://gitee.com/zhaoName0x01/Notes/edit/master/iOS/Categoty本质(二)load,initialize方法.md)
+- [Categoty - load,initialize](https://gitee.com/zhaoName0x01/Notes/edit/master/iOS/Categoty-load-initialize.md)
 
-- [Category本质(三)关联对象](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category本质(三)关联对象.md)
+- [Category - 关联对象](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category-AssociationObject.md)
 
 
 <br>

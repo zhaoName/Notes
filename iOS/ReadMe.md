@@ -8,7 +8,7 @@
 - [iOS获取任意线程调用栈(二) - ARM64下栈帧简介](https://github.com/zhaoName/Notes/blob/master/iOS/iOS%E8%8E%B7%E5%8F%96%E4%BB%BB%E6%84%8F%E7%BA%BF%E7%A8%8B%E8%B0%83%E7%94%A8%E6%A0%88(%E4%BA%8C)%20-%20ARM64%E4%B8%8B%E6%A0%88%E5%B8%A7%E7%AE%80%E4%BB%8B.md)
 - [iOS获取任意线程调用栈(三) - 在Mach-O中查找对应的符号(方法名)](https://github.com/zhaoName/Notes/blob/master/iOS/iOS%E8%8E%B7%E5%8F%96%E4%BB%BB%E6%84%8F%E7%BA%BF%E7%A8%8B%E8%B0%83%E7%94%A8%E6%A0%88(%E4%B8%89)%20-%20%E5%9C%A8Mach-O%E4%B8%AD%E6%9F%A5%E6%89%BE%E5%AF%B9%E5%BA%94%E7%9A%84%E7%AC%A6%E5%8F%B7(%E6%96%B9%E6%B3%95%E5%90%8D).md)
 
-- [CocoaPods - Uninstall And Install](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods-Uninstall%20And%20Install.md)
+- [CocoaPods - Uninstall&Install](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods-Uninstall%26Install.md)
 
 - [CocoaPods - Podfile](https://github.com/zhaoName/Notes/blob/master/iOS/CocoaPods-Podfile.md)
 
@@ -54,14 +54,9 @@
 
 - [Block本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/Block%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md)
 
-
-- [Categary本质(一)底层实现](https://github.com/zhaoName/Notes/blob/master/iOS/Categary%E6%9C%AC%E8%B4%A8(%E4%B8%80)%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0.md)
-
-
-- [Categoty本质(二)load、initialize方法](https://github.com/zhaoName/Notes/blob/master/iOS/Categoty%E6%9C%AC%E8%B4%A8(%E4%BA%8C)load%2Cinitialize%E6%96%B9%E6%B3%95.md)
-
-
-- [Category本质(三)关联对象](https://github.com/zhaoName/Notes/blob/master/iOS/Category%E6%9C%AC%E8%B4%A8(%E4%B8%89)%E5%85%B3%E8%81%94%E5%AF%B9%E8%B1%A1.md)
+- [Categary - 底层实现](https://github.com/zhaoName/Notes/blob/master/iOS/Categary-imp.md)
+- [Categoty - load、initialize](https://github.com/zhaoName/Notes/blob/master/iOS/Categoty-load-initialize.md)
+- [Category - 关联对象](https://github.com/zhaoName/Notes/blob/master/Category-AssociationObject.md)
 
 - [KVC](https://github.com/zhaoName/Notes/blob/master/iOS/KVC.md)
 
