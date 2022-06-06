@@ -211,15 +211,231 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 
 - 创建新的 `NSURLRequest `，并将 original request  的 `mutableCopy` 一份
 
-- 使用 `AFURLRequestSerialization ` 中的 `HTTPRequestHeaders` 属性设置 HTTP Header
+- 使用 `AFHTTPRequestSerializer ` 中的 `HTTPRequestHeaders` 属性设置 HTTP Header
 - **最重要的作用：序列化请求参数**
 
 具体实现看后面代码分析。
 
 <br>
 
-## 四、AFURLRequestSerialization
+## 四、AFHTTPRequestSerializer
 
+### 0x01 `init`
+
+```Objective-C
++ (instancetype)serializer {
+    return [[self alloc] init];
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (!self) {
+        return nil;
+    }
+
+    self.stringEncoding = NSUTF8StringEncoding;
+
+    self.mutableHTTPRequestHeaders = [NSMutableDictionary dictionary];
+    self.requestHeaderModificationQueue = dispatch_queue_create("requestHeaderModificationQueue", DISPATCH_QUEUE_CONCURRENT);
+
+    // Accept-Language HTTP Header; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.4
+    NSMutableArray *acceptLanguagesComponents = [NSMutableArray array];
+    [[NSLocale preferredLanguages] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        float q = 1.0f - (idx * 0.1f);
+        [acceptLanguagesComponents addObject:[NSString stringWithFormat:@"%@;q=%0.1g", obj, q]];
+        *stop = q <= 0.5f;
+    }];
+    [self setValue:[acceptLanguagesComponents componentsJoinedByString:@", "] forHTTPHeaderField:@"Accept-Language"];
+
+    // User-Agent Header; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.43
+    NSString *userAgent = nil;
+#if TARGET_OS_IOS
+    userAgent = [NSString stringWithFormat:@"%@/%@ (%@; iOS %@; Scale/%0.2f)", [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleExecutableKey] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleIdentifierKey], [[NSBundle mainBundle] infoDictionary][@"CFBundleShortVersionString"] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleVersionKey], [[UIDevice currentDevice] model], [[UIDevice currentDevice] systemVersion], [[UIScreen mainScreen] scale]];
+#elif TARGET_OS_TV
+    userAgent = [NSString stringWithFormat:@"%@/%@ (%@; tvOS %@; Scale/%0.2f)", [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleExecutableKey] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleIdentifierKey], [[NSBundle mainBundle] infoDictionary][@"CFBundleShortVersionString"] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleVersionKey], [[UIDevice currentDevice] model], [[UIDevice currentDevice] systemVersion], [[UIScreen mainScreen] scale]];
+#elif TARGET_OS_WATCH
+    userAgent = [NSString stringWithFormat:@"%@/%@ (%@; watchOS %@; Scale/%0.2f)", [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleExecutableKey] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleIdentifierKey], [[NSBundle mainBundle] infoDictionary][@"CFBundleShortVersionString"] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleVersionKey], [[WKInterfaceDevice currentDevice] model], [[WKInterfaceDevice currentDevice] systemVersion], [[WKInterfaceDevice currentDevice] screenScale]];
+#elif defined(__MAC_OS_X_VERSION_MIN_REQUIRED)
+    userAgent = [NSString stringWithFormat:@"%@/%@ (Mac OS X %@)", [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleExecutableKey] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleIdentifierKey], [[NSBundle mainBundle] infoDictionary][@"CFBundleShortVersionString"] ?: [[NSBundle mainBundle] infoDictionary][(__bridge NSString *)kCFBundleVersionKey], [[NSProcessInfo processInfo] operatingSystemVersionString]];
+#endif
+    if (userAgent) {
+        if (![userAgent canBeConvertedToEncoding:NSASCIIStringEncoding]) {
+            NSMutableString *mutableUserAgent = [userAgent mutableCopy];
+            if (CFStringTransform((__bridge CFMutableStringRef)(mutableUserAgent), NULL, (__bridge CFStringRef)@"Any-Latin; Latin-ASCII; [:^ASCII:] Remove", false)) {
+                userAgent = mutableUserAgent;
+            }
+        }
+        [self setValue:userAgent forHTTPHeaderField:@"User-Agent"];
+    }
+
+    // HTTP Method Definitions; see http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html
+    self.HTTPMethodsEncodingParametersInURI = [NSSet setWithObjects:@"GET", @"HEAD", @"DELETE", nil];
+
+    self.mutableObservedChangedKeyPaths = [NSMutableSet set];
+    for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
+        if ([self respondsToSelector:NSSelectorFromString(keyPath)]) {
+            [self addObserver:self forKeyPath:keyPath options:NSKeyValueObservingOptionNew context:AFHTTPRequestSerializerObserverContext];
+        }
+    }
+
+    return self;
+}
+```
+
+- 设置默认编码格式 `NSUTF8StringEncoding`
+
+- 声明 `HTTPRequestHeaders` 和 修改 headers 所用的队列
+- 设置请求头 Accept-Language
+- 设置请求头 User-Agent
+- `HTTPMethodsEncodingParametersInURI` 中包含 GET、HEAD、DELETE 三种请求，这三种请求的参数都是拼接在 URL 后面，而 POST、PUT 请求在放在 body 中。
+- 声明 `mutableObservedChangedKeyPaths`，以便设置 `NSURLRequest` 属性。
+
+<br>
+
+### 0x02 `mutableObservedChangedKeyPaths `
+
+这里需要将 `mutableObservedChangedKeyPaths` 单独说一下。它保存的是设置后的属性(没修改的不保存)，然后再遍历赋值给 `NSURLRequest` 的属性。为什么要这么做呢？
+
+`AFHTTPRequestSerializer` 的目的是构造一个正确的 `NSURLRequest`，那`AFHTTPRequestSerializer` 就会暴露一些 `NSURLRequest` 所用到的属性，以便给使用者设置值。但是这些属性是基本数据类型，如 `timeoutInterval`，都会带有默认值，若直接赋值给 `NSURLRequest` 就分不清到底是外部设置的，还是默认值。所以我们采用 KVO 监听的方法，监听修改的属性和设置之后的值，然后保存起来再赋值给 `NSURLRequest`。
+
+下面是`AFHTTPRequestSerializer` 暴露的属性：
+
+```Objective-C
+static NSArray * AFHTTPRequestSerializerObservedKeyPaths() {
+    static NSArray *_AFHTTPRequestSerializerObservedKeyPaths = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _AFHTTPRequestSerializerObservedKeyPaths = @[NSStringFromSelector(@selector(allowsCellularAccess)),
+                                                     NSStringFromSelector(@selector(cachePolicy)),
+                                                     NSStringFromSelector(@selector(HTTPShouldHandleCookies)),
+                                                     NSStringFromSelector(@selector(HTTPShouldUsePipelining)),
+                                                     NSStringFromSelector(@selector(networkServiceType)),
+                                                     NSStringFromSelector(@selector(timeoutInterval))];
+    });
+
+    return _AFHTTPRequestSerializerObservedKeyPaths;
+}
+```
+
+然后通过 KVO 监听这些属性值的变化
+
+```Objective-C
+for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
+    if ([self respondsToSelector:NSSelectorFromString(keyPath)]) {
+        [self addObserver:self forKeyPath:keyPath options:NSKeyValueObservingOptionNew context:AFHTTPRequestSerializerObserverContext];
+    }
+}
+```
+若监听到这些属性值发生变化，则会将属性和属性值添加到 `mutableObservedChangedKeyPaths` 中
+
+```Objective-C
+- (void)observeValueForKeyPath:(NSString *)keyPath
+                      ofObject:(__unused id)object
+                        change:(NSDictionary *)change
+                       context:(void *)context
+{
+    if (context == AFHTTPRequestSerializerObserverContext) {
+        if ([change[NSKeyValueChangeNewKey] isEqual:[NSNull null]]) {
+            [self.mutableObservedChangedKeyPaths removeObject:keyPath];
+        } else {
+            [self.mutableObservedChangedKeyPaths addObject:keyPath];
+        }
+    }
+}
+```
+
+再将保存后的属性赋值给 `NSURLRequest`
+
+```Objective-C
+- (NSMutableURLRequest *)requestWithMethod:(NSString *)method
+                                 URLString:(NSString *)URLString
+                                parameters:(id)parameters
+                                     error:(NSError *__autoreleasing *)error
+{
+    ...
+    for (NSString *keyPath in self.mutableObservedChangedKeyPaths) {
+        [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
+    }
+	...
+}
+```
+
+<br>
+
+### 0x03 `requestBySerializingRequest:withParameters:error:`
+
+`requestBySerializingRequest:withParameters:error:` 就是协议 `AFURLRequestSerialization` 中声明的方法。在 `AFHTTPRequestSerializer` 中实现
+
+```Objective-C
+- (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
+                               withParameters:(id)parameters
+                                        error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(request);
+
+    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+
+    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+        if (![request valueForHTTPHeaderField:field]) {
+            [mutableRequest setValue:value forHTTPHeaderField:field];
+        }
+    }];
+
+    NSString *query = nil;
+    // 序列化参数
+    if (parameters) {
+        if (self.queryStringSerialization) {
+            // 自定义序列化方式
+            NSError *serializationError;
+            query = self.queryStringSerialization(request, parameters, &serializationError);
+
+            if (serializationError) {
+                if (error) {
+                    *error = serializationError;
+                }
+
+                return nil;
+            }
+        } else {
+            // 默认序列化
+            switch (self.queryStringSerializationStyle) {
+                case AFHTTPRequestQueryStringDefaultStyle:
+                    query = AFQueryStringFromParameters(parameters);
+                    break;
+            }
+        }
+    }
+
+    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+        if (query && query.length > 0) {
+            // `GET`, `HEAD`, 和 `DELETE`请求，直接将序列化后的参数拼接到 URL 后面
+            mutableRequest.URL = [NSURL URLWithString:[[mutableRequest.URL absoluteString] stringByAppendingFormat:mutableRequest.URL.query ? @"&%@" : @"?%@", query]];
+        }
+    } else {
+        // #2864: an empty string is a valid x-www-form-urlencoded payload
+        if (!query) {
+            query = @"";
+        }
+        if (![mutableRequest valueForHTTPHeaderField:@"Content-Type"]) {
+            [mutableRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+        }
+        // 其他请求(如 POST ...) 序列化后的参数放在 body 中
+        [mutableRequest setHTTPBody:[query dataUsingEncoding:self.stringEncoding]];
+    }
+
+    return mutableRequest;
+}
+```
+
+```Objective-C
+
+```
+
+```Objective-C
+
+```
+
+<br>
 
 ```Objective-C
 
@@ -228,6 +444,12 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 ```Objective-C
 
 ```
+
+```Objective-C
+
+```
+
+<br>
 
 ```Objective-C
 
