@@ -209,7 +209,7 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 
 在这个方法中主要实现一下功能：
 
-- 创建新的 `NSURLRequest `，并将 original request  的 `mutableCopy` 一份
+- 创建新的 `NSURLRequest `，并将 original request `mutableCopy` 一份
 
 - 使用 `AFHTTPRequestSerializer ` 中的 `HTTPRequestHeaders` 属性设置 HTTP Header
 - **最重要的作用：序列化请求参数**
@@ -219,6 +219,15 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 <br>
 
 ## 四、AFHTTPRequestSerializer
+
+AFNetworking 提供了 3 中不同数据形式的序列化方式 (当然你也可以使用预留的 block 自定义其他数据格式的序列化方式)
+
+- `AFHTTPRequestSerializer`: 普通的 HTTP 请求，默认数据格式是 `application/x-www-form-urlencoded`，也就是 `key=value` 形式的 url 编码字符串
+
+- `AFJSONRequestSerializer`：参数格式是 JSON，数据格式是 `application/json`
+- `AFPropertyListRequestSerializer`：参数格式是苹果的 plist 格式，数据格式是 `application/x-plist`
+
+先从父类 `AFHTTPRequestSerializer` 说起，子类 `AFJSONRequestSerializer` 和 `AFPropertyListRequestSerializer ` 只需注意实现序列化的方法，其他雷同。
 
 ### 0x01 `init`
 
@@ -294,9 +303,9 @@ NSArray * AFQueryStringPairsFromKeyAndValue(NSString *key, id value) {
 
 ### 0x02 `mutableObservedChangedKeyPaths `
 
-这里需要将 `mutableObservedChangedKeyPaths` 单独说一下。它保存的是设置后的属性(没修改的不保存)，然后再遍历赋值给 `NSURLRequest` 的属性。为什么要这么做呢？
+这里需要将 `mutableObservedChangedKeyPaths` 单独说一下。它保存的是设置后的属性(没修改的不保存)，然后再遍历赋值给 `NSURLRequest` 对应的属性。为什么要这么做呢？
 
-`AFHTTPRequestSerializer` 的目的是构造一个正确的 `NSURLRequest`，那`AFHTTPRequestSerializer` 就会暴露一些 `NSURLRequest` 所用到的属性，以便给使用者设置值。但是这些属性是基本数据类型，如 `timeoutInterval`，都会带有默认值，若直接赋值给 `NSURLRequest` 就分不清到底是外部设置的，还是默认值。所以我们采用 KVO 监听的方法，监听修改的属性和设置之后的值，然后保存起来再赋值给 `NSURLRequest`。
+`AFHTTPRequestSerializer` 的目的是构造一个正确的 `NSURLRequest`，那`AFHTTPRequestSerializer` 就会暴露一些 `NSURLRequest` 所用到的属性，以便给使用者设置值。但是这些属性是基本数据类型，如 `timeoutInterval`，会带有默认值，若直接赋值给 `NSURLRequest` 就分不清到底是外部设置的，还是默认值。所以我们采用 KVO 监听的方法，监听修改的属性和设置之后的值，然后保存起来再赋值给 `NSURLRequest`。
 
 下面是`AFHTTPRequestSerializer` 暴露的属性：
 
@@ -356,15 +365,59 @@ for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
     for (NSString *keyPath in self.mutableObservedChangedKeyPaths) {
         [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
     }
-	...
+    ...
 }
 ```
 
+**为什么要手动触发 KVO ??**
+
+
 <br>
 
-### 0x03 `requestBySerializingRequest:withParameters:error:`
+### 0x03 `requestWithMethod:URLString:parameters:error:`
 
-`requestBySerializingRequest:withParameters:error:` 就是协议 `AFURLRequestSerialization` 中声明的方法。在 `AFHTTPRequestSerializer` 中实现
+`AFHTTPRequestSerializer` 提供了三个方法来创建 `NSMutableURLRequest`
+
+- `requestWithMethod:URLString:parameters:error:`
+
+- `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:`
+- `requestWithMultipartFormRequest:writingStreamContentsToFile:completionHandler:`
+
+前面一个是常规的 GET、POST 等请求，后面两个是 multipart 请求，主要用于上传。这里介绍第一个，实现如下:
+
+```Objective-C
+- (NSMutableURLRequest *)requestWithMethod:(NSString *)method
+                                 URLString:(NSString *)URLString
+                                parameters:(id)parameters
+                                     error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(method);
+    NSParameterAssert(URLString);
+
+    NSURL *url = [NSURL URLWithString:URLString];
+
+    NSParameterAssert(url);
+
+    NSMutableURLRequest *mutableRequest = [[NSMutableURLRequest alloc] initWithURL:url];
+    mutableRequest.HTTPMethod = method;
+    // 监听到外部设置的属性，同步到 NSMutableURLRequest 中 (KVO)
+    for (NSString *keyPath in self.mutableObservedChangedKeyPaths) {
+        [mutableRequest setValue:[self valueForKeyPath:keyPath] forKey:keyPath];
+    }
+    // 设置 header & 序列化参数
+    mutableRequest = [[self requestBySerializingRequest:mutableRequest withParameters:parameters error:error] mutableCopy];
+
+	return mutableRequest;
+}
+```
+
+在此方法中设置 HTTP Method、request 的属性、header、序列化后的参数。
+
+<br>
+
+### 0x04 `requestBySerializingRequest:withParameters:error:`
+
+`requestBySerializingRequest:withParameters:error:` 就是协议 `AFURLRequestSerialization` 中声明的方法，用于实现网络请求参数的序列化。在 `AFHTTPRequestSerializer` 中具体实现如下：
 
 ```Objective-C
 - (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
@@ -427,32 +480,200 @@ for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
 }
 ```
 
-```Objective-C
+序列化的方式有两种，一种是默认的通过 `AFQueryStringFromParameters` 函数将 `NSDictionary` 转成 `key1=value1&key2=value2`，具体实现方式上面讲过。还有一种是通过 `setQueryStringSerializationWithBlock:` 来自定义序列化方式。
 
+默认序列化方式的测试用例：
+
+```Objective-C
+// AFHTTPRequestSerializationTests.m
+
+- (void)testThatAFHTTPRequestSerializationSerializesPOSTRequestsProperly {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://example.com"]];
+    request.HTTPMethod = @"POST";
+
+    NSURLRequest *serializedRequest = [self.requestSerializer requestBySerializingRequest:request withParameters:@{@"key":@"value"} error:nil];
+    NSString *contentType = serializedRequest.allHTTPHeaderFields[@"Content-Type"];
+
+    XCTAssertNotNil(contentType);
+    XCTAssertEqualObjects(contentType, @"application/x-www-form-urlencoded");
+
+    XCTAssertNotNil(serializedRequest.HTTPBody);
+    XCTAssertEqualObjects(serializedRequest.HTTPBody, [@"key=value" dataUsingEncoding:NSUTF8StringEncoding]);
+}
 ```
 
-```Objective-C
+打印结果
 
+```Objective-C
+2022-06-07 23:23:59.966568+0800 xctest[19331:4601846] AFQueryStringPairsFromKeyAndValue --- (null) -- {
+    key = value;
+}
+2022-06-07 23:23:59.967301+0800 xctest[19331:4601846] AFQueryStringPairsFromKeyAndValue --- key -- value
+2022-06-07 23:23:59.968037+0800 xctest[19331:4601846] AFPercentEscapedStringFromString---string:key -- escaped:key
+2022-06-07 23:23:59.968840+0800 xctest[19331:4601846] AFPercentEscapedStringFromString---string:value -- escaped:value
+2022-06-07 23:23:59.969516+0800 xctest[19331:4601846] AFQueryStringFromParameters---key=value
+```
+
+
+自定义序列化方式的测试用例
+
+```Objective-C
+// AFHTTPRequestSerializationTests.m
+
+- (void)testThatAFHTTPRequestSerialiationSerializesQueryParametersCorrectlyFromQuerySerializationBlock {
+    [self.requestSerializer setQueryStringSerializationWithBlock:^NSString *(NSURLRequest *request, NSDictionary *parameters, NSError *__autoreleasing *error) {
+         __block NSMutableString *query = [NSMutableString stringWithString:@""];
+         [parameters enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+             [query appendFormat:@"%@**%@",key,obj];
+         }];
+
+         return query;
+     }];
+
+    NSURLRequest *originalRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://example.com"]];
+    NSURLRequest *serializedRequest = [self.requestSerializer requestBySerializingRequest:originalRequest withParameters:@{@"key":@"value"} error:nil];
+
+    XCTAssertTrue([[[serializedRequest URL] query] isEqualToString:@"key**value"], @"Custom Query parameters have not been serialized correctly (%@) by the query string block.", [[serializedRequest URL] query]);
+}
+```
+打印结果
+
+```Objective-C
+2022-06-07 23:27:18.116679+0800 xctest[19451:4604652] queryStringSerialization--key**value
 ```
 
 <br>
 
-```Objective-C
+### 0x05 `AFJSONRequestSerializer`
 
-```
-
-```Objective-C
-
-```
+`AFJSONRequestSerializer` 继承自 `AFHTTPRequestSerializer`，所以也会实现 `requestBySerializingRequest:withParameters:error:` 方法
 
 ```Objective-C
+- (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
+                               withParameters:(id)parameters
+                                        error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(request);
+    // GET、HEAD、DELETE
+    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+        return [super requestBySerializingRequest:request withParameters:parameters error:error];
+    }
 
+    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+    // 设置 header
+    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+        if (![request valueForHTTPHeaderField:field]) {
+            [mutableRequest setValue:value forHTTPHeaderField:field];
+        }
+    }];
+
+    if (parameters) {
+        if (![mutableRequest valueForHTTPHeaderField:@"Content-Type"]) {
+            [mutableRequest setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+        }
+
+        if (![NSJSONSerialization isValidJSONObject:parameters]) {
+            if (error) {
+                NSDictionary *userInfo = @{NSLocalizedFailureReasonErrorKey: NSLocalizedStringFromTable(@"The `parameters` argument is not valid JSON.", @"AFNetworking", nil)};
+                *error = [[NSError alloc] initWithDomain:AFURLRequestSerializationErrorDomain code:NSURLErrorCannotDecodeContentData userInfo:userInfo];
+            }
+            return nil;
+        }
+        // 序列化成 json
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:parameters options:self.writingOptions error:error];
+        
+        if (!jsonData) {
+            return nil;
+        }
+        
+        [mutableRequest setHTTPBody:jsonData];
+    }
+
+    return mutableRequest;
+}
 ```
+- 若是 GET、HEAD、DELETE 请求，只调用父类的实现。将序列化后的参数拼接在 URL 后面。
+
+- 若是其他请求，则需要将参数序列化成 JSON 格式，再放入 body 中。并将 `Content-Type` 设置为 `application/json`
+
+参数是 `NSArray` 类型的测试用例
+
+```Objective-C
+// AFJSONSerializationTests.m
+
+- (void)testThatJSONRequestSerializationHandlesParametersArray {
+    NSArray *parameters = @[@{@"key":@"value"}];
+    NSError *error = nil;
+    NSMutableURLRequest *request = [self.requestSerializer requestWithMethod:@"POST" URLString:self.baseURL.absoluteString parameters:parameters error:&error];
+
+    XCTAssertNil(error, @"Serialization error should be nil");
+
+    NSString *body = [[NSString alloc] initWithData:[request HTTPBody] encoding:NSUTF8StringEncoding];
+
+    XCTAssertTrue([@"[{\"key\":\"value\"}]" isEqualToString:body], @"Parameters were not encoded correctly");
+}
+```
+
 
 <br>
 
-```Objective-C
+### 0x06 `AFPropertyListRequestSerializer`
 
+`AFPropertyListRequestSerializer` 是将参数序列化成苹果的 plist 格式。具体实现如下：
+
+```Objective-C
+- (NSURLRequest *)requestBySerializingRequest:(NSURLRequest *)request
+                               withParameters:(id)parameters
+                                        error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(request);
+
+    if ([self.HTTPMethodsEncodingParametersInURI containsObject:[[request HTTPMethod] uppercaseString]]) {
+        return [super requestBySerializingRequest:request withParameters:parameters error:error];
+    }
+
+    NSMutableURLRequest *mutableRequest = [request mutableCopy];
+
+    [self.HTTPRequestHeaders enumerateKeysAndObjectsUsingBlock:^(id field, id value, BOOL * __unused stop) {
+        if (![request valueForHTTPHeaderField:field]) {
+            [mutableRequest setValue:value forHTTPHeaderField:field];
+        }
+    }];
+
+    if (parameters) {
+        if (![mutableRequest valueForHTTPHeaderField:@"Content-Type"]) {
+            [mutableRequest setValue:@"application/x-plist" forHTTPHeaderField:@"Content-Type"];
+        }
+
+        NSData *plistData = [NSPropertyListSerialization dataWithPropertyList:parameters format:self.format options:self.writeOptions error:error];
+        
+        if (!plistData) {
+            return nil;
+        }
+        
+        [mutableRequest setHTTPBody:plistData];
+    }
+
+    return mutableRequest;
+}
+```
+
+- 若是 GET、HEAD、DELETE 请求，只调用父类的实现。将序列化后的参数拼接在 URL 后面。
+
+- 若是其他请求，则需要将参数序列化成 plist 格式，再放入 body 中。并将 `Content-Type` 设置为 `application/x-plist`
+
+参数是 `NSDictionary` 类型的测试用例
+
+```Objective-C
+// AFPropertyListRequestSerializerTests.m
+
+- (void)testThatPropertyListRequestSerializerAcceptsPlist {
+    NSDictionary *parameters = @{@"key":@"value"};
+    NSError *error = nil;
+    NSMutableURLRequest *request = [self.requestSerializer requestWithMethod:@"POST" URLString:self.baseURL.absoluteString parameters:parameters error:&error];
+    
+    XCTAssertNotNil(request, @"Expected non-nil request.");
+}
 ```
 
 ```Objective-C
