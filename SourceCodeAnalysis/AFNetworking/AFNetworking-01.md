@@ -676,8 +676,54 @@ for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
 }
 ```
 
-```Objective-C
+<br>
 
+## 五、AFHTTPBodyPart
+
+
+
+```Objective-C
+- (instancetype)init {
+    self = [super init];
+    if (!self) {
+        return nil;
+    }
+
+    [self transitionToNextPhase];
+
+    return self;
+}
+
+- (BOOL)transitionToNextPhase {
+    if (![[NSThread currentThread] isMainThread]) {
+        dispatch_sync(dispatch_get_main_queue(), ^{
+            [self transitionToNextPhase];
+        });
+        return YES;
+    }
+
+    switch (_phase) {
+        case AFEncapsulationBoundaryPhase:
+            _phase = AFHeaderPhase;
+            break;
+        case AFHeaderPhase:
+            [self.inputStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+            [self.inputStream open];
+            _phase = AFBodyPhase;
+            break;
+        case AFBodyPhase:
+            [self.inputStream close];
+            _phase = AFFinalBoundaryPhase;
+            break;
+        case AFFinalBoundaryPhase:
+        default:
+            _phase = AFEncapsulationBoundaryPhase;
+            break;
+    }
+    _phaseReadOffset = 0;
+
+    return YES;
+}
 ```
 
 ```Objective-C
