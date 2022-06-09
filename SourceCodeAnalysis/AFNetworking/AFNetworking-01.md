@@ -726,6 +726,55 @@ for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
 }
 ```
 
+计算 multipart/form-data 所用到长度，包含：
+
+- 开始边界长度
+
+- headers + "\r\n" 的长度
+- parameters 通过 `AFQueryStringPairsFromDictionary()` 函数转成 `NSData`后的长度
+- 结束边界长度
+
+```Objective-C
+- (unsigned long long)contentLength {
+    unsigned long long length = 0;
+    // inital boundary length
+    NSData *encapsulationBoundaryData = [([self hasInitialBoundary] ? AFMultipartFormInitialBoundary(self.boundary) : AFMultipartFormEncapsulationBoundary(self.boundary)) dataUsingEncoding:self.stringEncoding];
+    length += [encapsulationBoundaryData length];
+    
+    // headers 加上 "\r\n" -> data -> length
+    NSData *headersData = [[self _stringForHeaders] dataUsingEncoding:self.stringEncoding];
+    length += [headersData length];
+    
+    // parameters (AFQueryStringPairsFromDictionary()) -> data -> length
+    length += _bodyContentLength;
+    
+    // final boundary length
+    NSData *closingBoundaryData = ([self hasFinalBoundary] ? [AFMultipartFormFinalBoundary(self.boundary) dataUsingEncoding:self.stringEncoding] : [NSData data]);
+    length += [closingBoundaryData length];
+
+    return length;
+}
+
+- (NSString *)_stringForHeaders 
+{
+    NSMutableString *headerString = [NSMutableString string];
+    for (NSString *field in [self.headers allKeys]) {
+        [headerString appendString:[NSString stringWithFormat:@"%@: %@%@", field, [self.headers valueForKey:field], kAFMultipartFormCRLF]];
+    }
+    [headerString appendString:kAFMultipartFormCRLF];
+
+    return [NSString stringWithString:headerString];
+}
+```
+
+```Objective-C
+
+```
+
+```Objective-C
+
+```
+
 ```Objective-C
 
 ```
