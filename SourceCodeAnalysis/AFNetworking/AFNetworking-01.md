@@ -678,9 +678,120 @@ for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
 
 <br>
 
-## 五、AFHTTPBodyPart
+## 五、multipart/form-data
+
+Content Type 为 `application/x-www-form-urlencoded` 对于传输大量二进制数据，或非 ASCII 字符的效率是非常低的。HTTP 协议中还设计一种 Content Type 为 `multipart/form-data` 专门用于上传文件、二进制数据、非 ASCII 字符。
+
+上面说到 `AFHTTPRequestSerializer` 提供了三个方法来创建 `NSMutableURLReques`。第一种方式上面已介绍，下面来说下第二种方法，就是创建 Content Type 为 `multipart/form-data` 的 `NSMutableURLReques `。具体函数调用栈如下：
+
+```Objective-C
+- [AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]
+    - [AFHTTPRequestSerializer requestWithMethod:URLString:parameters:error:]
+    - [AFStreamingMultipartFormData initWithURLRequest:stringEncoding:]
+    - AFQueryStringPairsFromDictionary()
+    - [AFStreamingMultipartFormData appendPartWithFormData:name:]
+        - [AFStreamingMultipartFormData appendPartWithHeaders:body:]
+            - [AFMultipartBodyStream appendHTTPBodyPart]
+    - [AFStreamingMultipartFormData requestByFinalizingMultipartFormData]
+        - [AFMultipartBodyStream setInitialAndFinalBoundaries]
+        - [AFMultipartBodyStream contentLength]
+            - [AFHTTPBodyPart contentLength]
+```
+
+### 0x01 `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:`
 
 
+
+```Objective-C
+/**
+ Creates an `NSMutableURLRequest` object with the specified HTTP method and URLString, and constructs a `multipart/form-data` HTTP body, using the specified parameters and multipart form data block. 
+ See http://www.w3.org/TR/html4/interact/forms.html#h-17.13.4.2
+
+ Multipart form requests are automatically streamed, reading files directly from disk along with in-memory data in a single HTTP body. 
+ The resulting `NSMutableURLRequest` object has an `HTTPBodyStream` property, so refrain from setting `HTTPBodyStream` or `HTTPBody` on this request object, 
+ as it will clear out the multipart form body stream.
+ */
+- (NSMutableURLRequest *)multipartFormRequestWithMethod:(NSString *)method
+                                              URLString:(NSString *)URLString
+                                             parameters:(NSDictionary *)parameters
+                              constructingBodyWithBlock:(void (^)(id <AFMultipartFormData> formData))block
+                                                  error:(NSError *__autoreleasing *)error
+{
+    NSParameterAssert(method);
+    NSParameterAssert(![method isEqualToString:@"GET"] && ![method isEqualToString:@"HEAD"]);
+
+    NSMutableURLRequest *mutableRequest = [self requestWithMethod:method URLString:URLString parameters:nil error:error];
+
+    __block AFStreamingMultipartFormData *formData = [[AFStreamingMultipartFormData alloc] initWithURLRequest:mutableRequest stringEncoding:NSUTF8StringEncoding];
+
+    if (parameters) {
+        for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
+            NSData *data = nil;
+            if ([pair.value isKindOfClass:[NSData class]]) {
+                data = pair.value;
+            } else if ([pair.value isEqual:[NSNull null]]) {
+                data = [NSData data];
+            } else {
+                data = [[pair.value description] dataUsingEncoding:self.stringEncoding];
+            }
+
+            if (data) {
+                // 设置 Content-Disposition
+                [formData appendPartWithFormData:data name:[pair.field description]];
+            }
+        }
+    }
+
+    if (block) {
+        block(formData);
+    }
+    
+    // 设置 formData.bodyStream 边界
+    // 设置 Content-Type & Content-Length
+    NSMutableURLRequest *newRequest = [formData requestByFinalizingMultipartFormData];
+    NSLog(@"%s: %@", __func__, newRequest.allHTTPHeaderFields);
+    return newRequest;
+}
+```
+
+- 先是和 `application/x-www-form-urlencoded` 一样，需要设置 `NSMutableURLRequest` 需要的属 & header & 序列化参数
+
+- 初始化 `AFStreamingMultipartFormData` 实例
+- 通过 `AFQueryStringPairsFromDictionary()` 函数将 parameters 转化成
+
+
+```Objective-C
+
+```
+
+
+```Objective-C
+
+```
+
+```Objective-C
+
+```
+
+
+
+```Objective-C
+
+```
+
+```Objective-C
+
+```
+
+
+
+```Objective-C
+
+```
+
+```Objective-C
+
+```
 
 ```Objective-C
 - (instancetype)init {
@@ -735,7 +846,8 @@ for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
 - 结束边界长度
 
 ```Objective-C
-- (unsigned long long)contentLength {
+- (unsigned long long)contentLength 
+{
     unsigned long long length = 0;
     // inital boundary length
     NSData *encapsulationBoundaryData = [([self hasInitialBoundary] ? AFMultipartFormInitialBoundary(self.boundary) : AFMultipartFormEncapsulationBoundary(self.boundary)) dataUsingEncoding:self.stringEncoding];
@@ -768,7 +880,16 @@ for (NSString *keyPath in AFHTTPRequestSerializerObservedKeyPaths()) {
 ```
 
 ```Objective-C
-
+- [AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]
+    - [AFStreamingMultipartFormData initWithURLRequest:stringEncoding:]
+    - AFQueryStringPairsFromDictionary()
+    - [AFStreamingMultipartFormData appendPartWithFormData:name:]
+        - [AFStreamingMultipartFormData appendPartWithHeaders:body:]
+            - [AFMultipartBodyStream appendHTTPBodyPart]
+    - [AFStreamingMultipartFormData requestByFinalizingMultipartFormData]
+        - [AFMultipartBodyStream setInitialAndFinalBoundaries]
+        - [AFMultipartBodyStream contentLength]
+            - [AFHTTPBodyPart contentLength]
 ```
 
 ```Objective-C
