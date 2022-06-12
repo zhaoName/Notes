@@ -698,9 +698,36 @@ Content Type 为 `application/x-www-form-urlencoded` 对于传输大量二进制
             - [AFHTTPBodyPart contentLength]
 ```
 
+通过上述函数调用 form-data 的格式应和如下格式相似
+
+```
+Content-Type: multipart/form-data; boundary=AaB03x
+
+--AaB03x
+Content-Disposition: form-data; name="submit-name"
+
+Larry
+--AaB03x
+Content-Disposition: form-data; name="files"
+Content-Type: multipart/mixed; boundary=BbC04y
+
+--BbC04y
+Content-Disposition: file; filename="file1.txt"
+Content-Type: text/plain
+
+... contents of file1.txt ...
+--BbC04y
+Content-Disposition: file; filename="file2.gif"
+Content-Type: image/gif
+Content-Transfer-Encoding: binary
+
+...contents of file2.gif...
+--BbC04y--
+--AaB03x--
+```
+
+
 ### 0x01 `multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:`
-
-
 
 ```Objective-C
 /**
@@ -754,99 +781,135 @@ Content Type 为 `application/x-www-form-urlencoded` 对于传输大量二进制
 }
 ```
 
-- 先是和 `application/x-www-form-urlencoded` 一样，需要设置 `NSMutableURLRequest` 需要的属 & header & 序列化参数
+- 先是和 `application/x-www-form-urlencoded` 一样，需要设置 `NSMutableURLRequest` 需要的属 & headers & 序列化参数
 
 - 初始化 `AFStreamingMultipartFormData` 实例
-- 通过 `AFQueryStringPairsFromDictionary()` 函数将 parameters 转化成
+- 通过 `AFQueryStringPairsFromDictionary()` 函数将 parameters 转化成 `@[AFQueryStringPair]` 数组，然后遍历数组将 `value` 转化成 `NSData`
+- 然后将设置 `Content-Disposition`
+- 设置 `formData.bodyStream` 边界，设置 `Content-Type` & `Content-Length`
+
+### 0x02 `initWithURLRequest:stringEncoding:`
 
 
 ```Objective-C
+static NSString * AFCreateMultipartFormBoundary() {
+    return [NSString stringWithFormat:@"Boundary+%08X%08X", arc4random(), arc4random()];
+}
 
-```
-
-
-```Objective-C
-
-```
-
-```Objective-C
-
-```
-
-
-
-```Objective-C
-
-```
-
-```Objective-C
-
-```
-
-
-
-```Objective-C
-
-```
-
-```Objective-C
-
-```
-
-```Objective-C
-- (instancetype)init {
+- (instancetype)initWithURLRequest:(NSMutableURLRequest *)urlRequest stringEncoding:(NSStringEncoding)encoding
+{
     self = [super init];
     if (!self) {
         return nil;
     }
 
-    [self transitionToNextPhase];
+    self.request = urlRequest;
+    self.stringEncoding = encoding;
+    self.boundary = AFCreateMultipartFormBoundary();
+    self.bodyStream = [[AFMultipartBodyStream alloc] initWithStringEncoding:encoding];
 
     return self;
 }
+```
 
-- (BOOL)transitionToNextPhase {
-    if (![[NSThread currentThread] isMainThread]) {
-        dispatch_sync(dispatch_get_main_queue(), ^{
-            [self transitionToNextPhase];
-        });
-        return YES;
-    }
+- 保存 `urlRequest ` 和编码方式 `stringEncoding`
 
-    switch (_phase) {
-        case AFEncapsulationBoundaryPhase:
-            _phase = AFHeaderPhase;
-            break;
-        case AFHeaderPhase:
-            [self.inputStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
-            [self.inputStream open];
-            _phase = AFBodyPhase;
-            break;
-        case AFBodyPhase:
-            [self.inputStream close];
-            _phase = AFFinalBoundaryPhase;
-            break;
-        case AFFinalBoundaryPhase:
-        default:
-            _phase = AFEncapsulationBoundaryPhase;
-            break;
-    }
-    _phaseReadOffset = 0;
+- `AFCreateMultipartFormBoundary()` 用于标记边界
+- 初始化 `AFMultipartBodyStream ` 实例
 
-    return YES;
+### 0x03 `appendPartWithFormData:name:`
+
+```Objective-C
+- (void)appendPartWithFormData:(NSData *)data name:(NSString *)name
+{
+    NSParameterAssert(name);
+
+    NSMutableDictionary *mutableHeaders = [NSMutableDictionary dictionary];
+    [mutableHeaders setValue:[NSString stringWithFormat:@"form-data; name=\"%@\"", name] forKey:@"Content-Disposition"];
+    NSLog(@"%s: %@", __func__, mutableHeaders);
+    // 构建 AFHTTPBodyPart，并添加到 self.bodyStream.HTTPBodyParts
+    [self appendPartWithHeaders:mutableHeaders body:data];
+}
+
+// 创建 AFHTTPBodyPart，并添加到 self.bodyStream.HTTPBodyParts 数组中
+- (void)appendPartWithHeaders:(NSDictionary *)headers body:(NSData *)body
+{
+    NSParameterAssert(body);
+
+    AFHTTPBodyPart *bodyPart = [[AFHTTPBodyPart alloc] init];
+    bodyPart.stringEncoding = self.stringEncoding;
+    bodyPart.headers = headers;
+    bodyPart.boundary = self.boundary;
+    bodyPart.bodyContentLength = [body length];
+    bodyPart.body = body;
+
+    [self.bodyStream appendHTTPBodyPart:bodyPart];
 }
 ```
 
-计算 multipart/form-data 所用到长度，包含：
-
-- 开始边界长度
-
-- headers + "\r\n" 的长度
-- parameters 通过 `AFQueryStringPairsFromDictionary()` 函数转成 `NSData`后的长度
-- 结束边界长度
+### 0x04 `requestByFinalizingMultipartFormData`
 
 ```Objective-C
-- (unsigned long long)contentLength 
+- (NSMutableURLRequest *)requestByFinalizingMultipartFormData
+{
+    if ([self.bodyStream isEmpty]) {
+        return self.request;
+    }
+
+    // Reset the initial and final boundaries to ensure correct Content-Length
+    [self.bodyStream setInitialAndFinalBoundaries];
+    [self.request setHTTPBodyStream:self.bodyStream];
+    
+    [self.request setValue:[NSString stringWithFormat:@"multipart/form-data; boundary=%@", self.boundary] forHTTPHeaderField:@"Content-Type"];
+    [self.request setValue:[NSString stringWithFormat:@"%llu", [self.bodyStream contentLength]] forHTTPHeaderField:@"Content-Length"];
+
+    return self.request;
+}
+```
+
+`requestByFinalizingMultipartFormData ` 的作用是设置边界 & 设置 Content-Length
+
+```Objective-C
+// AFMultipartBodyStream.m
+
+- (void)setInitialAndFinalBoundaries {
+    if ([self.HTTPBodyParts count] > 0) {
+        for (AFHTTPBodyPart *bodyPart in self.HTTPBodyParts) {
+            bodyPart.hasInitialBoundary = NO;
+            bodyPart.hasFinalBoundary = NO;
+        }
+
+        [[self.HTTPBodyParts firstObject] setHasInitialBoundary:YES];
+        [[self.HTTPBodyParts lastObject] setHasFinalBoundary:YES];
+    }
+}
+
+- (unsigned long long)contentLength {
+    unsigned long long length = 0;
+    for (AFHTTPBodyPart *bodyPart in self.HTTPBodyParts) {
+        length += [bodyPart contentLength];
+    }
+
+    return length;
+}
+```
+
+```Objective-C
+// AFHTTPBodyPart.m
+
+- (NSString *)_stringForHeaders
+{
+    NSMutableString *headerString = [NSMutableString string];
+    for (NSString *field in [self.headers allKeys]) {
+        // field: value\r\n
+        [headerString appendString:[NSString stringWithFormat:@"%@: %@%@", field, [self.headers valueForKey:field], kAFMultipartFormCRLF]];
+    }
+    [headerString appendString:kAFMultipartFormCRLF];
+    NSLog(@"%s: %@", __func__, headerString);
+    return [NSString stringWithString:headerString];
+}
+
+- (unsigned long long)contentLength
 {
     unsigned long long length = 0;
     // inital boundary length
@@ -866,30 +929,73 @@ Content Type 为 `application/x-www-form-urlencoded` 对于传输大量二进制
 
     return length;
 }
+```
+计算 multipart/form-data 所用到长度，包含：
 
-- (NSString *)_stringForHeaders 
+- 开始边界长度
+
+- headers + "\r\n" 的长度
+- parameters 通过 `AFQueryStringPairsFromDictionary()` 函数转成 `NSData`后的长度
+- 结束边界长度
+
+
+然后将上述所用到方式串起来，测试用例如下：
+
+```Objective-C
+- (void)testMultipartFormRequest
 {
-    NSMutableString *headerString = [NSMutableString string];
-    for (NSString *field in [self.headers allKeys]) {
-        [headerString appendString:[NSString stringWithFormat:@"%@: %@%@", field, [self.headers valueForKey:field], kAFMultipartFormCRLF]];
-    }
-    [headerString appendString:kAFMultipartFormCRLF];
+    AFHTTPRequestSerializer *serializer = [AFHTTPRequestSerializer serializer];
+    NSError *error  = nil;
+    
+    [serializer multipartFormRequestWithMethod:@"POST" URLString:@"" parameters:@{@"key1": @"value1", @"key2": @"value2"} constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
+        NSString *path = [[NSBundle bundleForClass:[self class]] pathForResource:@"logo" ofType:@"png"];
+        UIImage *logoImage = [UIImage imageWithContentsOfFile:path];
+        [formData appendPartWithFileData:UIImagePNGRepresentation(logoImage) name:@"file" fileName:@"logo" mimeType:@"image/png"];
+    } error: &error];
+    
+    XCTAssertNil(error, @"Multipart serializer error: %@",  error.localizedDescription);
+}
+```
 
-    return [NSString stringWithString:headerString];
+打印结果如下：
+
+```Objective-C
+AFQueryStringPairsFromKeyAndValue --- (null) -- {
+    key1 = value1;
+    key2 = value2;
+}
+2022-06-12 16:22:40.895072+0800 xctest[95872:6327607] AFQueryStringPairsFromKeyAndValue --- key1 -- value1
+2022-06-12 16:22:40.896599+0800 xctest[95872:6327607] AFQueryStringPairsFromKeyAndValue --- key2 -- value2
+2022-06-12 16:22:40.898502+0800 xctest[95872:6327607] -[AFStreamingMultipartFormData appendPartWithFormData:name:]: {
+    "Content-Disposition" = "form-data; name=\"key1\"";
+}
+2022-06-12 16:22:40.900326+0800 xctest[95872:6327607] -[AFStreamingMultipartFormData appendPartWithFormData:name:]: {
+    "Content-Disposition" = "form-data; name=\"key2\"";
+}
+
+2022-06-12 16:22:40.998871+0800 xctest[95872:6327607] -[AFHTTPBodyPart _stringForHeaders]: Content-Disposition: form-data; name="key1"
+2022-06-12 16:22:41.000022+0800 xctest[95872:6327607] -[AFHTTPBodyPart _stringForHeaders]: Content-Disposition: form-data; name="key2"
+2022-06-12 16:22:41.011637+0800 xctest[95872:6327607] -[AFHTTPBodyPart _stringForHeaders]: Content-Disposition: form-data; name="file"; filename="logo"
+Content-Type: image/png
+2022-06-12 16:22:41.012887+0800 xctest[95872:6327607] -[AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]-allHTTPHeaderFields: {
+    "Accept-Language" = "en;q=1";
+    "Content-Length" = 21759;
+    "Content-Type" = "multipart/form-data; boundary=Boundary+016C2AB740B1572B";
+    "User-Agent" = "com.apple.dt.xctest.tool/17501 (iPhone; iOS 14.4; Scale/3.00)";
 }
 ```
 
 ```Objective-C
-- [AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]
-    - [AFStreamingMultipartFormData initWithURLRequest:stringEncoding:]
-    - AFQueryStringPairsFromDictionary()
-    - [AFStreamingMultipartFormData appendPartWithFormData:name:]
-        - [AFStreamingMultipartFormData appendPartWithHeaders:body:]
-            - [AFMultipartBodyStream appendHTTPBodyPart]
-    - [AFStreamingMultipartFormData requestByFinalizingMultipartFormData]
-        - [AFMultipartBodyStream setInitialAndFinalBoundaries]
-        - [AFMultipartBodyStream contentLength]
-            - [AFHTTPBodyPart contentLength]
+```
+
+
+
+```Objective-C
+
+```
+
+```Objective-C
+
 ```
 
 ```Objective-C
