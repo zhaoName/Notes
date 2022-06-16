@@ -48,6 +48,33 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
 
 ## 二、从 NSInputStream 中读取数据
 
+从一个 `NSInputStream` 流中读取数据主要包括以下几个步骤：
+
+- 从数据源中创建和初始化一个 `NSInputStream` 实例
+
+- 将流对象放入一个 run loop 中并打开流
+- 处理流对象发送到其代理的事件
+- 当没有更多数据可读取时，关闭并销毁流对象。
+
+### 0x01 准备 `NSInputStream` 实例
+
+要创建一个 `NSInputStream` 实例，必须要有数据源。数据源可以是文件、`NSData` 对象和网络socket。创建好后，我们设置其代理对象，并将其放入到 run loop 中，然后打开流。
+
+```Objective-C
+- (void)setUpStreamForFile:(NSString *)path
+{
+    NSInputStream *inputStream = [[NSInputStream alloc] initWithFileAtPath:path];
+    inputStream.delegate = self;
+    [inputStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+    
+    [inputStream open];
+}
+```
+
+在流对象放入 run loop 且有流事件(有可读数据)发生时，流对象会向代理对象发送`stream:handleEvent:` 消息。在打开流之前，我们需要调用流对象的 `scheduleInRunLoop:forMode:` 方法，这样做可以避免在没有数据可读时阻塞代理对象的操作。我们需要确保的是流对象被放入正确的 run loop 中，即放入流事件发生的那个线程的 run loop 中。
+
+
+### 0x02 处理流事件
 
 
 
@@ -56,9 +83,7 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
 
 ## 三、向 NSOutputStream 中写入数据
 
-```Objective-C
 
-```
 
 ```Objective-C
 
