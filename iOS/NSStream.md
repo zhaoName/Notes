@@ -35,14 +35,6 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
 
 但这两者间的实现并不是完全一样的。Cocoa 流使用代理方式异步处理回调(`scheduleInRunLoop:forMode:`) 而 Core Foundation 一般使用回调函数来处理数据。另外我们可以子类化 `NSStream`、`NSInputStream` 和 `NSOutputStream`，来自定义一些属性和行为，而 Core Foundation 中的流对象则无法进行扩展。
 
-```Objective-C
-
-```
-
-```Objective-C
-
-```
-
 <br>
 
 
@@ -76,7 +68,106 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
 
 ### 0x02 处理流事件
 
+在流事件被打开后，我们可以使用 `streamStatus` 属性查看流的状态，用 `hasBytesAvailable` 属性检测是否有可读的数据，用 `streamError` 来查看流处理过程中产生的错误。
 
+`NSStreamStatus` 的定义如下：
+
+```Objective-C
+typedef NS_ENUM(NSUInteger, NSStreamStatus) {
+    NSStreamStatusNotOpen = 0,
+    NSStreamStatusOpening = 1,
+    NSStreamStatusOpen = 2,
+    NSStreamStatusReading = 3,
+    NSStreamStatusWriting = 4,
+    NSStreamStatusAtEnd = 5,
+    NSStreamStatusClosed = 6,
+    NSStreamStatusError = 7
+};
+```
+
+流一旦打开后，将会持续发送 `stream:handleEvent:` 消息给代理对象，直到流结束为止。这个消息接收一个 `NSStreamEvent` 常量作为参数，以标识事件的类型。对于 `NSInputStream` 对象，事件类型如下。通常我们会对 `NSStreamEventHasBytesAvailable` 更感兴趣。
+
+```Objective-C
+typedef NS_OPTIONS(NSUInteger, NSStreamEvent) {
+    NSStreamEventNone = 0,
+    NSStreamEventOpenCompleted = 1UL << 0,
+    NSStreamEventHasBytesAvailable = 1UL << 1,
+    NSStreamEventHasSpaceAvailable = 1UL << 2,
+    NSStreamEventErrorOccurred = 1UL << 3,
+    NSStreamEventEndEncountered = 1UL << 4
+};
+```
+
+使用 `NSInputStream ` 读取文件，然后将读取到内容转化成字符串打印出来，代码如下：
+
+```Objective-C
+- (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode
+{
+    NSLog(@"%s -- %lu", __func__, eventCode);
+    
+    switch (eventCode) {
+        case NSStreamEventHasBytesAvailable:
+            [self printInputStreamContent:aStream];
+            break;
+        ...
+    }
+}
+
+- (void)printInputStreamContent:(NSStream *)aStream
+{
+    uint8_t buf[1024];
+    NSInteger len = 0;
+    len = [(NSInputStream *)aStream read:buf maxLength:1024];
+    if(len) {
+        [self.data appendBytes:(const void *)buf length:len];
+        NSLog(@"%@", [[NSString alloc] initWithData:self.data encoding:NSUTF8StringEncoding]);
+    } else {
+        NSLog(@"no buffer!");
+    }
+}
+```
+
+打印结果：
+
+```Objective-C
+2022-06-18 23:54:03.021859+0800 ZZFoundation[70482:7752276] -[ZZStreamViewController stream:handleEvent:] -- 1
+2022-06-18 23:54:03.022058+0800 ZZFoundation[70482:7752276] -[ZZStreamViewController stream:handleEvent:] -- 2
+2022-06-18 23:54:03.022356+0800 ZZFoundation[70482:7752276] 流读取到的内容: 
+- [AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]
+    - [AFHTTPRequestSerializer requestWithMethod:URLString:parameters:error:]
+    - [AFStreamingMultipartFormData initWithURLRequest:stringEncoding:]
+    - AFQueryStringPairsFromDictionary()
+    - [AFStreamingMultipartFormData appendPartWithFormData:name:]
+        - [AFStreamingMultipartFormData appendPartWithHeaders:body:]
+            - [AFMultipartBodyStream appendHTTPBodyPart]
+    - [AFStreamingMultipartFormData requestByFinalizingMultipartFormData]
+        - [AFMultipartBodyStream setInitialAndFinalBoundaries]
+        - [AFMultipartBodyStream contentLength]
+            - [AFHTTPBodyPart contentLength]
+
+2022-06-18 23:54:03.022627+0800 ZZFoundation[70482:7752276] -[ZZStreamViewController stream:handleEvent:] -- 2
+2022-06-18 23:54:03.022962+0800 ZZFoundation[70482:7752276] no buffer!
+2022-06-18 23:54:03.023128+0800 ZZFoundation[70482:7752276] -[ZZStreamViewController stream:handleEvent:] -- 16
+```
+
+### 0x03 释放流对象
+
+当 `NSInputStream` 读取到流的结尾时，会发送一个 `NSStreamEventEndEncountered` 事件给代理，代理对象此时应该销毁流对象。
+
+```Objective-C
+- (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode
+{
+    switch (eventCode) {
+        ...
+        case NSStreamEventEndEncountered:
+            [aStream close];
+            [aStream removeFromRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+            aStream = nil;
+            break;
+        ...
+    }
+}
+```
 
 
 <br>
@@ -85,9 +176,7 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
 
 
 
-```Objective-C
 
-```
 
 ```Objective-C
 
