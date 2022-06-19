@@ -175,21 +175,116 @@ typedef NS_OPTIONS(NSUInteger, NSStreamEvent) {
 ## 三、向 NSOutputStream 中写入数据
 
 
+向 `NSOutputStream` 实例中写入数据需要经过一下几个步骤：
 
+- 使用要写入的数据创建和初始化一个 `NSOutputStream` 实例，并设置代理对象
 
+- 将流对象放到 run loop 中并打开流
+- 处理流对象发送到代理对象中的事件
+- 如果流对象写入数据到内存，则通过请求 `NSStreamDataWrittenToMemoryStreamKey` 属性来获取数据
+- 当没有更多数据可供写入时，释放流对象
+
+### 0x01 创建 `NSOutputStream` 实例对象
+
+和创建 `NSInputStream` 类似，需要设置代理、`scheduleInRunLoop`、并打开输出流。数据可写入的位置包括文件、C缓存、程序内存和网络 socket。
 
 ```Objective-C
+- (void)createOutputStream
+{
+    NSOutputStream *oStream = [[NSOutputStream alloc] initToMemory];
+    [oStream setDelegate:self];
+    [oStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+    [oStream open];
+}
+```
 
+
+### 0x02 处理流事件
+
+处理 `NSOutputStream ` 流事件时，需要注意一下两点
+
+- `hasSpaceAvailable` 属性表示是否有空间来写入数据
+
+- 在 `stream:handleEvent:` 中主要处理 `NSStreamEventHasSpaceAvailable` 事件，并调用流的`write:maxLength` 方法写数据。
+
+```Objective-C
+- (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode
+{
+    NSLog(@"%s -- %lu", __func__, eventCode);
+    switch (eventCode) {
+        case NSStreamEventHasSpaceAvailable:
+        {
+            uint8_t *readBytes = (uint8_t *)[self.data mutableBytes];
+            readBytes += self.byteIndex;
+            int data_len = (int)[self.data length];
+            unsigned int len = (data_len - self.byteIndex >= 1024) ? 1024 : (data_len - self.byteIndex);
+            uint8_t buf[len];
+            
+            (void)memcpy(buf, readBytes, len);
+            
+            len = [(NSOutputStream *)aStream write:buf maxLength:len];
+            self.byteIndex += len;
+            break;
+        }
+        ...
+    }
+}
+```
+
+注意 `write:maxLength` 的返回值，有以下三层意思: 
+
+- 如果写入操作成功，则返回放入流的实际字节数。
+
+- 如果流是固定长度并且已达到其容量，则返回 0。
+- 如果写入流时出错，则返回 -1。
+
+### 0x03 释放流对象
+
+如果 `NSOutputStream` 对象的目标是应用的内存时，在 `NSStreamEventEndEncountered` 事件中可能需要从内存中获取流中的数据。我们将调用 `NSOutputStream` 对象的 `propertyForKey:` 的属性，并指定 key 为 `NSStreamDataWrittenToMemoryStreamKey`来 获取这些数据。
+
+```Objective-C
+- (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode
+{
+    NSLog(@"%s -- %lu", __func__, eventCode);
+    switch (eventCode) {
+        case NSStreamEventEndEncountered:
+        {
+            NSData *data = [(NSOutputStream *)aStream propertyForKey:NSStreamDataWrittenToMemoryStreamKey];
+            if (data) {
+                NSLog(@"写入到流读内容: %@", [[NSString alloc] initWithData:self.data encoding:NSUTF8StringEncoding]);
+            } else {
+                NSLog(@"No data written to memory!");
+            }
+            
+            [aStream removeFromRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+            [aStream close];
+            aStream = nil;
+            break;
+        } 
+        ...
+    }
+}
 ```
 
 ```Objective-C
 
 ```
-
 
 <br>
 
+```Objective-C
 
+```
+
+```Objective-C
+
+```
+```Objective-C
+
+```
+```Objective-C
+
+```
 
 <br>
 
