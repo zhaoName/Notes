@@ -44,13 +44,13 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
 
 - 从数据源中创建和初始化一个 `NSInputStream` 实例
 
-- 将流对象放入一个 run loop 中并打开流
+- 将流对象放入一个 runloop 中并打开流
 - 处理流对象发送到其代理的事件
 - 当没有更多数据可读取时，关闭并销毁流对象。
 
 ### 0x01 准备 `NSInputStream` 实例
 
-要创建一个 `NSInputStream` 实例，必须要有数据源。数据源可以是文件、`NSData` 对象和网络socket。创建好后，我们设置其代理对象，并将其放入到 run loop 中，然后打开流。
+要创建一个 `NSInputStream` 实例，必须要有数据源。数据源可以是文件、`NSData` 对象和网络socket。创建好后，我们设置其代理对象，并将其放入到 runloop 中，然后打开流。
 
 ```Objective-C
 - (void)setUpStreamForFile:(NSString *)path
@@ -63,7 +63,7 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
 }
 ```
 
-在流对象放入 run loop 且有流事件(有可读数据)发生时，流对象会向代理对象发送`stream:handleEvent:` 消息。在打开流之前，我们需要调用流对象的 `scheduleInRunLoop:forMode:` 方法，这样做可以避免在没有数据可读时阻塞代理对象的操作。我们需要确保的是流对象被放入正确的 run loop 中，即放入流事件发生的那个线程的 run loop 中。
+在流对象放入 runloop 且有流事件(有可读数据)发生时，流对象会向代理对象发送`stream:handleEvent:` 消息。在打开流之前，我们需要调用流对象的 `scheduleInRunLoop:forMode:` 方法，这样做可以避免在没有数据可读时阻塞代理对象的操作。我们需要确保的是流对象被放入正确的 runloop 中，即放入流事件发生的那个线程的 runloop 中。
 
 
 ### 0x02 处理流事件
@@ -179,7 +179,7 @@ typedef NS_OPTIONS(NSUInteger, NSStreamEvent) {
 
 - 使用要写入的数据创建和初始化一个 `NSOutputStream` 实例，并设置代理对象
 
-- 将流对象放到 run loop 中并打开流
+- 将流对象放到 runloop 中并打开流
 - 处理流对象发送到代理对象中的事件
 - 如果流对象写入数据到内存，则通过请求 `NSStreamDataWrittenToMemoryStreamKey` 属性来获取数据
 - 当没有更多数据可供写入时，释放流对象
@@ -249,9 +249,9 @@ typedef NS_OPTIONS(NSUInteger, NSStreamEvent) {
     switch (eventCode) {
         case NSStreamEventEndEncountered:
         {
-            NSData *data = [(NSOutputStream *)aStream propertyForKey:NSStreamDataWrittenToMemoryStreamKey];
-            if (data) {
-                NSLog(@"写入到流读内容: %@", [[NSString alloc] initWithData:self.data encoding:NSUTF8StringEncoding]);
+            NSData *streamData = [(NSOutputStream *)aStream propertyForKey:NSStreamDataWrittenToMemoryStreamKey];
+            if (streamData) {
+                NSLog(@"写入到流读内容: %@", [[NSString alloc] initWithData:streamData encoding:NSUTF8StringEncoding]);
             } else {
                 NSLog(@"No data written to memory!");
             }
@@ -266,27 +266,152 @@ typedef NS_OPTIONS(NSUInteger, NSStreamEvent) {
 }
 ```
 
-```Objective-C
+使用 `NSOutputStream` 将数据写入到内存中，打印结果如下：
 
+```Objective-C
+2022-06-20 22:15:22.700910+0800 ZZFoundation[12292:8724783] -[ZZStreamViewController stream:handleEvent:] -- 1
+2022-06-20 22:15:22.701987+0800 ZZFoundation[12292:8724783] -[ZZStreamViewController stream:handleEvent:] -- 4
+2022-06-20 22:15:22.703123+0800 ZZFoundation[12292:8724783] -[ZZStreamViewController stream:handleEvent:] -- 4
+2022-06-20 22:15:22.703518+0800 ZZFoundation[12292:8724783] -[ZZStreamViewController stream:handleEvent:] -- 4
+2022-06-20 22:15:22.703764+0800 ZZFoundation[12292:8724783] -[ZZStreamViewController stream:handleEvent:] -- 16
+2022-06-20 22:15:22.703938+0800 ZZFoundation[12292:8724783] 写入到流的内容: 
+- [AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]
+    - [AFHTTPRequestSerializer requestWithMethod:URLString:parameters:error:]
+    - [AFStreamingMultipartFormData initWithURLRequest:stringEncoding:]
+    - AFQueryStringPairsFromDictionary()
+    - [AFStreamingMultipartFormData appendPartWithFormData:name:]
+        - [AFStreamingMultipartFormData appendPartWithHeaders:body:]
+            - [AFMultipartBodyStream appendHTTPBodyPart]
+    - [AFStreamingMultipartFormData requestByFinalizingMultipartFormData]
+        - [AFMultipartBodyStream setInitialAndFinalBoundaries]
+        - [AFMultipartBodyStream contentLength]
+            - [AFHTTPBodyPart contentLength]
 ```
 
 <br>
 
+## 四、Polling VS Run-Loop Scheduling
+
+流处理有个潜在的问题是阻塞线程。正在写入或读取流的线程可能必须无限期地等待，直到流上（分别）有空间以将字节或字节放入可读取的流上。尤其是用在 socket 时。
+
+对于 `NSStream` 来说系统提供两种方式来处理流事件：
+
+- Run-loop scheduling，也就是上述代码中将流加入到 runloop 中。这样可以在不太可能发生线程阻塞时通过代理来处理流事件。`NSInputStream ` 对应着 `NSStreamHasBytesAvailable`，`NSOutputStream ` 对应着 `NSStreamHasSpaceAvailable`。
+
+- Polling 轮询。仅在流结束或出错时中断循环，否则不断询问流对象是否有（对于读取流）可读取的字节或（对于写入流）可用于写入的空间。 `NSInputStream` 对应着 `hasBytesAvailable`，`NSOutputStream` 对应着 `hasSpaceAvailable` 。
+
+通过轮询处理流事件代码如下：
+
 ```Objective-C
+- (void)createNewFile
+{
+    NSOutputStream *oStream = [[NSOutputStream alloc] initToMemory];
+    [oStream open];
+    const char *readBytes = (const char *)[self.data mutableBytes];
+    char buf[1024];
+    unsigned long len = 1024;
+    
+    while (1) {
+        if (len == 0) break;
+        
+        if ( [oStream hasSpaceAvailable] ) {
+            (void)strncpy(buf, readBytes, len);
+            readBytes += len;
+            if ([oStream write:(const uint8_t *)buf maxLength:len] == -1) {
+                [self handleError:[oStream streamError]];
+                break;
+            }
+            self.byteIndex += len;
+            len = MAX(MIN(([self.data length] - self.byteIndex), 1024), 0);
+        }
+    }
+    NSData *newData = [oStream propertyForKey:NSStreamDataWrittenToMemoryStreamKey];
+    if (!newData) {
+        NSLog(@"No data written to memory!");
+    } else {
+        NSLog(@"写入到流的内容: %@", [[NSString alloc] initWithData:newData encoding:NSUTF8StringEncoding]);
+    }
+    [oStream close];
+    oStream = nil;
+}
+
+- (void)handleError:(NSError *)error
+{
+    NSLog(@"%s--%@", __func__, error.localizedDescription);
+}
+```
+
+
+
+```Objective-C
+2022-06-20 23:27:19.952171+0800 ZZFoundation[14138:8786415] 写入到流的内容:
+- [AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]
+    - [AFHTTPRequestSerializer requestWithMethod:URLString:parameters:error:]
+    - [AFStreamingMultipartFormData initWithURLRequest:stringEncoding:]
+    - AFQueryStringPairsFromDictionary()
+    - [AFStreamingMultipartFormData appendPartWithFormData:name:]
+        - [AFStreamingMultipartFormData appendPartWithHeaders:body:]
+            - [AFMultipartBodyStream appendHTTPBodyPart]
+    - [AFStreamingMultipartFormData requestByFinalizingMultipartFormData]
+        - [AFMultipartBodyStream setInitialAndFinalBoundaries]
+        - [AFMultipartBodyStream contentLength]
+            - [AFHTTPBodyPart contentLength]
+
+- [AFHTTPRequestSerializer multipartFormRequestWithMethod:URLString:parameters:constructingBodyWithBlock:error:]
+    - [AFHTTPRequestSerializer requestWithMethod:URLString:parameters:error:]
+    - [AFStreamingMultipartFormData initWithURLRequest:stringEncoding:]
+    - AFQueryStringPairsFromDictionary()
+    - [AFStreamingMultipartFormData appendPartWithFormData:name:]
+        - [AFStreamingMultipartFormData appendPartWithHeaders:body:]
+            - [AFMultipartBodyStream appendHTTPBodyPart]
+    - [AFStreamingMultipartFormData requestByFinalizingMultipartFormData]
+        - [AFMultipartBodyStream setInitialAndFinalBoundaries]
+        - [AFMultipartBodyStream contentLength]
+            - [AFHTTPBodyPart contentLength]
 
 ```
 
-```Objective-C
+但轮询这种处理方法的问题在于它会阻塞当前线程，直到流处理结束为止，才继续进行后面的操作。而这种问题在处理网络 socket 流时尤为严重，我们必须等待服务端数据回来后才能继续操作。因此，通常情况下，建议使用 runloop 方式来处理流事件。
 
-```
-```Objective-C
+<br>
 
-```
-```Objective-C
+## 五、错误处理
 
+当流出现错误时，会停止对流数据的处理。一个流对象在出现错误时，不能再用于读或写操作，虽然在关闭前可以查询它的状态。
+
+`NSStream` 和 `NSOutputStream` 类会以几种方式来告知错误的发生：
+
+- 如果流被放到runloop中，对象会发送一个 `NSStreamEventErrorOccurred` 事件到代理对象的`stream:handleEvent:` 方法中
+
+- 任何时候，可以调用 `streamStatus` 属性来查看是否发生错误(返回 `NSStreamStatusError`)
+- 如果在通过调用 `write:maxLength:` 写入数据到 `NSOutputStream` 对象时返回 -1，则发生一个写错误。
+
+一旦确定产生错误时，我们可以调用流对象的 `streamError` 属性来查看错误的详细信息。
+
+```Objective-C
+- (void)stream:(NSStream *)aStream handleEvent:(NSStreamEvent)eventCode
+{
+    NSLog(@"%s -- %lu", __func__, eventCode);
+    switch (eventCode) {
+        ...
+        case NSStreamEventErrorOccurred:
+        {
+            NSError *error = aStream.streamError;
+            NSLog(@"%ld--%@", error.code, error.localizedDescription);
+            [aStream close];
+            aStream = nil;
+            break;
+        }
+    }
+}
 ```
 
 <br>
+
+
+
+<br>
+
 
 
 <br>
