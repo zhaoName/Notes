@@ -408,6 +408,88 @@ typedef NS_OPTIONS(NSUInteger, NSStreamEvent) {
 
 <br>
 
+## 六、设置 Socket Stream
+
+`NSStream` 是不支持连接远程服务，需要用到 `CFStream `。这样就需要使用 toll-free 桥接的方式，将 `CFReadStreamRef ` 和 `CFWriteStreamRef ` 转化成 `NSInputStream ` 和 `NSOutputStream `
+
+```Objective-C
+- (IBAction)searchForSite:(id)sender
+{
+    NSString *urlStr = [sender stringValue];
+    if (![urlStr isEqualToString:@""]) {
+        NSURL *website = [NSURL URLWithString:urlStr];
+        if (!website) {
+            NSLog(@"%@ is not a valid URL");
+            return;
+        }
+ 
+        CFReadStreamRef readStream;
+        CFWriteStreamRef writeStream;
+        CFStreamCreatePairWithSocketToHost(NULL, (CFStringRef)[website host], 80, &readStream, &writeStream);
+ 
+        NSInputStream *inputStream = (__bridge_transfer NSInputStream *)readStream;
+        NSOutputStream *outputStream = (__bridge_transfer NSOutputStream *)writeStream;
+        [inputStream setDelegate:self];
+        [outputStream setDelegate:self];
+        [inputStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+        [outputStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
+        [inputStream open];
+        [outputStream open];
+ 
+        /* Store a reference to the input and output streams so that
+           they don't go away.... */
+        ...
+    }
+}
+```
+
+### 0x01 配置安全连接
+
+在打开流对象之前，您可能希望设置与远程主机（例如，可能是 HTTPS 服务器）的连接的安全性和其他功能。 `NSStream` 以两种方式定义了影响 TCP/IP 套接字连接安全性的属性：
+
+- Secure Socket Layer (SSL)：一种使用数字证书为 TCP/IP 连接提供数据加密、服务器身份验证、消息完整性和（可选）客户端身份验证的安全协议。
+
+- SOCKS 代理服务器：通过 TCP/IP 连接位于客户端应用程序和真实服务器之间的服务器。它拦截对真实服务器的请求，如果它无法从最近请求的文件的缓存中完成它们，则将它们转发到真实服务器。 SOCKS 代理服务器有助于提高网络性能，也可用于过滤请求
+
+对于 SSL 安全性，`NSStream` 定义了各种安全级别的属性，如下:
+
+```Objective-C
+NSStreamSocketSecurityLevel const NSStreamSocketSecurityLevelNone
+NSStreamSocketSecurityLevel const NSStreamSocketSecurityLevelSSLv2
+NSStreamSocketSecurityLevel const NSStreamSocketSecurityLevelSSLv3
+NSStreamSocketSecurityLevel const NSStreamSocketSecurityLevelTLSv1
+NSStreamSocketSecurityLevel const NSStreamSocketSecurityLevelNegotiatedSSL
+```
+
+您可以通过使用密钥 `NSStreamSocketSecurityLevelKey` 向流对象发送 `setProperty:forKey:` 来设置这些属性，且必须在打开流之前设置：
+
+```Objective-C
+[inputStream setProperty:NSStreamSocketSecurityLevelTLSv1 forKey:NSStreamSocketSecurityLevelKey];
+```
+
+但注意一旦它打开，它就会通过一个握手协议来找出连接的另一端正在使用的 SSL 安全级别。 如果安全级别与指定的属性不兼容，则流对象会生成错误事件。
+
+要为连接配置 SOCKS 代理服务器，您需要使用 `NSStreamSOCKSProxyNameKey` 形式的键（例如，NSStreamSOCKSProxyHostKey）构造一个字典。 
+
+```
+NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyHostKey
+NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyPortKey
+NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyVersionKey
+NSStreamSOCKSProxyVersion5
+NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyUserKey			API_AVAILABLE(macos(10.3), ios(2.0), watchos(2.0), tvos(9.0));
+    // Value is an NSString
+FOUNDATION_EXPORT NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyPasswordKey		API_AVAILABLE(macos(10.3), ios(2.0), watchos(2.0), tvos(9.0));
+    // Value is an NSString
+
+typedef NSString * NSStreamSOCKSProxyVersion NS_STRING_ENUM;
+
+FOUNDATION_EXPORT NSStreamSOCKSProxyVersion const NSStreamSOCKSProxyVersion4			API_AVAILABLE(macos(10.3), ios(2.0), watchos(2.0), tvos(9.0));
+    // Value for NSStreamSOCKProxyVersionKey
+FOUNDATION_EXPORT NSStreamSOCKSProxyVersion const NSStreamSOCKSProxyVersion5	
+```
+
+然后使用 setProperty:forKey:，将字典设置为`NSStreamSOCKSProxyConfigurationKey` 的值。
+
 
 
 <br>
