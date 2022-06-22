@@ -19,7 +19,7 @@
 
 从图中看，`NSInputStream` 可以从文件、`socket` 和 `NSData` 对象中获取数据；`NSOutputStream` 可以将数据写入文件、`socket`、内存缓存和 `NSData` 对象中。这三处类主要处理一些比较底层的任务。
 
-流对象有一些相关的属性。大部分属性是用于处理网络安全和配置的，这些属性统称为SSL和SOCKS代理信息。两个比较重要的属性是：
+流对象有一些相关的属性。大部分属性是用于处理网络安全和配置的，这些属性统称为 SSL 和 SOCKS 代理信息。两个比较重要的属性是：
 
 - `NSStreamDataWrittenToMemoryStreamKey`：允许输出流查询写入到内存的数据
 
@@ -58,7 +58,6 @@ Cocoa 中的流对象与 Core Foundation 中的流对象是对应的。我们可
     NSInputStream *inputStream = [[NSInputStream alloc] initWithFileAtPath:path];
     inputStream.delegate = self;
     [inputStream scheduleInRunLoop:[NSRunLoop currentRunLoop] forMode:NSDefaultRunLoopMode];
-    
     [inputStream open];
 }
 ```
@@ -126,6 +125,13 @@ typedef NS_OPTIONS(NSUInteger, NSStreamEvent) {
     }
 }
 ```
+
+注意 `read:maxLength:` 的返回值，有以下三种：
+
+- 正数表示读取的字节数。
+
+- 0 表示已到达缓冲区的末尾。
+- -1 表示操作失败， 可用 `streamError` 来获取错误信息
 
 打印结果：
 
@@ -469,31 +475,20 @@ NSStreamSocketSecurityLevel const NSStreamSocketSecurityLevelNegotiatedSSL
 
 但注意一旦它打开，它就会通过一个握手协议来找出连接的另一端正在使用的 SSL 安全级别。 如果安全级别与指定的属性不兼容，则流对象会生成错误事件。
 
-要为连接配置 SOCKS 代理服务器，您需要使用 `NSStreamSOCKSProxyNameKey` 形式的键（例如，NSStreamSOCKSProxyHostKey）构造一个字典。 
+要为连接配置 SOCKS 代理服务器，您需要使用 `NSStreamSOCKSProxyNameKey` 形式的键（例如，`NSStreamSOCKSProxyHostKey`）构造一个字典。 
 
 ```
 NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyHostKey
 NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyPortKey
 NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyVersionKey
-NSStreamSOCKSProxyVersion5
-NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyUserKey			API_AVAILABLE(macos(10.3), ios(2.0), watchos(2.0), tvos(9.0));
-    // Value is an NSString
-FOUNDATION_EXPORT NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyPasswordKey		API_AVAILABLE(macos(10.3), ios(2.0), watchos(2.0), tvos(9.0));
-    // Value is an NSString
+NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyUserKey
+NSStreamSOCKSProxyConfiguration const NSStreamSOCKSProxyPasswordKey
 
-typedef NSString * NSStreamSOCKSProxyVersion NS_STRING_ENUM;
-
-FOUNDATION_EXPORT NSStreamSOCKSProxyVersion const NSStreamSOCKSProxyVersion4			API_AVAILABLE(macos(10.3), ios(2.0), watchos(2.0), tvos(9.0));
-    // Value for NSStreamSOCKProxyVersionKey
-FOUNDATION_EXPORT NSStreamSOCKSProxyVersion const NSStreamSOCKSProxyVersion5	
+NSStreamSOCKSProxyVersion const NSStreamSOCKSProxyVersion4
+NSStreamSOCKSProxyVersion const NSStreamSOCKSProxyVersion5	
 ```
 
-然后使用 setProperty:forKey:，将字典设置为`NSStreamSOCKSProxyConfigurationKey` 的值。
-
-
-
-<br>
-
+然后使用 `setProperty:forKey:`，将字典设置为`NSStreamSOCKSProxyConfigurationKey` 的值。
 
 
 <br>
@@ -503,6 +498,7 @@ FOUNDATION_EXPORT NSStreamSOCKSProxyVersion const NSStreamSOCKSProxyVersion5
 - [Introduction to Stream Programming Guide for Cocoa](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Streams/Streams.html)
 
 - [iOS中流(Stream)的使用](http://southpeak.github.io/page/8/)
+- [Streams of Cocoa: Why It's Still Worth Knowing NSStream](https://pspdfkit.com/blog/2021/streams-of-cocoa-why-its-still-worth-knowing-nsstream/)
 
 <br>
 
