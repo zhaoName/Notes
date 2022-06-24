@@ -65,9 +65,9 @@
 
 会在 `init` 方法中设置 `self.acceptableStatusCodes` 的范围为 [200, 299]。
 
-### 0x02 `validateResponse:data:error:`
+### 0x02 `responseObjectForResponse:data:error:`
 
-`validateResponse:data:error:` 的实现如下:
+`AFHTTPResponseSerializer ` 遵守的协议方法 `responseObjectForResponse:data:error:` 实现如下：
 
 ```Objective-C
 - (BOOL)validateResponse:(NSHTTPURLResponse *)response data:(NSData *)data error:(NSError * __autoreleasing *)error
@@ -130,18 +130,93 @@
 }
 ```
 
-此方法作用有两个：
+其内部会调用 `validateResponse:data:error:` 此方法作用有两个：
 
 - 检验 content-type 是否正确
 
 - 检验 status code 是否是 2xx
 
 
-```Objective-C
-```
+<br>
+
+## 二、AFJSONResponseSerializer
+
+### 0x01 `init`
 
 ```Objective-C
++ (instancetype)serializer {
+    return [self serializerWithReadingOptions:(NSJSONReadingOptions)0];
+}
+
++ (instancetype)serializerWithReadingOptions:(NSJSONReadingOptions)readingOptions {
+    AFJSONResponseSerializer *serializer = [[self alloc] init];
+    serializer.readingOptions = readingOptions;
+    
+    return serializer;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (!self) {
+        return nil;
+    }
+    
+    self.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript", nil];
+    return self;
+}
 ```
+ `AFJSONResponseSerializer `的初始化方法有
+
+- 指定 JSON 序列化默认方式
+
+- 重写父类属性 `acceptableContentTypes` 值
+- `acceptableStatusCodes ` 保持和父类一致
+
+
+### 0x02 `responseObjectForResponse:data:error:`
+
+ `AFJSONResponseSerializer ` 遵守的协议方法 `responseObjectForResponse:data:error:` 实现如下：
+
+```Objective-C
+- (id)responseObjectForResponse:(NSURLResponse *)response data:(NSData *)data error:(NSError *__autoreleasing *)error
+{
+    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
+            return nil;
+        }
+    }
+    
+    // Workaround for behavior of Rails to return a single space for `head :ok` (a workaround for a bug in Safari), which is not interpreted as valid input by NSJSONSerialization.
+    // See https://github.com/rails/rails/issues/1742
+    BOOL isSpace = [data isEqualToData:[NSData dataWithBytes:" " length:1]];
+    
+    if (data.length == 0 || isSpace) {
+        return nil;
+    }
+    
+    NSError *serializationError = nil;
+    id responseObject = [NSJSONSerialization JSONObjectWithData:data options:self.readingOptions error:&serializationError];
+    
+    if (!responseObject)
+    {
+        if (error) {
+            *error = AFErrorWithUnderlyingError(serializationError, *error);
+        }
+        return nil;
+    }
+    
+    if (self.removesKeysWithNullValues) {
+        // 过滤掉值为 NSNull 的字段
+        return AFJSONObjectByRemovingKeysWithNullValues(responseObject, self.readingOptions);
+    }
+    
+    return responseObject;
+}
+```
+- 首先调用父类的 `validateResponse:data:error:` 判断 `statusCode` 和 `acceptableContentTypes` 是否合法
+
+- 检验将 `data` 序列化成 JSON 对象是否出错
+- 若设置 `removesKeysWithNullValues` 为 `YES` (默认是 `NO`)，则过滤掉值为 `NSNull` 的字段
 
 ```Objective-C
 ```
