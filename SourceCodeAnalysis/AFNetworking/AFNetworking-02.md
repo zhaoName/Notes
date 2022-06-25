@@ -136,6 +136,36 @@
 
 - 检验 status code 是否是 2xx
 
+测试若 status code 为 300 会发生什么
+
+```Objective-C
+- (void)testThatAFHTTPResponseSerializationHandlesAll2XXCodes {
+    // statusCode 取值范围 [200, 300]
+    NSIndexSet *indexSet = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(200, 101)];
+    [indexSet enumerateIndexesUsingBlock:^(NSUInteger statusCode, BOOL *stop) {
+        NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:self.baseURL statusCode:(NSInteger)statusCode HTTPVersion:@"1.1" headerFields:@{@"Content-Type": @"text/html"}];
+
+        XCTAssert([self.responseSerializer.acceptableStatusCodes containsIndex:statusCode], @"Status code %@ should be acceptable", @(statusCode));
+
+        NSError *error = nil;
+        [self.responseSerializer validateResponse:response data:[@"text" dataUsingEncoding:NSUTF8StringEncoding] error:&error];
+
+        XCTAssertNil(error, @"Error handling status code %@", @(statusCode));
+    }];
+}
+```
+
+当 `indexSet` 遍历到值为 300 时，会有如下打印
+
+```Objective-C
+error: -[AFHTTPResponseSerializationTests testThatAFHTTPResponseSerializationHandlesAll2XXCodes] : (([self.responseSerializer.acceptableStatusCodes containsIndex:statusCode]) is true) failed - Status code 300 should be acceptable
+
+error: -[AFHTTPResponseSerializationTests testThatAFHTTPResponseSerializationHandlesAll2XXCodes] : ((error) == nil) failed: "Error Domain=com.alamofire.error.serialization.response Code=-1011 "Request failed: multiple choices (300)" UserInfo={NSLocalizedDescription=Request failed: multiple choices (300), NSErrorFailingURLKey=https://httpbin.org, com.alamofire.serialization.response.error.data={length = 4, bytes = 0x74657874}, com.alamofire.serialization.response.error.response=<NSHTTPURLResponse: 0x7b080003e2e0> { URL: https://httpbin.org } { Status Code: 300, Headers {
+    "Content-Type" =     (
+        "text/html"
+    );
+} }}" - Error handling status code 300
+```
 
 <br>
 
@@ -218,63 +248,99 @@
 - 检验将 `data` 序列化成 JSON 对象是否出错
 - 若设置 `removesKeysWithNullValues` 为 `YES` (默认是 `NO`)，则过滤掉值为 `NSNull` 的字段
 
+下面的测试用例，会检测过滤掉值为 `NSNull` 的字段
+
 ```Objective-C
+- (void)testThatJSONRemovesKeysWithNullValues {
+    self.responseSerializer.removesKeysWithNullValues = YES;
+    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:self.baseURL statusCode:200 HTTPVersion:@"1.1" headerFields:@{@"Content-Type":@"text/json"}];
+    NSData *data = [NSJSONSerialization dataWithJSONObject:@{@"key":@"value",@"nullkey":[NSNull null],@"array":@[@{@"subnullkey":[NSNull null]}], @"arrayWithNulls": @[[NSNull null]]}
+                                                   options:(NSJSONWritingOptions)0
+                                                     error:nil];
+
+    NSError *error = nil;
+    NSDictionary *responseObject = [self.responseSerializer responseObjectForResponse:response data:data error:&error];
+    
+    XCTAssertNil(error);
+    XCTAssertNotNil(responseObject[@"key"]);
+    XCTAssertNil(responseObject[@"nullkey"]);
+    XCTAssertNil(responseObject[@"array"][0][@"subnullkey"]);
+    XCTAssertEqualObjects(responseObject[@"arrayWithNulls"], @[]);
+}
 ```
 
 <br>
 
 
+## 三、XML Response Serializer
+
+AFNetworking 提供两种 XML 解析方式：`AFXMLParserResponseSerializer ` 和 `AFXMLDocumentResponseSerializer `。在这两个类的初始化方法中都会设置 `acceptableContentTypes`，如下：
+
 ```Objective-C
+self.acceptableContentTypes = [[NSSet alloc] initWithObjects:@"application/xml", @"text/xml", nil];
+```
+
+`AFXMLParserResponseSerializer` 的解析如下：
+
+```Objective-C
+- (id)responseObjectForResponse:(NSHTTPURLResponse *)response
+                           data:(NSData *)data
+                          error:(NSError *__autoreleasing *)error
+{
+    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
+            return nil;
+        }
+    }
+    
+    return [[NSXMLParser alloc] initWithData:data];
+}
+```
+
+`AFXMLDocumentResponseSerializer` 的解析如下：
+
+```Objective-C
+- (id)responseObjectForResponse:(NSURLResponse *)response data:(NSData *)data error:(NSError *__autoreleasing *)error
+{
+    if (![self validateResponse:(NSHTTPURLResponse *)response data:data error:error]) {
+        if (!error || AFErrorOrUnderlyingErrorHasCodeInDomain(*error, NSURLErrorCannotDecodeContentData, AFURLResponseSerializationErrorDomain)) {
+            return nil;
+        }
+    }
+    
+    NSError *serializationError = nil;
+    NSXMLDocument *document = [[NSXMLDocument alloc] initWithData:data options:self.options error:&serializationError];
+    
+    if (!document)
+    {
+        if (error) {
+            *error = AFErrorWithUnderlyingError(serializationError, *error);
+        }
+        return nil;
+    }
+    
+    return document;
+}
+```
+
+测试用例：
+
+
+```Objective-C
+static NSData * AFXMLTestData() {
+    return [@"<?xml version=\"1.0\" encoding=\"UTF-8\"?><foo attr1=\"1\" attr2=\"2\"><bar>someValue</bar></foo>" dataUsingEncoding:NSUTF8StringEncoding];
+}
 ```
 
 ```Objective-C
+- (void)testThatXMLParserResponseSerializerReturnsNSXMLParserObjectForValidXML {
+    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:self.baseURL statusCode:200 HTTPVersion:@"1.1" headerFields:@{@"Content-Type": @"application/xml"}];
+    NSError *error = nil;
+    id responseObject = [self.responseSerializer responseObjectForResponse:response data:AFXMLTestData() error:&error];
+
+    XCTAssertNil(error, @"Serialization error should be nil");
+    XCTAssert([responseObject isKindOfClass:[NSXMLParser class]], @"Expected response to be a NSXMLParser");
+}
 ```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-<br>
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-<br>
-
-<br>
-
-
-<br>
 
 <br>
