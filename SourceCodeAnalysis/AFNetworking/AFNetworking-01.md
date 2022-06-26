@@ -293,7 +293,7 @@ AFNetworking 提供了 3 中不同数据形式的序列化方式 (当然你也�
 
 - 设置默认编码格式 `NSUTF8StringEncoding`
 
-- 声明 `HTTPRequestHeaders` 和 修改 headers 所用的队列
+- 声明 `HTTPRequestHeaders` 和修改 headers 所用的队列
 - 设置请求头 Accept-Language
 - 设置请求头 User-Agent
 - `HTTPMethodsEncodingParametersInURI` 中包含 GET、HEAD、DELETE 三种请求，这三种请求的参数都是拼接在 URL 后面，而 POST、PUT 请求在放在 body 中。
