@@ -70,56 +70,168 @@ static AFNetworkReachabilityStatus AFNetworkReachabilityStatusForFlags(SCNetwork
 
 ### 0x01 初始化
 
+`AFNetworkReachabilityManager ` 提供了 5 个初始化方法。4 个类方法和 1 个实例方法，4 个类方法最后都会调用实例方法完成初始化。
+
+- 单例初始化
 
 ```Objective-C
++ (instancetype)sharedManager {
+    static AFNetworkReachabilityManager *_sharedManager = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _sharedManager = [self manager];
+    });
 
+    return _sharedManager;
+}
 ```
 
-```Objective-C
+- 通过地址或域名初始化
 
+```Objective-C
++ (instancetype)managerForDomain:(NSString *)domain {
+    SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithName(kCFAllocatorDefault, [domain UTF8String]);
+
+    AFNetworkReachabilityManager *manager = [[self alloc] initWithReachability:reachability];
+    
+    CFRelease(reachability);
+
+    return manager;
+}
+
++ (instancetype)managerForAddress:(const void *)address {
+    SCNetworkReachabilityRef reachability = SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr *)address);
+    AFNetworkReachabilityManager *manager = [[self alloc] initWithReachability:reachability];
+
+    CFRelease(reachability);
+    
+    return manager;
+}
+
++ (instancetype)manager
+{
+#if (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 90000) || (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 101100)
+    struct sockaddr_in6 address;
+    bzero(&address, sizeof(address));
+    address.sin6_len = sizeof(address);
+    address.sin6_family = AF_INET6;
+#else
+    struct sockaddr_in address;
+    bzero(&address, sizeof(address));
+    address.sin_len = sizeof(address);
+    address.sin_family = AF_INET;
+#endif
+    return [self managerForAddress:&address];
+}
 ```
 
+- 实例方法初始化
 
 ```Objective-C
+- (instancetype)initWithReachability:(SCNetworkReachabilityRef)reachability {
+    self = [super init];
+    if (!self) {
+        return nil;
+    }
 
+    _networkReachability = CFRetain(reachability);
+    self.networkReachabilityStatus = AFNetworkReachabilityStatusUnknown;
+
+    return self;
+}
 ```
 
-```Objective-C
+初始化的目的有两个
 
+-  设置 `SCNetworkReachabilityRef`
+
+- 设置 `networkReachabilityStatus` 的默认状态为 `AFNetworkReachabilityStatusUnknown`
+
+### 0x02 `startMonitoring`
+
+`startMonitoring`方法中监听网络状态，如下
+
+```Objective-C
+- (void)startMonitoring {
+    [self stopMonitoring];
+
+    if (!self.networkReachability) { return; }
+
+    __weak __typeof(self)weakSelf = self;
+    
+    AFNetworkReachabilityStatusCallback callback = ^(AFNetworkReachabilityStatus status) {
+        __strong __typeof(weakSelf)strongSelf = weakSelf;
+        
+        strongSelf.networkReachabilityStatus = status;
+        if (strongSelf.networkReachabilityStatusBlock) {
+            strongSelf.networkReachabilityStatusBlock(status);
+        }
+        return strongSelf;
+    };
+
+    SCNetworkReachabilityContext context = {0, (__bridge void *)callback, AFNetworkReachabilityRetainCallback, AFNetworkReachabilityReleaseCallback, NULL};
+    SCNetworkReachabilitySetCallback(self.networkReachability, AFNetworkReachabilityCallback, &context);
+    SCNetworkReachabilityScheduleWithRunLoop(self.networkReachability, CFRunLoopGetMain(), kCFRunLoopCommonModes);
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0),^{
+        SCNetworkReachabilityFlags flags;
+        if (SCNetworkReachabilityGetFlags(self.networkReachability, &flags)) {
+            AFPostReachabilityStatusChange(flags, callback);
+        }
+    });
+}
 ```
 
-```Objective-C
+后续网络状态发生变化的回调
 
+```Objective-C
+static void AFNetworkReachabilityCallback(SCNetworkReachabilityRef __unused target, SCNetworkReachabilityFlags flags, void *info) {
+    NSLog(@"AFNetworkReachabilityCallback--- %d", flags);
+    AFPostReachabilityStatusChange(flags, (__bridge AFNetworkReachabilityStatusCallback)info);
+}
 ```
 
-```Objective-C
+将网络状态发生变化的回调 通过 `AFNetworkReachabilityStatusCallback` 传给外部调用者，并发送通知。
 
+```Objective-C
+/**
+ * Queue a status change notification for the main thread.
+ *
+ * This is done to ensure that the notifications are received in the same order
+ * as they are sent. If notifications are sent directly, it is possible that
+ * a queued notification (for an earlier status condition) is processed after
+ * the later update, resulting in the listener being left in the wrong state.
+ */
+static void AFPostReachabilityStatusChange(SCNetworkReachabilityFlags flags, AFNetworkReachabilityStatusCallback block) {
+    AFNetworkReachabilityStatus status = AFNetworkReachabilityStatusForFlags(flags);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        AFNetworkReachabilityManager *manager = nil;
+        if (block) {
+            manager = block(status);
+        }
+        NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+        NSDictionary *userInfo = @{ AFNetworkingReachabilityNotificationStatusItem: @(status) };
+        [notificationCenter postNotificationName:AFNetworkingReachabilityDidChangeNotification object:manager userInfo:userInfo];
+    });
+}
+```
+
+### 0x03 KVO 
+
+若外部设置通过 KVO 监听 `networkReachabilityStatus` 属性，则`reachable ` 、`reachableViaWWAN ` 或 `reachableViaWiFi ` 的变化都会触发 KVO。
+
+```Objective-C
++ (NSSet *)keyPathsForValuesAffectingValueForKey:(NSString *)key {
+    if ([key isEqualToString:@"reachable"] || [key isEqualToString:@"reachableViaWWAN"] || [key isEqualToString:@"reachableViaWiFi"]) {
+        return [NSSet setWithObject:@"networkReachabilityStatus"];
+    }
+
+    return [super keyPathsForValuesAffectingValueForKey:key];
+}
 ```
 
 <br>
 
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-
-```Objective-C
-```
-<br>
-
-
-
-<br>
-
+所以 AFNetworking 提供三种监听网络变化的方式： block 、通知、 KVO。
 
 <br>
