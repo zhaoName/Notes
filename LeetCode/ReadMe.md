@@ -37,8 +37,22 @@
 | No. | Title | Difficulty | Solution | Time Complexity | Space Complexity |
 | :---: | :---: | :---: | :---: | :---: | :---: |
 | 20 | Valid Parentheses | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0020-ValidParentheses.md) | O(n) | O(n) |
+| 71 | Simplify Path | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0071-SimplifyPath.md) | O(n) | O(n) |
 | 94 | Binary Tree Inorder Traversal | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0094-BinaryTreeInorderTraversal.md) | O(n) | O(n) |
+| 114 | Flatten Binary Tree to Linked List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0114-FlattenBinaryTreeToLinkedList.md) | O(n) | O(1) |
 | 144 | Binary Tree Preorder Traversal | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0144-BinaryTreePreorderTraversal.md) | O(n) | O(n) |
 | 145 |  Binary Tree Postorder Traversal | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0145-BinaryTreePostorderTraversal.md) | O(n) | O(n) |
+
+
+<br>
+
+### Linked List
+
+| No. | Title | Difficulty | Solution | Time Complexity | Space Complexity | Remark |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 143 | Reorder List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0143-ReorderList.md) | O(n) | O(1) | |
+
+
+<br>
 
 <br>
