@@ -78,18 +78,248 @@ KVO 监听到上传或下载进度发生变化时，将进度通过 block 回调
 }
 ```
 
-```Objective-C
-```
+### 0x03 代理
+
+`AFURLSessionManagerTaskDelegate ` 实现 3 个代理
+
+- `NSURLSessionDataDelegate`
 
 ```Objective-C
+- (void)URLSession:(__unused NSURLSession *)session
+          dataTask:(__unused NSURLSessionDataTask *)dataTask
+    didReceiveData:(NSData *)data
+{
+    NSLog(@"%s -- %lld", __func__, dataTask.countOfBytesExpectedToReceive);
+    self.downloadProgress.totalUnitCount = dataTask.countOfBytesExpectedToReceive;
+    self.downloadProgress.completedUnitCount = dataTask.countOfBytesReceived;
+
+    [self.mutableData appendData:data];
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task
+   didSendBodyData:(int64_t)bytesSent
+    totalBytesSent:(int64_t)totalBytesSent
+totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend{
+    
+    self.uploadProgress.totalUnitCount = task.countOfBytesExpectedToSend;
+    self.uploadProgress.completedUnitCount = task.countOfBytesSent;
+}
 ```
 
+- `NSURLSessionDownloadDelegate`
+
 ```Objective-C
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
+      didWriteData:(int64_t)bytesWritten
+ totalBytesWritten:(int64_t)totalBytesWritten
+totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite{
+    NSLog(@"%s -- %lld", __func__, totalBytesExpectedToWrite);
+    self.downloadProgress.totalUnitCount = totalBytesExpectedToWrite;
+    self.downloadProgress.completedUnitCount = totalBytesWritten;
+}
+
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
+ didResumeAtOffset:(int64_t)fileOffset
+expectedTotalBytes:(int64_t)expectedTotalBytes{
+    NSLog(@"%s -- %lld", __func__, expectedTotalBytes);
+    self.downloadProgress.totalUnitCount = expectedTotalBytes;
+    self.downloadProgress.completedUnitCount = fileOffset;
+}
+
+- (void)URLSession:(NSURLSession *)session
+      downloadTask:(NSURLSessionDownloadTask *)downloadTask
+didFinishDownloadingToURL:(NSURL *)location
+{
+    self.downloadFileURL = nil;
+
+    if (self.downloadTaskDidFinishDownloading) {
+        self.downloadFileURL = self.downloadTaskDidFinishDownloading(session, downloadTask, location);
+        if (self.downloadFileURL) {
+            NSError *fileManagerError = nil;
+
+            if (![[NSFileManager defaultManager] moveItemAtURL:location toURL:self.downloadFileURL error:&fileManagerError]) {
+                [[NSNotificationCenter defaultCenter] postNotificationName:AFURLSessionDownloadTaskDidFailToMoveFileNotification object:downloadTask userInfo:fileManagerError.userInfo];
+            } else {
+                [[NSNotificationCenter defaultCenter] postNotificationName:AFURLSessionDownloadTaskDidMoveFileSuccessfullyNotification object:downloadTask userInfo:nil];
+            }
+        }
+    }
+}
+```
+
+- `NSURLSessionTaskDelegate`
+
+```Objective-C
+- (void)URLSession:(__unused NSURLSession *)session
+              task:(NSURLSessionTask *)task
+didCompleteWithError:(NSError *)error
+{
+    NSLog(@"%s -- %@", __func__, error.localizedDescription);
+    error = objc_getAssociatedObject(task, AuthenticationChallengeErrorKey) ?: error;
+    __strong AFURLSessionManager *manager = self.manager;
+
+    __block id responseObject = nil;
+
+    NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+    userInfo[AFNetworkingTaskDidCompleteResponseSerializerKey] = manager.responseSerializer;
+
+    //Performance Improvement from #2672
+    NSData *data = nil;
+    if (self.mutableData) {
+        data = [self.mutableData copy];
+        //We no longer need the reference, so nil it out to gain back some memory.
+        self.mutableData = nil;
+    }
+
+#if AF_CAN_USE_AT_AVAILABLE && AF_CAN_INCLUDE_SESSION_TASK_METRICS
+    if (@available(iOS 10, macOS 10.12, watchOS 3, tvOS 10, *)) {
+        if (self.sessionTaskMetrics) {
+            userInfo[AFNetworkingTaskDidCompleteSessionTaskMetrics] = self.sessionTaskMetrics;
+        }
+    }
+#endif
+
+    if (self.downloadFileURL) {
+        userInfo[AFNetworkingTaskDidCompleteAssetPathKey] = self.downloadFileURL;
+    } else if (data) {
+        userInfo[AFNetworkingTaskDidCompleteResponseDataKey] = data;
+    }
+
+    if (error) {
+        userInfo[AFNetworkingTaskDidCompleteErrorKey] = error;
+
+        dispatch_group_async(manager.completionGroup ?: url_session_manager_completion_group(), manager.completionQueue ?: dispatch_get_main_queue(), ^{
+            if (self.completionHandler) {
+                // 请求出错 回调出错信息
+                self.completionHandler(task.response, responseObject, error);
+            }
+
+            dispatch_async(dispatch_get_main_queue(), ^{
+                // 请求完成通知，带着请求失败的错误信息
+                [[NSNotificationCenter defaultCenter] postNotificationName:AFNetworkingTaskDidCompleteNotification object:task userInfo:userInfo];
+            });
+        });
+    } else {
+        dispatch_async(url_session_manager_processing_queue(), ^{
+            NSError *serializationError = nil;
+            // 请求到的数据序列化成对应的格式，如JSON、Plist
+            responseObject = [manager.responseSerializer responseObjectForResponse:task.response data:data error:&serializationError];
+
+            if (self.downloadFileURL) {
+                responseObject = self.downloadFileURL;
+            }
+
+            if (responseObject) {
+                userInfo[AFNetworkingTaskDidCompleteSerializedResponseKey] = responseObject;
+            }
+
+            if (serializationError) {
+                userInfo[AFNetworkingTaskDidCompleteErrorKey] = serializationError;
+            }
+
+            dispatch_group_async(manager.completionGroup ?: url_session_manager_completion_group(), manager.completionQueue ?: dispatch_get_main_queue(), ^{
+                if (self.completionHandler) {
+                    // 请求成功回调
+                    self.completionHandler(task.response, responseObject, serializationError);
+                }
+
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    // 请求完成通知，带着请求成功后的数据
+                    [[NSNotificationCenter defaultCenter] postNotificationName:AFNetworkingTaskDidCompleteNotification object:task userInfo:userInfo];
+                });
+            });
+        });
+    }
+}
+
+#if AF_CAN_INCLUDE_SESSION_TASK_METRICS
+- (void)URLSession:(NSURLSession *)session
+              task:(NSURLSessionTask *)task
+didFinishCollectingMetrics:(NSURLSessionTaskMetrics *)metrics AF_API_AVAILABLE(ios(10), macosx(10.12), watchos(3), tvos(10)) {
+    self.sessionTaskMetrics = metrics;
+}
+#endif
+```
+
+前两个代理是处理和上传、下载进度相关的回调。最终在 `NSURLSessionTaskDelegate` 的 `URLSession: task:didCompleteWithError:` 方法中将请求到的数据 `responseSerializer ` 的反序列化方法将 `NSData` 转换成对应的数据类型。
+
+调用如下测试用例方法：
+
+```Objective-C
+- (void)testDownloadTaskDoesReportProgress {
+    __weak XCTestExpectation *expectation = [self expectationWithDescription:@"Progress should equal 1.0"];
+    NSURLSessionTask *task;
+    task = [self.localManager
+            downloadTaskWithRequest:[self bigImageURLRequest]
+            progress:^(NSProgress * _Nonnull downloadProgress) {
+                if (downloadProgress.fractionCompleted == 1.0) {
+                    [expectation fulfill];
+                }
+            }
+            destination:nil
+            completionHandler:nil];
+    [task resume];
+    [self waitForExpectationsWithCommonTimeout];
+}
+```
+
+由于测试用例中的 `NSURLRequest` 没有设置 `Content-Lenght`，所以需要将 `NSURLSessionDownloadDelegate` 的代理方法作如下改动，否则 `NSProgress` 的 `totalUnitCount` 值为 -1。这样 `AFURLSessionTaskCompletionHandler` 回调会一直不能被触发，测试用例报错。
+
+```Objective-C
+- (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
+      didWriteData:(int64_t)bytesWritten
+ totalBytesWritten:(int64_t)totalBytesWritten
+totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite{
+    NSLog(@"%s -- %lld", __func__, totalBytesExpectedToWrite);
+    self.downloadProgress.totalUnitCount = 901049; //totalBytesExpectedToWrite;
+    self.downloadProgress.completedUnitCount = totalBytesWritten;
+}
+```
+
+最终打印结果
+
+```Objective-C
+2022-07-01 23:02:23.640737+0800 xctest[31817:13764391] NSURLSessionTaskDelegate--didReceiveChallenge
+2022-07-01 23:02:25.733972+0800 xctest[31817:13764394] NSURLSessionDownloadDelegate-didWriteData: 912-- 912 -- -1
+2022-07-01 23:02:25.735327+0800 xctest[31817:13764394] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:25.769951+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 42786-- 43698 -- -1
+2022-07-01 23:02:25.771309+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:25.884779+0800 xctest[31817:13764394] NSURLSessionDownloadDelegate-didWriteData: 8187-- 51885 -- -1
+2022-07-01 23:02:25.885605+0800 xctest[31817:13764394] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:25.887157+0800 xctest[31817:13764334] NSURLSessionDownloadDelegate-didWriteData: 45154-- 97039 -- -1
+2022-07-01 23:02:25.887567+0800 xctest[31817:13764334] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.005990+0800 xctest[31817:13764392] NSURLSessionDownloadDelegate-didWriteData: 12159-- 109198 -- -1
+2022-07-01 23:02:26.007609+0800 xctest[31817:13764392] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.120715+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 32744-- 141942 -- -1
+2022-07-01 23:02:26.121787+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.122969+0800 xctest[31817:13764394] NSURLSessionDownloadDelegate-didWriteData: 110526-- 252468 -- -1
+2022-07-01 23:02:26.123437+0800 xctest[31817:13764394] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.346063+0800 xctest[31817:13764392] NSURLSessionDownloadDelegate-didWriteData: 8184-- 260652 -- -1
+2022-07-01 23:02:26.346791+0800 xctest[31817:13764392] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.355251+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 163771-- 424423 -- -1
+2022-07-01 23:02:26.356271+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.624842+0800 xctest[31817:13764392] NSURLSessionDownloadDelegate-didWriteData: 8187-- 432610 -- -1
+2022-07-01 23:02:26.625679+0800 xctest[31817:13764392] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.701929+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 212860-- 645470 -- -1
+2022-07-01 23:02:26.705741+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.728162+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 24588-- 670058 -- -1
+2022-07-01 23:02:26.730118+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.734053+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 131016-- 801074 -- -1
+2022-07-01 23:02:26.734776+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:26.846871+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 73687-- 874761 -- -1
+2022-07-01 23:02:26.848076+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:27.045217+0800 xctest[31817:13764394] NSURLSessionDownloadDelegate-didWriteData: 8192-- 882953 -- -1
+2022-07-01 23:02:27.046486+0800 xctest[31817:13764394] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
+2022-07-01 23:02:27.057434+0800 xctest[31817:13764334] NSURLSessionTaskDelegate-didFinishCollectingMetrics++++++
+2022-07-01 23:02:27.058081+0800 xctest[31817:13764390] NSURLSessionDownloadDelegate-didWriteData: 18096-- 901049 -- -1
+2022-07-01 23:02:27.060104+0800 xctest[31817:13764390] -[AFURLSessionManagerTaskDelegate URLSession:downloadTask:didWriteData:totalBytesWritten:totalBytesExpectedToWrite:] -- -1
 ```
 
 <br>
 
-## 一、
+## 二、_AFURLSessionTaskSwizzling
+
+
 
 ```Objective-C
 - (instancetype)init {
@@ -158,9 +388,17 @@ KVO 监听到上传或下载进度发生变化时，将进度通过 block 回调
 ```
 
 ```Objective-C
+
 ```
 
 ```Objective-C
+```
+
+```Objective-C
+```
+
+```Objective-C
+
 ```
 
 <br>
