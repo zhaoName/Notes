@@ -19,7 +19,7 @@ return [0, 1].
 
 ### Python
 
-```
+```python3
 def twoSum(self, nums: list, target: int) -> list:
 	numsDict = {}
     for i in range(len(nums)):

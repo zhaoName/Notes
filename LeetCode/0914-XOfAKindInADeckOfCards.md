@@ -32,7 +32,7 @@ Constraints:
 
 - 第一思路
 
-```
+```python3
 def hasGroupsSizeX(self, deck: list) -> bool:
 	if len(deck) < 2: return False
 	g, d = -1, {}
@@ -51,14 +51,14 @@ def hasGroupsSizeX(self, deck: list) -> bool:
 
 - 借鉴思路  reduce()
 
-```
-def hasGroupsSizeX_reduce(self, deck: list) -> bool:
-	if len(deck) < 2: return False
-	minLen, d = 0, {}
-	for a in deck:
-		try:
-			d[a] += 1
-		except:
-			d[a] = 1
-	return reduce(gcd, d.values()) >= 2
+```python3
+import collections
+from functools import reduce
+from math import gcd
+from typing import List
+
+class Solution:
+    def hasGroupsSizeX(self, deck: List[int]) -> bool:
+        vals = collections.Counter(deck).values()
+        return reduce(gcd, vals) >= 2
 ```
