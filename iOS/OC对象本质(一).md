@@ -23,7 +23,7 @@ warning: include path for stdlibc++ headers not found; pass '-std=libc++' on the
 
 - 查看`main_arm64.cpp`文件, 并对比`OC`中`NSObject`的实现
 
-```
+```Objective-C
 // main_arm64.cpp中NSObject implementation
 struct NSObject_IMPL {
 	Class isa;
@@ -51,7 +51,7 @@ struct NSObject_IMPL {
 
 - `class_getInstanceSize()` 底层实现
 
-```
+```Objective-C
 // objc-class.mm 
 size_t class_getInstanceSize(Class cls)
 {
@@ -60,8 +60,9 @@ size_t class_getInstanceSize(Class cls)
 }
 
 // Class's ivar size rounded up to a pointer-size boundary.
-uint32_t alignedInstanceSize() {
-	return word_align(unalignedInstanceSize());
+uint32_t alignedInstanceSize()
+{
+    return word_align(unalignedInstanceSize());
 }
 ```
 
@@ -69,7 +70,7 @@ uint32_t alignedInstanceSize() {
 
 - 对比打印
 
-```
+```Objective-C
 #import <objc/runtime.h>
 #import <malloc/malloc.h>
 
@@ -95,7 +96,7 @@ NSLog(@"malloc_size:%zd", malloc_size((__bridge const void *)(obj)));
 
 - 字节数 指每次读取几个字节，`b`表示1个字节、`h`表示2个字节、`w`表示4个字节、`g`表示8个字节
 
-```
+```Objective-C
 (lldb) po obj
 <NSObject: 0x100505a90>
 
@@ -126,7 +127,7 @@ NSLog(@"malloc_size:%zd", malloc_size((__bridge const void *)(obj)));
 
 在了解结构体中的内存对齐之前，先看一组数据
 
-```
+```C++
 struct Person1 {
     char a;
     double b;
@@ -193,7 +194,7 @@ oooooooo|ox|oo|oooo
 
 - 实际打印(为查看成员`d`的内存大小，给结构体多添加一个成员`e`)
 
-```
+```Objective-C
 NSLog(@"%p %p %p %p %p", &p1.a, &p1.b, &p1.c, &p1.d, &p1.e);
 NSLog(@"%p %p %p %p %p", &p2.a, &p2.b, &p2.c, &p2.d, &p2.e);
 
@@ -206,9 +207,8 @@ NSLog(@"%p %p %p %p %p", &p2.a, &p2.b, &p2.c, &p2.d, &p2.e);
 
 - runtime源码
 
-```
+```Objective-C
 // NSObject.mm
-
 id _objc_rootAllocWithZone(Class cls, malloc_zone_t *zone)
 {
     id obj;
@@ -280,7 +280,7 @@ void *calloc(size_t __count, size_t __size) __result_use_check __alloc_size(1,2)
 
 - 自定义类的实例对象的内存
 
-```
+```Objective-C
 @interface Person : NSObject
 {
     int _age;
@@ -313,7 +313,7 @@ NSLog(@"malloc_size:%zu", malloc_size((__bridge const void *)(p)));
 
 - libmalloc源码
 
-```
+```C++
 // malloc.c
 void *calloc(size_t num_items, size_t size)
 {
