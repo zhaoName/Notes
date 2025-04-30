@@ -31,7 +31,7 @@ The solution may be too advanced for an interview but you may find reading this 
 
 ## 解法
 
-```
+```python3
 from typing import List
 import heapq
 
