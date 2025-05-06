@@ -19,7 +19,7 @@
 
 - 栈：用于函数调用开销，如局部变量，函数跳转时下条汇编指令存储等。栈去的地址由高到低分配，遵循先进后出的原则，由系统管理。
 
-```
+```Objective-C
 int global_var1 = 10;
 int global_var2;
 
@@ -67,12 +67,12 @@ Objective-C 提供了两种内存管理机制：MRC(Mannul Reference Counting) �
 
 ### 0x02 源码解读
 
-由 [runtime(一) - isa](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%B8%80)%20-%20isa.md) 可知从 64bit 开始苹果使用位域技术对 isa 进行优化，优化后的引用计数由`has_sidetable_rc`决定存储在哪。若`has_sidetable_rc `值为0，则存储在`extra_rc`中，若`has_sidetable_rc `值为1，则存储在`SideTable`中的属性中。
+由 [runtime - isa](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-isa.md) 可知从 64bit 开始苹果使用位域技术对 isa 进行优化，优化后的引用计数由`has_sidetable_rc`决定存储在哪。若`has_sidetable_rc `值为0，则存储在`extra_rc`中，若`has_sidetable_rc `值为1，则存储在`SideTable`中的属性中。
 
 
 `retainCount`是`NSObject`中的方法，且`NSObject`中的方法在 runtime 中已开源。
 
-```
+```Objective-C
 // objc4-750 NSObject.mm
 
 struct SideTable {
@@ -142,7 +142,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 ### 0x01 一个人
 
-```
+```Objective-C
 // ZNPerson.m
 - (void)dealloc
 {
@@ -170,7 +170,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 ### 0x02 一个人一条狗
 
-```
+```Objective-C
 // ZNDog.m
 - (void)walkingDog
 {
@@ -227,7 +227,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 也就是说我们若想通过`per`去访问`ZNDog`中的方法，`per`必须要持有`dog`对象。我们可以在`dog`的`setter`方法上动手脚。
 
-```
+```Objective-C
 // ZNPerson.m
 - (void)setDog:(ZNDog *)dog
 {
@@ -242,7 +242,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 这样虽然不会造成坏内存访问，但程序结束时`per`仍持有`dog`对象，`dog`的引用计数为1，不会从内存中释放，这造成内存泄露。这时我们需要在`per`释放前，将`dog`的引用计数减1。
 
-```
+```Objective-C
 // ZNPerson.m
 - (void)dealloc
 {
@@ -262,7 +262,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 这里的多条狗是指创建多条狗，而不是一个人同时持有多条狗。
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -289,7 +289,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 可以看到程序结束时`dog2`被释放了，但`dog1`的引用计数仍为1，没有被释放。解决办法是`per`更换持有的`ZNDog`对象时，要将老的`dog1`对象的引用计数减1，新的`dog`对象的引用计数加1。
 
-```
+```Objective-C
 - (void)setDog:(ZNDog *)dog
 {
     // 老的 dog 对象的引用计数减1，新的 dog 对象的引用计数加1
@@ -306,7 +306,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 ### 0x04 多个人一条狗
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -338,7 +338,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 ### 0x05 一个人重复持有一条狗
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -362,7 +362,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 对于一个人重复持有一条狗，我们完全没有必要先`release`再`retain`，就像养一条狗，丢了后重新找回，是不会将以前的养狗证销毁，重新办一张的。
 
-```
+```Objective-C
 - (void)setDog:(ZNDog *)dog
 {
     if (_dog != dog) {
@@ -380,7 +380,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 至此 MRC 环境下对象的内存管理已经成型，所有对象的`setter`方法都会写成这样(包括 ARC 环境下自动生成的代码)。
 
-```
+```Objective-C
 - (void)setXxx:(XXX *)xxx
 {
     if (_xxx != xxx) {
@@ -392,7 +392,7 @@ size_t objc_object::sidetable_getExtraRC_nolock()
 
 这样写`setter`方法只能保证对象的`retainCount`最小值为1，不能被释放，所以还要注意一点在持有对象释放时，持有对象的`dealloc`方法中一定要调用被持有对象的`release`方法。
 
-```
+```Objective-C
 // ZNPerson.m
 - (void)dealloc
 {

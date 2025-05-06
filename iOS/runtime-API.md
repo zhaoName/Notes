@@ -135,6 +135,12 @@ free(ivarList);
 - `class_replaceMethod`
 
 ```Objective-C
+// ViewController.m
+- (void)testAddMethod
+{
+    NSLog(@"%@==%@", self, NSStringFromSelector(_cmd));
+}
+
 // 替换方法实现
 // 参数: 要替换的Class、要替换的方法名、新的方法实现、新方法的方法签名
 class_replaceMethod([ZNPerson class], @selector(testPerson), class_getMethodImplementation([self class], @selector(testAddMethod)), "v@:");
@@ -148,7 +154,7 @@ ZNPerson *per = [[ZNPerson alloc] init];
 
 - `class_copyMethodList`
 
-```
+```Objective-C
 // 获取某个类的所有方法
 NSInteger count = 0;
 Method *methodList = class_copyMethodList([ZNPerson class], &count);

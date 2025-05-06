@@ -16,7 +16,7 @@
 
 - 每个类在内存中只有一个`class`对象
 
-```
+```Objective-C
 NSObject *obj1 = [[NSObject alloc] init];
 NSObject *obj2 = [[NSObject alloc] init];
     
@@ -53,7 +53,7 @@ NSLog(@"%p, %p, %p, %p, %p", obj1Class, obj2Class, obj3Class, obj4Class, objClas
 
 - 每个类在内存中只有一个`meta-class`对象
 
-```
+```Objective-C
 // 获取元类对象
 // 将NSObject类对象传进去，元类对象只能用object_getClass获取
 Class metaClass1 = object_getClass([NSObject class]);
@@ -123,7 +123,7 @@ NSLog(@"类对象:%p %p", obj1Class, cls);
 
 声明两个类`ZZStudent`和`ZZPerson`，`ZZStudent`继承自`ZZPerson`
 
-```
+```Objective-C
 @interface ZZPerson : NSObject
 + (void)test;
 @end
@@ -141,7 +141,7 @@ NSLog(@"类对象:%p %p", obj1Class, cls);
 
 打印`ZZPerson`的实例对象、类对象、元类对象
 
-```
+```Objective-C
 ZZPerson *p = [[ZZPerson alloc] init];
 Class pClass = object_getClass(p);
 Class pMetaClass = object_getClass(pClass);
@@ -154,7 +154,7 @@ NSLog(@"instance:%p class:%p meta-class:%p", p, pClass, pMetaClass);
 
 在`NSLog`处下断点
 
-```
+```Objective-C
 (lldb) p/x (long)p->isa
 (long) $0 = 0x001d8001000023c1
 ```
@@ -162,7 +162,7 @@ NSLog(@"instance:%p class:%p meta-class:%p", p, pClass, pMetaClass);
 
 这是因为苹果从`64bit`开始，`isa`要经过一次位运算才能得到真实地址
 
-```
+```Objective-C
 // objc4源码 isa.h
 
 # if __arm64__
@@ -176,7 +176,7 @@ NSLog(@"instance:%p class:%p meta-class:%p", p, pClass, pMetaClass);
 
 将`p->isa`经过位运算,得到的值刚好和类对象`0x1000023c0`一致
 
-```
+```Objective-C
 (lldb) p/x 0x00007ffffffffff8 & 0x001d8001000023c1
 (long) $1 = 0x00000001000023c0
 ```
@@ -187,7 +187,7 @@ NSLog(@"instance:%p class:%p meta-class:%p", p, pClass, pMetaClass);
 
 `class `、`meta-class`对象的本质结构都是`struct objc_class`
 
-```
+```Objective-C
 // 自己构造一个和 struct objc_class 类似的结构体
 struct zz_objc_class {
     Class isa;
@@ -204,7 +204,6 @@ struct zz_objc_class *pMetaClass = (__bridge struct zz_objc_class *)object_getCl
 (Class) $0 = 0x001d800100002399
 (lldb) p/x pMetaClass
 (zz_objc_class *) $1 = 0x0000000100002398
-(lldb) p/x pMetaClass
 
 // 类对象的isa指向元类对象
 (lldb) p/x 0x001d800100002399 & 0x00007ffffffffff8
@@ -213,7 +212,7 @@ struct zz_objc_class *pMetaClass = (__bridge struct zz_objc_class *)object_getCl
 
 ### 0x03 证明`meta-class`对象的`isa`指向基类的`meta-class`，基类的`meta-class`对象的`isa`指向它自己
 
-```
+```Objective-C
 ZZPerson *p = [[ZZPerson alloc] init];
 NSObject *obj = [[NSObject alloc] init];
 
@@ -239,15 +238,15 @@ struct zz_objc_class *objMetaClass = (__bridge struct zz_objc_class *)object_get
 
 ### 0x04 证明`class`对象的`superclass`指向父类的`class`对象，若父类不存在则`superclass`为`nil`
 
-```
+```Objective-C
 // 强转
 struct zz_objc_class *stuClass = (__bridge struct zz_objc_class *)([ZZStudent class]);
 struct zz_objc_class *perClass = (__bridge struct zz_objc_class *)([ZZPerson class]);
 struct zz_objc_class *objClass = (__bridge struct zz_objc_class *)([NSObject class]);
 
-NSLog(@"stuClass:%p claperClassss:%p objClass:%p", stuClass, perClass, objClass);
+NSLog(@"stuClass:%p perClass:%p objClass:%p", stuClass, perClass, objClass);
 // 打印
-2019-04-24 14:11:27.911900+0800 ZZNSObject[1000:32800] stuClass:0x100002418 claperClassss:0x1000023c8 objClass:0x7fff9b046140
+2019-04-24 14:11:27.911900+0800 ZZNSObject[1000:32800] stuClass:0x100002418 perClass:0x1000023c8 objClass:0x7fff9b046140
 
 (lldb) p/x stuClass->superclass
 (Class) $0 = 0x00000001000023c8 ZZPerson
@@ -260,7 +259,7 @@ NSLog(@"stuClass:%p claperClassss:%p objClass:%p", stuClass, perClass, objClass)
 ### 0x05 证明`meta-class`对象的`superclass`指向父类的`meta-class`对象，基类的`meta-class`对象的`superclass`指向基类的`class`对象
 
 
-```
+```Objective-C
 // 强转
 struct zz_objc_class *objClass = (__bridge struct zz_objc_class *)([NSObject class]);
 struct zz_objc_class *stuMetaClass = (__bridge struct zz_objc_class *)(object_getClass([ZZStudent class]));
@@ -282,7 +281,7 @@ struct zz_objc_class *objMetaClass = (__bridge struct zz_objc_class *)object_get
 
 新建`NSObject`的分类`NSObject+Add`
 
-```
+```Objective-C
 // NSObject+Add.h
 - (void)test;
 
@@ -301,7 +300,7 @@ NSLog(@"%p", [ZZPerson class]);
 
 运行程序
 
-```
+```Objective-C
 2019-04-24 14:43:22.845794+0800 ZZNSObject[1135:47507] 0x1000023b0
 2019-04-24 14:43:22.846132+0800 ZZNSObject[1135:47507] -[NSObject test]===0x1000023b0
 ```

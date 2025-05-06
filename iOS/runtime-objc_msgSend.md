@@ -9,7 +9,7 @@
 
 ## 一、消息发送
 
-消息发送 你可以认为是根据消息接收者查找要调用方法的过程。被调用的实例(类)方法可能在方法缓存里([runtime(二) - 方法缓存](https://github.com/zhaoName/Notes/blob/master/iOS/runtime(%E4%BA%8C)%20-%20%E6%96%B9%E6%B3%95%E7%BC%93%E5%AD%98.md))，也能在`class`(`meta-class`)对象或其父类中([OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md))。具体查找流程需要查看`runtime`源码。
+消息发送 你可以认为是根据消息接收者查找要调用方法的过程。被调用的实例(类)方法可能在方法缓存里([runtime-methodCache](https://github.com/zhaoName/Notes/blob/master/iOS/runtime-methodCache.md))，也能在`class`(`meta-class`)对象或其父类中([OC对象本质(二)](https://github.com/zhaoName/Notes/blob/master/iOS/OC%E5%AF%B9%E8%B1%A1%E6%9C%AC%E8%B4%A8(%E4%BA%8C).md))。具体查找流程需要查看`runtime`源码。
 
 
 ### 0x01 方法缓存中查找
@@ -312,7 +312,7 @@ static void _class_resolveInstanceMethod(Class cls, SEL sel, id inst)
 
 - 判断是否已经动态解析过，若已经解析过则跳过
 
-- 为解析则调用`+resolveInstanceMethod:`或者`+resolveClassMethod:`方法来动态解析方法
+- 未解析过则调用`+resolveInstanceMethod:`或者`+resolveClassMethod:`方法来动态解析方法
 
 - 标记已经动态解析过
 
@@ -565,7 +565,7 @@ int __forwarding__(void *frameStackPointer, int isStret) {
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-   	 ZNPerson *per = [[ZNPerson alloc] init];
+    ZNPerson *per = [[ZNPerson alloc] init];
     [per testPerson:@"----testPerson-----"];
 }
 

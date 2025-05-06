@@ -14,7 +14,7 @@
 
 定义一个类似`struct objc_class`的结构体
 
-```
+```Objective-C
 // ZZClassInfo.h
 
 # if __arm64__
@@ -164,7 +164,7 @@ public:
 
 在`main.mm`文件中
 
-```
+```Objective-C
 #import "ZZClassInfo.h"
 
 @interface ZZPerson : NSObject<NSCopying>

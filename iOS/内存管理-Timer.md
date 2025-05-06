@@ -9,7 +9,7 @@
 在我们使用`NSTimer`或`CADisplayLink`时可能会遇到这样的情况，`ViewController`消失后，定时器并是没销毁仍在工作，且`ViewController`也没有调用`dealloc`方法。如下：
 
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.timer = [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(testTimer) userInfo:nil repeats:YES];
@@ -46,7 +46,7 @@
 
 我们来看段代码就知道啥原因了
 
-```
+```Objective-C
 #define RETAIN(object)  [(object) retain]
 #define RELEASE(object)	  [(object) release]
 
@@ -120,7 +120,7 @@
 
 ### 0x01 `Block`
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     __weak typeof(self) weakSelf = self;
@@ -167,7 +167,7 @@
 
 这时我们可以使用系统提供的类`NSProxy`。`NSProxy`有点特殊，它是基类，和`NSObject`一个级别。
 
-```
+```Objective-C
 @interface ZNProxy : NSProxy
 
 @property (nonatomic, weak) id target;
@@ -229,7 +229,7 @@
 苹果提供了基于内核的定时器`dispatch_time_t `，它就很准时了。
 
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     

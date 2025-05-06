@@ -15,7 +15,7 @@
 
 - 深拷贝：地址和指针都拷贝(内容拷贝)，生成一个新的对象。原对象的引用计数不变，新对象引用计数为1。
 
-```
+```Objective-C
 // 这里要注意 字符串要足够长 否则创建出来的是Tagged Pointer, 引用计数为-1
 NSString *str1 = [NSString stringWithFormat:@"abcdefggggggg"];
 NSLog(@"str1.retainCount: %zd", str1.retainCount);
@@ -57,7 +57,7 @@ NSLog(@"str1:%p---str2:%p---str3:%p", str1, str2, str3);
 
 ### 0x01 NSString、NSMutableString
 
-```
+```Objective-C
 // 原对象是 NSString
 NSString *str1 = [NSString stringWithFormat:@"abcdefggggggg"];
 NSString *str2 = [str1 copy]; // 不可变 浅拷贝
@@ -77,7 +77,7 @@ NSLog(@"地址：str4:%p---str5:%p---str6:%p", str4, str5, str6);
 
 ### 0x02 NSArray、NSMutableArray
 
-```
+```Objective-C
 // 原有对象是 NSArray
 NSArray *arr1 = @[@"z", @"x", @"c"];
 NSArray *arr2 = [arr1 copy]; // 不可变 浅拷贝
@@ -103,7 +103,7 @@ NSLog(@"类型：arr4:%@---arr5:%@---arr6:%@", arr4.class.superclass, arr5.class
 
 ### 0x03 NSDictionary、NSMutableDictionary
 
-```
+```Objective-C
 // 原有对象是 NSDictionary
 NSDictionary *dict1 = @{@"key":@"value"};
 NSDictionary *dict2 = [dict1 copy]; // 不可变 浅拷贝
@@ -128,7 +128,7 @@ NSLog(@"类型：dict4:%@---dict5:%@---dict6:%@", dict4.class.superclass, dict5.
 
 ### 0x04 单层深拷贝
 
-```
+```Objective-C
 NSMutableArray *arr4 = [NSMutableArray arrayWithArray:@[@"z", @"x", @"c"]];
 NSArray *arr5 = [arr4 copy]; // 不可变 深拷贝
 NSArray *arr6 = [arr4 mutableCopy]; // 可变 深拷贝
@@ -149,7 +149,7 @@ for (int i=0; i<arr4.count; i++) {
 
 苹果文档指出可以用归档和解归档实现完全深拷贝。
 
-```
+```Objective-C
 // 完全深拷贝
 NSArray *arr7 = [NSKeyedUnarchiver unarchiveObjectWithData:[NSKeyedArchiver archivedDataWithRootObject:arr4]];
 NSLog(@"地址：arr4:%p---arr7:%p", arr4, arr7);
@@ -177,7 +177,7 @@ for (int i=0; i<arr4.count; i++) {
 
 我们自定义一个`ZNPerson`类。
 
-```
+```Objective-C
 ZNPerson *per = [[ZNPerson alloc] init];
 per.age = 18;
 per.name = @"zhao";
@@ -192,7 +192,7 @@ NSLog(@"%d %@", copyPer.age, copyPer.name);
 
 对于自定义的类，我们要想调用`copy/mutableCopy`方法，需要实现手动实现`NSCopying/NSMutableCopying`协议。
 
-```
+```Objective-C
 - (id)copyWithZone:(NSZone *)zone
 {
     // [self class] 能防止子类未实现 NSCoping 协议调用copy 方法，出现崩溃(unrecognized selector sent to instance)
@@ -211,7 +211,7 @@ NSLog(@"%d %@", copyPer.age, copyPer.name);
 
 首先我们来看下声明`NSString`类型的属性用`strong`关键字修饰，有什么后果。
 
-```
+```Objective-C
 NSString *str = [NSMutableString stringWithString:@"123"];
 self.name = str;
 str = @"345";
@@ -223,7 +223,7 @@ NSLog(@"self.name：%@---str：%@", self.name, str);
 
 当我们声明一个不可变字符串局部变量赋值给`_name`，重新给字符串赋值，不会影响`_name`的值。
 
-```
+```Objective-C
 NSMutableString *str = [NSMutableString stringWithString:@"123"];
 self.name = str;
 [str appendString:@"456"];
@@ -237,7 +237,7 @@ NSLog(@"self.name：%@---str：%@", self.name, str);
 
 若我们用`copy`关键字修饰，在 MRC 环境下`_name`的`setter`方法如下
 
-```
+```Objective-C
 - (void)setName:(NSString *)name
 {
     if (_name != name) {
@@ -251,7 +251,7 @@ NSLog(@"self.name：%@---str：%@", self.name, str);
 
 ### 0x02 使用`copy`关键字修饰`NSMutableArray`会有什么后果 ？
 
-```
+```Objective-C
 @property (nonatomic, copy) NSMutableArray *mArr;
 
 self.mArr = [[NSMutableArray alloc] init];

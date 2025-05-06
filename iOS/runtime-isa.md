@@ -240,7 +240,7 @@ struct {
 
 ### 0x02 位域成员的类型
 
-`C`语言标准规定，只有有限的几种数据类型可以用于位域。在`ANSIC `中，这几种数据类型是`int`和`unsigned int`， 到了`C99 ``_Bool`也被支持了。但编译器在具体实现时都进行了扩展，额外支持了`char`、`signed char`、`unsigned char`以及`enum`类型。
+`C`语言标准规定，只有有限的几种数据类型可以用于位域。在`ANSIC `中，这几种数据类型是`int`和`unsigned int`， 到了`C99 ` `_Bool` 也被支持了。但编译器在具体实现时都进行了扩展，额外支持了`char`、`signed char`、`unsigned char`以及`enum`类型。
 
 位域不能是静态类型。不能使用`&`对位域做取地址运算，因此不存在位域的指针。
 
@@ -293,7 +293,7 @@ NSLog(@"========%d", sizeof(test));
 2019-06-23 22:32:20.928969+0800 runtime-isa[2529:175243] ========4
 ```
 
-`x1``x2``x3``x4`的位宽之和为`2+4+8+6 = 20`，大于`short`类型的长度16。所以在存储`x4`的时候会新开辟两个字节长度。 
+`x1` `x2` `x3` `x4`的位宽之和为`2+4+8+6 = 20`，大于`short`类型的长度16。所以在存储`x4`的时候会新开辟两个字节长度。 
 
 ![](../Images/iOS/runtime/runtime_image0103.png)
 
@@ -391,7 +391,6 @@ union {
         char white : 1;
         char rich : 1;
         char beautiful :1;
-        
     };
 }_whiteRichBeautiful;
 
