@@ -440,7 +440,7 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 ```Objective-C
 - (id)init
 {
-	return [self initWithCondition:0];
+    return [self initWithCondition:0];
 }
 
 - (id)initWithCondition:(NSInteger)value
@@ -550,27 +550,27 @@ pthread_mutexattr_settype(&attr_recursive, PTHREAD_MUTEX_RECURSIVE);
 // 返回 0 表示成功，返回非 0 表示超时
 intptr_t dispatch_semaphore_wait(dispatch_semaphore_t dsema, dispatch_time_t timeout)
 {
-	// 将 dsema_value(初始化设置的值) 的值减 1
-	long value = os_atomic_dec2o(dsema, dsema_value, acquire);
-	// 若结果 >= 0，则直接返回
-	if (likely(value >= 0)) {
-		return 0;
-	}
-	return _dispatch_semaphore_wait_slow(dsema, timeout);
+    // 将 dsema_value(初始化设置的值) 的值减 1
+    long value = os_atomic_dec2o(dsema, dsema_value, acquire);
+    // 若结果 >= 0，则直接返回
+    if (likely(value >= 0)) {
+        return 0;
+    }
+    return _dispatch_semaphore_wait_slow(dsema, timeout);
 }
 
 // 如果之前的值小于0 就会唤醒当前的 wait
 intptr_t dispatch_semaphore_signal(dispatch_semaphore_t dsema)
 {
-	// 	将 dsema_value(初始化设置的值) 的值加 1
-	long value = os_atomic_inc2o(dsema, dsema_value, release);
-	if (likely(value > 0)) {
-		return 0;
-	}
-	if (unlikely(value == LONG_MIN)) {
-		DISPATCH_CLIENT_CRASH(value, "Unbalanced call to dispatch_semaphore_signal()");
-	}
-	return _dispatch_semaphore_signal_slow(dsema);
+    // 将 dsema_value(初始化设置的值) 的值加 1
+    long value = os_atomic_inc2o(dsema, dsema_value, release);
+    if (likely(value > 0)) {
+        return 0;
+    }
+    if (unlikely(value == LONG_MIN)) {
+        DISPATCH_CLIENT_CRASH(value, "Unbalanced call to dispatch_semaphore_signal()");
+    }
+    return _dispatch_semaphore_signal_slow(dsema);
 }
 ```
 
@@ -689,18 +689,18 @@ int objc_sync_exit(id obj)
 // objc4-750 objc-accessors.mm
 static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t offset, bool atomic, bool copy, bool mutableCopy)
 {
-	...
-	if (!atomic) {
-		oldValue = *slot;
-		*slot = newValue;
-	} else {
-		spinlock_t& slotlock = PropertyLocks[slot];
-		slotlock.lock();
-		oldValue = *slot;
-		*slot = newValue;        
-		slotlock.unlock();
-	}
-	objc_release(oldValue);
+    ...
+    if (!atomic) {
+        oldValue = *slot;
+        *slot = newValue;
+    } else {
+        spinlock_t& slotlock = PropertyLocks[slot];
+        slotlock.lock();
+        oldValue = *slot;
+        *slot = newValue;
+        slotlock.unlock();
+    }
+    objc_release(oldValue);
 }
 ```
 

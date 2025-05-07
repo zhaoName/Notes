@@ -291,12 +291,15 @@ __weak Person *weakP2 = per;
 __weak Person *weakP3 = per;
 __weak Person *weakP4 = per;
 __weak Person *weakP5 = per;
+
+NSLog(@"main-------%@--%p--%@", weakP1, &weakP1, per);
 ```
 
 打印结果如下，同时也证明我们的结论
 
 ```
 objc_initWeak: 0x7ffeefbff4c8-----0x101215430 
+
 ***********print_weak_table: 0x101215430 对应的 weak 变量**************
 print_weak_table: inline_referrers[0] ---0x7ffeefbff4c8 
 print_weak_table: inline_referrers[1] ---0x0 
@@ -335,6 +338,8 @@ print_weak_table: referrers[2] ---0x7ffeefbff4d0
 print_weak_table: referrers[5] ---0x7ffeefbff4e8 
 print_weak_table: referrers[6] ---0x7ffeefbff4d8 
 print_weak_table: referrers[7] ---0x7ffeefbff4c8 
+
+ZZRuntimeTest[43286:809370] main-------<Person: 0x101215430>--0x7ffeefbff4c8--<Person: 0x101215430>
 ```
 
 ![](../Images/iOS/weak/weak_image02.png)

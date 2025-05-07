@@ -21,7 +21,7 @@ Explanation: There are 4 prime numbers less than 10, they are 2, 3, 5, 7.
 
 - 第一思路 暴力求解 超时
 
-```
+```python3
 # O(n * sqrt(i)) 超时
 def countPrimes_simple(self, n: int) -> int:
 	if n == 1: return 0
@@ -46,7 +46,7 @@ def countPrimes_simple(self, n: int) -> int:
 
 - 借鉴思路 筛选
 
-```
+```python3
 
 ## Time Complexity:O(nloglogn)  Space Time:O(n)
 def countPrimes_multiple(self, n) -> int:
@@ -63,7 +63,7 @@ def countPrimes_multiple(self, n) -> int:
 
 - 借鉴思路  在筛选的基础上优化
 
-```
+```python3
 def countPrimes_sqrt(self, n) -> int:
 	if n<= 2: return 0
 	isPrimes = [1] * n
