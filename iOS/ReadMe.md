@@ -19,13 +19,13 @@
 - [组件化(三) - 加载资源文件](https://github.com/zhaoName/Notes/blob/master/iOS/%E7%BB%84%E4%BB%B6%E5%8C%96(%E4%B8%89)-%E5%8A%A0%E8%BD%BD%E8%B5%84%E6%BA%90%E6%96%87%E4%BB%B6.md)
 - [组件化(四) - 各种坑](https://github.com/zhaoName/Notes/blob/master/iOS/%E7%BB%84%E4%BB%B6%E5%8C%96(%E5%9B%9B)-%E5%90%84%E7%A7%8D%E5%9D%91.md)
 
-- [内存管理 - Timer](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20Timer.md)
+- [内存管理-Timer](https://github.com/zhaoName/Notes/blob/master/iOS/MemoryManagement-Timer.md)
 
-- [内存管理 - MRC](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20MRC.md)
+- [内存管理-MRC](https://github.com/zhaoName/Notes/blob/master/iOS/MemoryManagement-MRC.md)
 
-- [内存管理 - Copy](https://github.com/zhaoName/Notes/blob/master/iOS/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%20-%20Copy.md)
+- [内存管理-Copy](https://github.com/zhaoName/Notes/blob/master/iOS/MemoryManagement-Copy.md)
 
-- [weak](https://github.com/zhaoName/Notes/blob/master/iOS/weak.md)
+- [内存管理-weak](https://github.com/zhaoName/Notes/blob/master/iOS/MemoryManagement-weak.md)
 
 - [AutoreleasePool](https://github.com/zhaoName/Notes/blob/master/iOS/AutoreleasePool.md)
 

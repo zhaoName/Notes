@@ -13,7 +13,7 @@
 
 用`xcrun -sdk iphoneos clang -arch arm64 -rewrite-objc  ViewController.m`将如下代码转成 C++ 的实现。
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -25,7 +25,7 @@
 
 C++ 代码：
 
-```
+```C++
 static void _I_ViewController_viewDidLoad(ViewController * self, SEL _cmd)
 {
     objc_msgSendSuper(self, class_getSuperclass(objc_getClass("ViewController"))}, sel_registerName("viewDidLoad"));
@@ -39,7 +39,7 @@ static void _I_ViewController_viewDidLoad(ViewController * self, SEL _cmd)
 
 对比代码，我们可以看到`@autoreleasepool{}`最终转成了`__AtAutoreleasePool `类型的结构体。
 
-```
+```Objective-C
 struct __AtAutoreleasePool {
     // 构造函数，创建此结构体变量时调用
     __AtAutoreleasePool() {
@@ -55,7 +55,7 @@ struct __AtAutoreleasePool {
 
 也就是说`@autoreleasepool { NSObject *obj = [[NSObject alloc] init]; }`最终会转成如下代码：
 
-```
+```Objective-C
 void *atautoreleasepoolobj = objc_autoreleasePoolPush();
 
 NSObject *obj = [[NSObject alloc] init];
@@ -71,7 +71,7 @@ objc_autoreleasePoolPop(atautoreleasepoolobj);
 
 在 runtime4-750 的 NSObject.mm 中找到其实现。可以看到这两个函数其内部会调用 C++ 实现的类`AutoreleasePoolPage `中的方法。也就是说加入到 `@autoreleasepool`中的对象，都是借助`AutoreleasePoolPage `管理的。
 
-```
+```Objective-C
 void *objc_autoreleasePoolPush(void)
 {
     return AutoreleasePoolPage::push();
@@ -86,7 +86,7 @@ void objc_autoreleasePoolPop(void *ctxt)
 
 ### 0x01 `AutoreleasePoolPage `结构
 
-```
+```Objective-C
 // objc4-750 NSObject.mm
 
 #define POOL_BOUNDARY  nil
@@ -139,7 +139,7 @@ class AutoreleasePoolPage
 
 4096 个字节除了用来存放它内部的成员变量，若剩下的内存空间不够存储一个自动释放池`@autoreleasepool{}`中的`autorelease`对象，则会新创建一个`AutoreleasePoolPage `对象，构成双向链表，在新的`AutoreleasePoolPage `对象中继续存储。
 
-```
+```Objective-C
 extern void _objc_autoreleasePoolPrint(void);
 
 int main(int argc, const char * argv[]) {
@@ -177,7 +177,7 @@ objc[28420]: [0x101007348]       0x10062b3c0  NSObject
 
 若剩下的内存空间足够存储一个自动释放池`@autoreleasepool{}`中的`autorelease`对象，则存储下一个自动释放池`@autoreleasepool{}`中的`autorelease`对象不会创建新的`AutoreleasePoolPage `对象。
 
-```
+```Objective-C
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         NSObject *obj3 = [[[NSObject alloc] init] autorelease];
@@ -217,7 +217,7 @@ objc[28465]: ##############
 
 ### 0x01 push()
 
-```
+```Objective-C
 static inline void *push()
 {
     id *dest;
@@ -253,7 +253,7 @@ static inline id *autoreleaseFast(id obj)
 
 ### 0x02 `autoreleaseFullPage()`
 
-```
+```Objective-C
 static __attribute__((noinline)) id *autoreleaseFullPage(id obj, AutoreleasePoolPage *page)
 {
     // The hot page is full. 
@@ -279,7 +279,7 @@ static __attribute__((noinline)) id *autoreleaseFullPage(id obj, AutoreleasePool
 
 ### 0x03 `autoreleaseNoPage()`
 
-```
+```Objective-C
 static __attribute__((noinline)) id *autoreleaseNoPage(id obj)
 {
     // "No page" could mean no pool has been pushed
@@ -335,7 +335,7 @@ static __attribute__((noinline)) id *autoreleaseNoPage(id obj)
 
 ### 0x01 `pop()`
 
-```
+```Objective-C
 static inline void pop(void *token) 
 {
     AutoreleasePoolPage *page;
@@ -409,7 +409,7 @@ static inline void pop(void *token)
 
 ### 0x02 `pageForPointer()`
 
-```
+```Objective-C
  static AutoreleasePoolPage *pageForPointer(const void *p) 
 {
     return pageForPointer((uintptr_t)p);
@@ -442,7 +442,7 @@ result = 0x100816000
 ### 0x03 `releaseUntil()`
 
 
-```
+```Objective-C
 void releaseUntil(id *stop) 
 {
     while (this->next != stop) {
@@ -475,7 +475,7 @@ void releaseUntil(id *stop)
 
 ### 0x04 `kill()`
 
-```
+```Objective-C
 void kill() 
 {
     AutoreleasePoolPage *page = this;
@@ -504,9 +504,9 @@ void kill()
 ## 五、`autorelease`
 
 
-OC 对象调用`autorelease `方法就会将对象加入到自动释放池中。我们来看看`autorelease `的内部实现。
+OC 对象调用`autorelease` 方法就会将对象加入到自动释放池中。我们来看看`autorelease` 的内部实现。
 
-```
+```Objective-C
 // objc4-750 
 
 NSObject.mm
@@ -569,7 +569,7 @@ OC 对象调用`autorelease`方法，最终会调用`autoreleaseFast()`函数，
 
 ### 0x01 `@autoreleasepool`
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -591,7 +591,7 @@ OC 对象调用`autorelease`方法，最终会调用`autoreleaseFast()`函数，
 
 ### 0x02 对象直接调用`autorelease `
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -626,7 +626,7 @@ OC 对象调用`autorelease`方法，最终会调用`autoreleaseFast()`函数，
 
 这就和`RunLoop`有关了，iOS 在主线程的`Runloop`中注册了 2 个`Observer`。用于监听和自动释放池相关的事件。
 
-```
+```Objective-C
 "<CFRunLoopObserver 0x6000001c45a0 [0x1058e0ae8]>{activities = 0x1, callout = _wrapRunLoopWithAutoreleasePoolHandler (0x1083db87d) ...}}"
 
 "<CFRunLoopObserver 0x6000001c4640 [0x1058e0ae8]>{activities = 0xa0,callout = _wrapRunLoopWithAutoreleasePoolHandler (0x1083db87d) ...)}}"
@@ -634,7 +634,7 @@ OC 对象调用`autorelease`方法，最终会调用`autoreleaseFast()`函数，
 
 再结合`CFRunLoopActivity `的值
 
-```
+```Objective-C
 typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
     kCFRunLoopEntry = (1UL << 0),  // 1
     kCFRunLoopBeforeTimers = (1UL << 1), // 2

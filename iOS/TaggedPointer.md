@@ -16,7 +16,7 @@ Tagged Pointer 是苹果从 64bit 开始应用的技术，用于优化`NSNumber`
 
 我们来看下若不使用 Tagged Pointer 为什么会造成内存浪费。创建一个`NSNumber`对象
 
-```
+```Objective-C
 NSNumber *number = [NSNumber numberWithInt:10];
 ```
 
@@ -31,7 +31,7 @@ NSNumber *number = [NSNumber numberWithInt:10];
 
 使用 Tagged Pointer 后，会是将值和标志直接存储在指针中。若值过大，指针存不下则当成一个正常对象处理。
 
-```
+```Objective-C
 NSNumber *a = @10;
 NSNumber *b = @18;
 NSNumber *c = @(0xfffffffffffffff);
@@ -59,7 +59,7 @@ NSLog(@"%@ %@", str1.class, str3.class);
 
 但这是2013年的演讲稿，所以只能参考，最新的判断标准在`runtime`源码中给出答案。
 
-```
+```Objective-C
 // objc4-750  NSObject.mm
 
 #if (TARGET_OS_OSX || TARGET_OS_IOSMAC) && __x86_64__
@@ -87,13 +87,14 @@ static inline bool _objc_isTaggedPointer(const void * _Nullable ptr)
 - 在 64bit 非 Mac 下，最高有效位(MSB)为1，则是 Tagged Pointer
 
 
+
 ## 三、面试题
 
 ### 0x01 
 
 下面代码运行有什么结果 ?
 
-```
+```Objective-C
 @property (nonatomic, copy) NSString *name;
 
 dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
@@ -110,7 +111,7 @@ for (int i=0; i<1000; i++) {
 
 首先可以确定一点的是`[NSString stringWithFormat:@"abcsafojoefflwmflkwf"]`是一个普通的 OC 对象，且`self.name = xxx`等同于`[self setName:xxx]`。属性的`setter`方法在 MRC 环境下会转成如下代码。
 
-```
+```Objective-C
 - (void)setName:(NSString *)name
 {
     if (_name != name) {
@@ -131,7 +132,7 @@ for (int i=0; i<1000; i++) {
 
 若改成下面代码，运行结果又是什么样的 ？
 
-```
+```Objective-C
 dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
 for (int i=0; i<1000; i++) {
     dispatch_async(queue, ^{
@@ -143,7 +144,7 @@ NSLog(@"---------%@", self.name);
 
 运行结果
 
-```
+```Objective-C
 2019-07-24 23:38:01.002111+0800 MemoryManagement[81538:6125551] ---------abc
 ```
 
