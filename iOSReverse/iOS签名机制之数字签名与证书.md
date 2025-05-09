@@ -79,7 +79,7 @@
 
 ### 0x04 中间人攻击
 
-1.用非对称加密发送消息机制(详情参考[iOS签名机制之非对称加密](https://gitee.com/zhaoName0x01/Notes/blob/master/iOSReverse/iOS签名机制之非对称加密.md))解释中间人攻击
+1.用非对称加密发送消息机制(详情参考[iOS签名机制之非对称加密](https://github.com/zhaoName/Notes/blob/master/iOSReverse/iOS%E7%AD%BE%E5%90%8D%E6%9C%BA%E5%88%B6%E4%B9%8B%E9%9D%9E%E5%AF%B9%E7%A7%B0%E5%8A%A0%E5%AF%86.md))解释中间人攻击
 
 ![](../Images/iOSReverse/iOS签名机制之数字签名与证书/certificate_image4.png)
 

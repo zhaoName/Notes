@@ -178,9 +178,9 @@ void _object_set_associative_reference(id object, void *key, id value, uintptr_t
 
 **相关内容**
 
-- [Categary - 底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category-imp.md)
+- [Categary - 底层实现](https://github.com/zhaoName/Notes/blob/master/iOS/Category-imp.md)
 
-- [Categoty - load,initialize](https://gitee.com/zhaoName0x01/Notes/edit/master/iOS/Categoty-load-initialize.md)
+- [Categoty - load,initialize](https://github.com/zhaoName/Notes/blob/master/iOS/Categoty-load-initialize.md)
 
 <br>
 

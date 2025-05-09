@@ -9,7 +9,7 @@
 
 创建`ZNPeron`类, 下面代码`per`对象什么时候被释放？
 
-```
+```Objective-C
 ZNPerson.h
 @property (nonatomic, copy) NSString *name;
 
@@ -25,27 +25,26 @@ ZNPeron.m
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         ZNBlock block;
-		{
-		    ZNPerson *per = [[ZNPerson alloc] init];
-		    per.name = @"zhaoName";
-	
-		    block = ^{
-				 NSLog(@"per.age：%@", per.name);
-		    };
-		    // MRC 下加下句代码
-		    //[per release];
-		}
-		block();
-		NSLog(@"========");
+        {
+            ZNPerson *per = [[ZNPerson alloc] init];
+            per.name = @"zhaoName";
+            
+            block = ^{
+                NSLog(@"per.age：%@", per.name);
+            };
+            // MRC 下加下句代码
+            //[per release];
+        }
+        block();
+        NSLog(@"========");
     }
     return 0;
 }
-
 ```
 
 - `MRC` 下打印结果
 
-```
+```Objective-C
 2019-06-17 23:49:00.987411+0800 BlockNature[9555:9755205] -[ZNPerson dealloc]
 2019-06-17 23:49:00.987758+0800 BlockNature[9555:9755205] per.age：zhaoName
 2019-06-17 23:49:00.987913+0800 BlockNature[9588:9768138] ========
@@ -53,7 +52,7 @@ int main(int argc, const char * argv[]) {
 
 - `ARC` 下打印结果
 
-```
+```Objective-C
 2019-06-17 23:51:06.082531+0800 BlockNature[9588:9768138] per.age：zhaoName
 2019-06-17 23:51:06.082731+0800 BlockNature[9588:9768138] ========
 2019-06-17 23:51:06.082952+0800 BlockNature[9588:9768138] -[ZNPerson dealloc]
@@ -68,7 +67,7 @@ int main(int argc, const char * argv[]) {
 
 转换成`C++`代码看其底层实现
 
-```
+```Objective-C
 typedef void(*ZNBlock)(void);
 
 struct __main_block_impl_0 {
@@ -135,7 +134,7 @@ int main(int argc, const char * argv[]) {
 
 `__main_block_copy_0`函数内调用`_Block_object_assign`函数将`per`对象赋值给`ZNBlock`结构体中的成员变量`ZNPerson *__strong per`,并持有该对象。相对于`MRC`环境下调用`retain`方法。
 
-```
+```Objective-C
 static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src)
 {
     _Block_object_assign((void*)&dst->per, (void*)src->per, 3/*BLOCK_FIELD_IS_OBJECT*/);
@@ -144,7 +143,7 @@ static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_bl
 
 `__main_block_dispose_0`函数内调用`_Block_object_dispose`函数将`ZNBlock`结构体中的成员释放掉。相对于`MRC`环境下调用`release`方法。
 
-```
+```Objective-C
 static void __main_block_dispose_0(struct __main_block_impl_0*src)
 {
     _Block_object_dispose((void*)src->per, 3/*BLOCK_FIELD_IS_OBJECT*/);
@@ -187,13 +186,13 @@ static void __main_block_dispose_0(struct __main_block_impl_0*src)
 
 有个很经典的错误，在`Block`内直接修改`auto`变量的值会直接报错。
 
-```
+```Objective-C
 int age = 10;
 NSLog(@"block外：%p", &age);
 
 ZNBlock block = ^{
-	NSLog(@"block内：%p", &age);
-	// 下句代码报错：variable is not assignable (missing __block type specifier)
+    NSLog(@"block内：%p", &age);
+    // 下句代码报错：variable is not assignable (missing __block type specifier)
     age = 20;
 };
 block();
@@ -201,7 +200,7 @@ block();
 
 想要看清楚为什么不能改值，还是要看底层源码(去掉报错代码)
 
-```
+```Objective-C
 struct __main_block_impl_0 {
     struct __block_impl impl;
     struct __main_block_desc_0* Desc;
@@ -236,7 +235,7 @@ int main(int argc, const char * argv[]) {
 
 另外从打印结果也可以看到`Block`内外，变量`age`内存地址不一样。
 
-```
+```Objective-C
 2019-06-18 15:17:03.805430+0800 BlockNature[3095:144777] block外：0x7ffeefbff57c
 2019-06-18 15:17:03.805877+0800 BlockNature[3095:144777] block内：0x1005335e0
 ```
@@ -257,13 +256,12 @@ int main(int argc, const char * argv[]) {
 
 我们看下下面这段源代码
 
-```
+```Objective-C
 int global_age = 10;
 static int static_global_num =15;
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        
         static int static_height = 12;
         ZNBlock block = ^{
             global_age++;
@@ -278,7 +276,7 @@ int main(int argc, const char * argv[]) {
 
 转换后部分代码如下
 
-```
+```Objective-C
 int global_age = 10;
 static int static_global_num =15;
 
@@ -315,7 +313,7 @@ static void __main_block_func_0(struct __main_block_impl_0 *__cself)
 
 在前面编译报错的代码中的基本数据类型变量`age`声明前加上`__block`修饰符
 
-```
+```Objective-C
 __block int age = 12;
 ZNBlock block = ^{
     age++;
@@ -325,7 +323,7 @@ block();
 
 转换后代码如下
 
-```
+```Objective-C
 typedef void(*ZNBlock)(void);
 
 // __block 修饰变量转换成的结构体，内部有个成员 age
@@ -393,7 +391,7 @@ int main(int argc, const char * argv[]) {
 
 - `__Block_byref_age_0`结构体
 
-```
+```Objective-C
 struct __Block_byref_age_0 {
     void *__isa;
     __Block_byref_age_0 *__forwarding;
@@ -416,7 +414,7 @@ __Block_byref_age_0 age = {(void*)0,(__Block_byref_age_0 *)&age, 0, sizeof(__Blo
 
 - 下面来解释下为什么能在`Block`内部修改带有`__block `修饰符的变量？
 
-```
+```Objective-C
 __block int age = 12;
 NSLog(@"进入block前：%p", &age);
 ZNBlock block = ^{
@@ -452,7 +450,7 @@ block();
 
 有两个`block`访问同一个`__block`修饰的变量
 
-```
+```Objective-C
 __block int age = 12;
 ZNBlock block_first = ^{
      age = 13;
@@ -465,7 +463,7 @@ ZNBlock block_sec = ^{
 
 转换代码
 
-```
+```Objective-C
 ZNBlock block_first = &__main_block_impl_0(__main_block_func_0, &__main_block_desc_0_DATA, (__Block_byref_age_0 *)&age, 570425344));
 
 ZNBlock block_sec = &__main_block_impl_1(__main_block_func_1, &__main_block_desc_1_DATA, (__Block_byref_age_0 *)&age, 570425344));
@@ -487,7 +485,7 @@ ZNBlock block_sec = &__main_block_impl_1(__main_block_func_1, &__main_block_desc
 
 若`Block`从栈上拷贝到堆上，则`__block`变量也会拷贝到堆上。复制上面代码
 
-```
+```Objective-C
 // 为了持有 __Block_byref_age_0 *age 而新增代码
 static void __main_block_copy_0(struct __main_block_impl_0*dst, struct __main_block_impl_0*src)
 {
@@ -544,7 +542,7 @@ static struct __main_block_desc_0 {
 ### 0x05 `__block`修饰的对象类型
 
 
-```
+```Objective-C
 __block ZNPerson *per = [[ZNPerson alloc] init];
 ZNBlock block = ^{
     NSLog(@"ZNPerson： %@",  per);
@@ -554,7 +552,7 @@ block();
 
 转成`C++`代码
 
-```
+```Objective-C
 typedef void(*ZNBlock)(void);
 
 // 为持有 ZNPerson *__strong per 而新增 copy 函数,相当于 retain
@@ -622,27 +620,27 @@ static struct __main_block_desc_0 {
 
 
 int main(int argc, const char * argv[]) {
-    /* @autoreleasepool */ { __AtAutoreleasePool __autoreleasepool; 
-
-	__Block_byref_per_0 per = {
-	    (void*)0,(__Block_byref_per_0 *)&per,
-	    33554432,
-	    sizeof(__Block_byref_per_0),
-	    __Block_byref_id_object_copy_131,
-	    __Block_byref_id_object_dispose_131,
-	    [[ZNPerson alloc] init]};
-	}
+    /* @autoreleasepool */ 
+    { __AtAutoreleasePool __autoreleasepool;
+        __Block_byref_per_0 per = {
+            (void*)0,(__Block_byref_per_0 *)&per,
+            33554432,
+            sizeof(__Block_byref_per_0),
+            __Block_byref_id_object_copy_131,
+            __Block_byref_id_object_dispose_131,
+            [[ZNPerson alloc] init]};
+    }
     ...
 }
 ```
 
 当`__block`修饰的是对象类型的变量，在`__block`变量结构体`__Block_byref_per_0`中新增`__Block_byref_id_object_copy`和`__Block_byref_id_object_dispose`两个成员变量, 以及作为指针赋值给这两个成员的`__Block_byref_id_object_copy_131 `和`__Block_byref_id_object_dispose_131 `函数，来管理`ZNPerson *__strong per`的内存。
 
-```
+```Objective-C
 // 持有 ZNPerson *__strong per 而新增 copy 函数,相当于 retain
 static void __Block_byref_id_object_copy_131(void *dst, void *src)
 {
-	// 由 __Block_byref_per_0 结构体可知 dst + 40 就是 per 的地址
+    // 由 __Block_byref_per_0 结构体可知 dst + 40 就是 per 的地址
     _Block_object_assign((char*)dst + 40, *(void * *) ((char*)src + 40), 131);
 }
 
@@ -690,7 +688,7 @@ struct __Block_byref_per_0 {
 
 若在`Block`内使用`__strong`修饰的对象类型变量，那么当`Block`从栈上复制到堆上时，`Block`会强引用该对象。这样很容易产生循环引用
 
-```
+```Objective-C
 // ZNPerson.h
 typedef void(^ZNBlock)(void);
 
@@ -738,7 +736,7 @@ int main(int argc, const char * argv[]) {
 
 由前面`Block`捕获对象类型变量的总结可知，`ZNBlock`是否持有对象类型变量取决于对象类型变量的修饰符是`__strong` 还是`__weak`、`__unsafe_unretained`。
 
-```
+```Objective-C
 // ZNPreson.m
 - (void)test
 {
@@ -757,7 +755,7 @@ int main(int argc, const char * argv[]) {
 ### 0x02 `__unsafe_unretained ` 
 
 
-```
+```Objective-C
 - (void)test
 {
     __unsafe_unretained ZNPerson *weakSelf = self;
@@ -775,7 +773,7 @@ int main(int argc, const char * argv[]) {
 
 ### 0x03 `__block ` 
 
-```
+```Objective-C
 // ZNPerson.m
 - (void)test
 {
@@ -815,8 +813,6 @@ int main(int argc, const char * argv[]) {
 **参考文献：**
 
 - 《Objective-C高级编程iOS与OS+X多线程和内存管理》
-
-- 视频
 
 <br>
 

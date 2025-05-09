@@ -9,7 +9,7 @@
 
 新建`ZZPerson`并创建两个分类`ZZPerson+TestA.m`和`ZZPerson+TestB.m`，分别实现其`load`方法
 
-```
+```Objective-C
 // ZZPerson.m
 + (void)load
 {
@@ -33,7 +33,7 @@
 
 这时候啥也不做，`ZZPerson`的头文件也不用导入，直接运行代码，看看会出现什么情况
 
-```
+```Objective-C
 2019-04-27 23:53:36.527709+0800 ZZCategory[50064:5855381] +[ZZPerson load]
 2019-04-27 23:53:36.527937+0800 ZZCategory[50064:5855381] +[ZZPerson(TestA) load]
 2019-04-27 23:53:36.527958+0800 ZZCategory[50064:5855381] +[ZZPerson(TestB) load]
@@ -41,7 +41,7 @@
 
 控制台会有打印信息！！这说明 **`+load`方法是在程序将类或分类载进内存时就会自动调用。**
 
-但是看到控制台的打印信息又有点疑惑！根据[Categary本质(一)底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Categary本质(一)底层实现.md)所分析的结果，当分类中存在同样的方法，最终会调用哪个分类的方法，由分类的编译顺序决定，后编译的优先调用。那应该只会调用`ZZPerson+TestB`中的`+load`方法！但结果原类和分类中的`+load`都调用了，这是为啥呢？
+但是看到控制台的打印信息又有点疑惑！根据[Categary本质(一)底层实现](https://github.com/zhaoName/Notes/blob/master/iOS/Category-imp.md)所分析的结果，当分类中存在同样的方法，最终会调用哪个分类的方法，由分类的编译顺序决定，后编译的优先调用。那应该只会调用`ZZPerson+TestB`中的`+load`方法！但结果原类和分类中的`+load`都调用了，这是为啥呢？
 
 想解释清楚这个问题，需要查看`runtime`中关于`+load`方法的底层实现！
 
@@ -50,21 +50,21 @@
 
 在`objc-os.mm`中找到`_objc_init()`
 
-```
+```Objective-C
 // runtime的初始化方法，也是runtime的入口函数
 void _objc_init(void)
 {
-	......
+    ......
     
-	// map_images 中有合并分类的过程
-	// load_images 中有加载+load方法的过程
+    // map_images 中有合并分类的过程
+    // load_images 中有加载+load方法的过程
     _dyld_objc_notify_register(&map_images, load_images, unmap_image);
 }
 ```
 
 在`objc-runtime-new.mm`中找到`load_images()`
 
-```
+```Objective-C
 void load_images(const char *path __unused, const struct mach_header *mh)
 {
     ......
@@ -84,7 +84,7 @@ void load_images(const char *path __unused, const struct mach_header *mh)
 
 - `prepare_load_methods()`
 
-```
+```Objective-C
 // 从源文件中读取所有类和分类的+load方法 组成结构体loadable_class 或 loadable_category, 再将结构体放在数组中
 void prepare_load_methods(const headerType *mhdr)
 {
@@ -92,8 +92,7 @@ void prepare_load_methods(const headerType *mhdr)
     
     runtimeLock.assertLocked();
     // 从源文件中获取所有类，并遍历
-    classref_t *classlist =
-    _getObjc2NonlazyClassList(mhdr, &count);
+    classref_t *classlist = _getObjc2NonlazyClassList(mhdr, &count);
     for (i = 0; i < count; i++) {
         // 按 superclass -> class 的顺序将cls和+load对应起来 存在数组里
         schedule_class_load(remapClass(classlist[i]));
@@ -122,7 +121,7 @@ static void schedule_class_load(Class cls)
     
     // class和+load方法对应起来(struct loadable_class) 放在数组里
     add_class_to_loadable_list(cls);
-    cls->setInfo(RW_LOADED); 
+    cls->setInfo(RW_LOADED);
 }
 
 // class和+load方法对应起来(struct loadable_class) 放在数组里
@@ -130,12 +129,11 @@ void add_class_to_loadable_list(Class cls)
 {
     ......
     // loadable_classes扩容
-	if (loadable_classes_used == loadable_classes_allocated) {
+    if (loadable_classes_used == loadable_classes_allocated) {
         loadable_classes_allocated = loadable_classes_allocated*2 + 16;
-        loadable_classes = (struct loadable_class *)
-            realloc(loadable_classes, loadable_classes_allocated * sizeof(struct loadable_class));
+        loadable_classes = (struct loadable_class *)realloc(loadable_classes, loadable_classes_allocated * sizeof(struct loadable_class));
     }
-	    
+    
     // 将cls 和+load方法对应起来 存在loadable_classes数组中
     // loadable_classes 中是 struct loadable_class 结构体
     loadable_classes[loadable_classes_used].cls = cls;
@@ -154,11 +152,10 @@ void add_category_to_loadable_list(Category cat)
     // loadable_categories扩容
     if (loadable_categories_used == loadable_categories_allocated) {
         loadable_categories_allocated = loadable_categories_allocated*2 + 16;
-        loadable_categories = (struct loadable_category *)
-            realloc(loadable_categories, loadable_categories_allocated * sizeof(struct loadable_category));
+        loadable_categories = (struct loadable_category *)realloc(loadable_categories, loadable_categories_allocated * sizeof(struct loadable_category));
     }
     
-	// 将 cat 和 +load 方法对应起来放在 loadable_category 结构体中，然后放在loadable_categories数组中
+    // 将 cat 和 +load 方法对应起来放在 loadable_category 结构体中，然后放在loadable_categories数组中
     loadable_categories[loadable_categories_used].cat = cat;
     loadable_categories[loadable_categories_used].method = method;
     // category的个数
@@ -168,7 +165,7 @@ void add_category_to_loadable_list(Category cat)
 
 - `call_load_methods()`
 
-```
+```Objective-C
 // objc-loadmethod.mm
 
 // 调用prepare_load_methods()中准备好的 类和分类中的+load方法
@@ -176,17 +173,17 @@ void add_category_to_loadable_list(Category cat)
 // 直到类中的+load方法调用完成，才会调用分类的+load方法
 void call_load_methods(void)
 {
-	......
+    ......
     do {
         // 1. Repeatedly call class +loads until there aren't any more
         while (loadable_classes_used > 0) {
-        	// 调用类中的 +load 方法
+            // 调用类中的 +load 方法
             call_class_loads();
         }
         // 2. Call category +loads ONCE
         // 调用分类中的 +load 方法
         more_categories = call_category_loads();
-
+        
         // 3. Run more +loads if there are classes OR more untried categories
     } while (loadable_classes_used > 0  ||  more_categories);
     ......
@@ -206,11 +203,11 @@ static void call_class_loads(void)
     
     // Call all +loads for the detached list.
     for (i = 0; i < used; i++) {
-    	// 从结构体中取出cls 和 +load
+        // 从结构体中取出cls 和 +load
         Class cls = classes[i].cls;
         load_method_t load_method = (load_method_t)classes[i].method;
-        if (!cls) continue; 
-
+        if (!cls) continue;
+        
         if (PrintLoading) {
             _objc_inform("LOAD: +[%s load]\n", cls->nameForLogging());
         }
@@ -221,7 +218,6 @@ static void call_class_loads(void)
     // Destroy the detached list.
     if (classes) free(classes);
 }
-
 
 // 调用prepare_load_methods()中准备好的分类的 +load方法
 // 若有新的分类变成 loadable，则其 +load方法不会别调用，会将其放在loadable_categories最后 并返回true
@@ -238,7 +234,7 @@ static bool call_category_loads(void)
     loadable_categories = nil;
     loadable_categories_allocated = 0;
     loadable_categories_used = 0;
-
+    
     // Call all +loads for the detached list.
     // 遍历loadable_classes
     for (i = 0; i < used; i++) {
@@ -246,8 +242,8 @@ static bool call_category_loads(void)
         load_method_t load_method = (load_method_t)cats[i].method;
         Class cls;
         if (!cat) continue;
-		
-		// 获取分类对应的类
+        
+        // 获取分类对应的类
         cls = _category_getClass(cat);
         if (cls  &&  cls->isLoadable()) {
             if (PrintLoading) {
@@ -270,7 +266,7 @@ static bool call_category_loads(void)
 
 新键`ZZStudent`继承自`ZZPerson`,也给其添加两个分类
 
-```
+```Objective-C
 // ZZStudent.m
 + (void)load
 {
@@ -322,7 +318,7 @@ static bool call_category_loads(void)
 
 新建`ZZPerson`和其子类`ZZStudent`,并分别为其创建两个分类。然后实现`+initialize`方法
 
-```
+```Objective-C
 // ZZPerson.m
 + (void)initialize
 {
@@ -362,7 +358,7 @@ static bool call_category_loads(void)
 
 ### 0x02 `+initialize`什么时候调用？
 
-```
+```Objective-C
 [ZZPerson alloc];
 [ZZPerson alloc];
 // 打印信息
@@ -389,7 +385,7 @@ static bool call_category_loads(void)
 
 -  `lookUpImpOrForward()`
 
-```
+```Objective-C
 IMP lookUpImpOrForward(Class cls, SEL sel, id inst, bool initialize, bool cache, bool resolver)
 {
     ......
@@ -407,7 +403,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst, bool initialize, bool cache,
 - `_class_initialize()`
 
 
-```
+```Objective-C
 void _class_initialize(Class cls)
 {
     assert(!cls->isMetaClass());
@@ -433,7 +429,7 @@ void _class_initialize(Class cls)
 
 - `callInitialize()`
 
-```
+```Objective-C
 void callInitialize(Class cls)
 {
     ((void(*)(Class, SEL))objc_msgSend)(cls, SEL_initialize);
@@ -456,9 +452,9 @@ void callInitialize(Class cls)
 
 **相关内容**
 
-- [Categary - 底层实现](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category-imp.md)
+- [Categary - 底层实现](https://github.com/zhaoName/Notes/blob/master/iOS/Category-imp.md)
 
-- [Category - 关联对象](https://gitee.com/zhaoName0x01/Notes/blob/master/iOS/Category-AssociationObject.md)
+- [Category - 关联对象](https://github.com/zhaoName/Notes/blob/master/iOS/Category-AssociationObject.md)
 
 <br>
 

@@ -2,7 +2,7 @@
 
 <br>
 
-经过前面两篇文章:[iOS签名机制之非对称加密](https://gitee.com/zhaoName0x01/Notes/blob/master/iOSReverse/iOS签名机制之非对称加密.md)、[iOS签名机制之数字签名与证书](https://gitee.com/zhaoName0x01/Notes/blob/master/iOSReverse/iOS签名机制之数字签名与证书.md)的介绍，已经了解iOS签名机制的基础 -- 数字签名相关内容，下面介绍iOS签名机制的具体流程。
+经过前面两篇文章:[iOS签名机制之非对称加密](https://github.com/zhaoName/Notes/blob/master/iOSReverse/iOS%E7%AD%BE%E5%90%8D%E6%9C%BA%E5%88%B6%E4%B9%8B%E9%9D%9E%E5%AF%B9%E7%A7%B0%E5%8A%A0%E5%AF%86.md)、[iOS签名机制之数字签名与证书](https://github.com/zhaoName/Notes/blob/master/iOSReverse/iOS%E7%AD%BE%E5%90%8D%E6%9C%BA%E5%88%B6%E4%B9%8B%E6%95%B0%E5%AD%97%E7%AD%BE%E5%90%8D%E4%B8%8E%E8%AF%81%E4%B9%A6.md)的介绍，已经了解iOS签名机制的基础 -- 数字签名相关内容，下面介绍iOS签名机制的具体流程。
 
 
 发布过iOS程序的同学都知道，在发布前要去购买苹果开发者账号并到苹果后台配置`.cer / .mobileprovision`，添加`AppId`和`UDID`，并且还有`CertificateSigningRequest.certSigningRequest`、`p12`、`entitlements`等各种概念。那这些证书、概念到底在iOS签名机制中有什么作用，扮演什么角色？

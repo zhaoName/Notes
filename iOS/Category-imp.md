@@ -10,7 +10,7 @@
 
 `memcpy()`和`memmove()`都是C语言中的库函数，在头文件`string.h`中，其原型分别如下：
 
-```
+```C
 void *memcpy(void *dst, const void *src, size_t count);
 
 void *memmove(void *dst, const void *src, size_t count);
@@ -22,40 +22,40 @@ void *memmove(void *dst, const void *src, size_t count);
 
 VS.NET2003中所附源码如下（有删）
 
-```
-void *memcpy(void *dest, const void *source, size_t count)  
-{  
-	assert((NULL != dest) && (NULL != source));  
-	char *tmp_dest = (char *)dest;  
-	char *tmp_source = (char *)source;  
-	while(count --)//不对是否存在重叠区域进行判断  
-	  *tmp_dest ++ = *tmp_source ++;  
-	return dest;  
-} 
+```C
+void *memcpy(void *dest, const void *source, size_t count)
+{
+    assert((NULL != dest) && (NULL != source));
+    char *tmp_dest = (char *)dest;
+    char *tmp_source = (char *)source;
+    while(count --)//不对是否存在重叠区域进行判断
+        *tmp_dest ++ = *tmp_source ++;
+    return dest;
+}
 
 
-void *memmove(void *dest, const void *source, size_t count)  
-{  
-	assert((NULL != dest) && (NULL != source));  
-	char *tmp_source, *tmp_dest;  
-	tmp_source = (char *)source;  
-	tmp_dest = (char *)dest;  
-	if((dest + count<source) || (source + count) <dest))  
-	{
-		// 如果没有重叠区域  
-	   	while(count--)  
-	     *tmp_dest++ = *tmp_source++;  
-	}  
-	else  
-	{ 
-		//如果有重叠, 从后往前取值 
-		 tmp_source += count - 1;  
-		 tmp_dest += count - 1;  
-		 while(count--)  
-		   *--tmp_dest = *--tmp;  
-	}  
-	return dest;  
-} 
+void *memmove(void *dest, const void *source, size_t count)
+{
+    assert((NULL != dest) && (NULL != source));
+    char *tmp_source, *tmp_dest;
+    tmp_source = (char *)source;
+    tmp_dest = (char *)dest;
+    if((dest + count<source) || (source + count) <dest))
+    {
+        // 如果没有重叠区域
+        while(count--)
+            *tmp_dest++ = *tmp_source++;
+    }
+    else
+    {
+        //如果有重叠, 从后往前取值
+        tmp_source += count - 1;
+        tmp_dest += count - 1;
+        while(count--)
+            *--tmp_dest = *--tmp;
+    }
+    return dest;
+}
 ```
 
 **下面只讨论"右复制",（"左复制"肯定不会出现数据覆盖的情况）**
@@ -72,7 +72,7 @@ void *memmove(void *dest, const void *source, size_t count)
 
 不写`.h`中方法声明
 
-```
+```Objective-C
 // ZZPerson.m
 - (void)instanceMethodTest
 {
@@ -135,7 +135,7 @@ ZZPerson *per = [[ZZPerson alloc] init];
 
 用`clang`指令将`ZZPerson+TestA.m`转化成`C++`代码
 
-```
+```shell
 $ cd ZZCategoty
 
 $ xcrun -sdk iphoneos clang -arch arm64 -rewrite-objc ZZPerson+TestA.m -o ZZPerson+TestA.cpp
@@ -143,90 +143,91 @@ $ xcrun -sdk iphoneos clang -arch arm64 -rewrite-objc ZZPerson+TestA.m -o ZZPers
 
 可以看到编译之后`OC`中的分类在`C++`中是一个`struct _category_t `结构体类型
 
-```
+```Objective-C++
 struct _category_t {
-	const char *name;
-	struct _class_t *cls;
-	const struct _method_list_t *instance_methods;
-	const struct _method_list_t *class_methods;
-	const struct _protocol_list_t *protocols;
-	const struct _prop_list_t *properties;
+    const char *name;
+    struct _class_t *cls;
+    const struct _method_list_t *instance_methods;
+    const struct _method_list_t *class_methods;
+    const struct _protocol_list_t *protocols;
+    const struct _prop_list_t *properties;
 };
 ```
 
 `ZZPerson+TestA`的实现
 
-```
-static struct _category_t _OBJC_$_CATEGORY_ZZPerson_$_TestA __attribute__ ((used, section ("__DATA,__objc_const"))) = 
+```Objective-C++
+static struct _category_t _OBJC_$_CATEGORY_ZZPerson_$_TestA __attribute__ ((used, section ("__DATA,__objc_const"))) =
 {
-	// 标记那个类的分类
-	"ZZPerson",
-	0, // &OBJC_CLASS_$_ZZPerson,
-	// 实例方法列表
-	(const struct _method_list_t *)&_OBJC_$_CATEGORY_INSTANCE_METHODS_ZZPerson_$_TestA,
-	// 类方法列表
-	(const struct _method_list_t *)&_OBJC_$_CATEGORY_CLASS_METHODS_ZZPerson_$_TestA,
-	// 协议列表
-	(const struct _protocol_list_t *)&_OBJC_CATEGORY_PROTOCOLS_$_ZZPerson_$_TestA,
-	// 属性列表
-	(const struct _prop_list_t *)&_OBJC_$_PROP_LIST_ZZPerson_$_TestA,
+    // 标记那个类的分类
+    "ZZPerson",
+    0, // &OBJC_CLASS_$_ZZPerson,
+    // 实例方法列表
+    (const struct _method_list_t *)&_OBJC_$_CATEGORY_INSTANCE_METHODS_ZZPerson_$_TestA,
+    // 类方法列表
+    (const struct _method_list_t *)&_OBJC_$_CATEGORY_CLASS_METHODS_ZZPerson_$_TestA,
+    // 协议列表
+    (const struct _protocol_list_t *)&_OBJC_CATEGORY_PROTOCOLS_$_ZZPerson_$_TestA,
+    // 属性列表
+    (const struct _prop_list_t *)&_OBJC_$_PROP_LIST_ZZPerson_$_TestA,
 };
 ```
 
 由分类的实现可以看到分类中的实例方法都存在结构体`_OBJC_$_CATEGORY_INSTANCE_METHODS_ZZPerson_$_TestA`中，找到他的实现。里面确实有我们给`ZZPerson`新增的`instanceMethodTest`实例方法。
 
-```
+```Objective-C++
 static struct /*_method_list_t*/ {
-	unsigned int entsize;  // sizeof(struct _objc_method)
-	unsigned int method_count;
-	struct _objc_method method_list[1];
+    unsigned int entsize;  // sizeof(struct _objc_method)
+    unsigned int method_count;
+    struct _objc_method method_list[1];
 } _OBJC_$_CATEGORY_INSTANCE_METHODS_ZZPerson_$_TestA __attribute__ ((used, section ("__DATA,__objc_const"))) = {
-	sizeof(_objc_method),
-	1,// 几个实例方法
-	// 实例方法IMP
-	{{(struct objc_selector *)"instanceMethodTest", "v16@0:8", (void *)_I_ZZPerson_TestA_instanceMethodTest}}
+    sizeof(_objc_method),
+    // 几个实例方法
+    1,
+    // 实例方法IMP
+    {{(struct objc_selector *)"instanceMethodTest", "v16@0:8", (void *)_I_ZZPerson_TestA_instanceMethodTest}}
 };
 ```
 
 类方法结构体`_OBJC_$_CATEGORY_CLASS_METHODS_ZZPerson_$_TestA`实现
 
-```
+```Objective-C++
 static struct /*_method_list_t*/ {
-	unsigned int entsize;  // sizeof(struct _objc_method)
-	unsigned int method_count;
-	struct _objc_method method_list[1];
+    unsigned int entsize;  // sizeof(struct _objc_method)
+    unsigned int method_count;
+    struct _objc_method method_list[1];
 } _OBJC_$_CATEGORY_CLASS_METHODS_ZZPerson_$_TestA __attribute__ ((used, section ("__DATA,__objc_const"))) = {
-	sizeof(_objc_method),
-	1,
-	{{(struct objc_selector *)"classMethodTest", "v16@0:8", (void *)_C_ZZPerson_TestA_classMethodTest}}
+    sizeof(_objc_method),
+    1,
+    {{(struct objc_selector *)"classMethodTest", "v16@0:8", (void *)_C_ZZPerson_TestA_classMethodTest}}
 };
 ```
 
 协议信息结构体`_OBJC_CATEGORY_PROTOCOLS_$_ZZPerson_$_TestA`实现
 
-```
+```Objective-C++
 static struct /*_method_list_t*/ {
-	unsigned int entsize;  // sizeof(struct _objc_method)
-	unsigned int method_count;
-	struct _objc_method method_list[1];
+    unsigned int entsize;  // sizeof(struct _objc_method)
+    unsigned int method_count;
+    struct _objc_method method_list[1];
 } _OBJC_PROTOCOL_INSTANCE_METHODS_NSCopying __attribute__ ((used, section ("__DATA,__objc_const"))) = {
-	sizeof(_objc_method),
-	1,
-	{{(struct objc_selector *)"copyWithZone:", "@24@0:8^{_NSZone=}16", 0}}
+    sizeof(_objc_method),
+    1,
+    {{(struct objc_selector *)"copyWithZone:", "@24@0:8^{_NSZone=}16", 0}}
 };
 ```
 
 属性结构体`_OBJC_$_PROP_LIST_ZZPerson_$_TestA`实现
 
-```
+```Objective-C++
 static struct /*_prop_list_t*/ {
-	unsigned int entsize;  // sizeof(struct _prop_t)
-	unsigned int count_of_properties;
-	struct _prop_t prop_list[1];
+    unsigned int entsize;  // sizeof(struct _prop_t)
+    unsigned int count_of_properties;
+    struct _prop_t prop_list[1];
 } _OBJC_$_PROP_LIST_ZZPerson_$_TestA __attribute__ ((used, section ("__DATA,__objc_const"))) = {
-	sizeof(_prop_t),
-	1,
-	{{"name","T@\"NSString\",&,N"}}
+    sizeof(_prop_t),
+    1,
+    {{"name","T@\"NSString\",&,N"}}
 };
 ```
 
@@ -236,7 +237,7 @@ static struct /*_prop_list_t*/ {
 
 `runtime`中关于分类的定义
 
-```
+```Objective-C++
 // objc-runtime-new.h
 
 struct category_t {
@@ -270,53 +271,53 @@ struct category_t {
 
 ### 0x01 `_read_images()`
 
-```
+```Objective-C++
 void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int unoptimizedTotalClasses)
 {
-	......
-	
-	// Discover categories. 
-	for (EACH_HEADER) {
-		// 获取某个类的所有分类
-	    category_t **catlist =  _getObjc2CategoryList(hi, &count);
-	    bool hasClassProperties = hi->info()->hasCategoryClassProperties();
-	
-		// 遍历所有分类
-	    for (i = 0; i < count; i++) {
-	        category_t *cat = catlist[i];
-	        Class cls = remapClass(cat->cls);
-			...
-	        // 如果分类中存在实例方法 或协议 或属性
-	        if (cat->instanceMethods || cat->protocols || cat->instanceProperties)
-	        {
-	            addUnattachedCategoryForClass(cat, cls, hi);
-	            if (cls->isRealized()) {
-	            	// 重新组织class,也就是将分类中的实例方法 或协议 或属性合并到class中
-	                remethodizeClass(cls);
-	                classExists = YES;
-	            }
-	            ...
-	        }
-	
-			// 如果分类中存在类方法 或协议 或_classProperties
-	        if (cat->classMethods || cat->protocols || (hasClassProperties && cat->_classProperties))
-	        {
-	            addUnattachedCategoryForClass(cat, cls->ISA(), hi);
-	            if (cls->ISA()->isRealized()) {
-	            	// 重新组织meta-class,也就是将类方法合并到meta-class中
-	                remethodizeClass(cls->ISA());
-	            }
-	            ...
-	        }
-	    }
-	}
-	......
+    ......
+    
+    // Discover categories.
+    for (EACH_HEADER) {
+        // 获取某个类的所有分类
+        category_t **catlist =  _getObjc2CategoryList(hi, &count);
+        bool hasClassProperties = hi->info()->hasCategoryClassProperties();
+        
+        // 遍历所有分类
+        for (i = 0; i < count; i++) {
+            category_t *cat = catlist[i];
+            Class cls = remapClass(cat->cls);
+            ...
+            // 如果分类中存在实例方法 或协议 或属性
+            if (cat->instanceMethods || cat->protocols || cat->instanceProperties)
+            {
+                addUnattachedCategoryForClass(cat, cls, hi);
+                if (cls->isRealized()) {
+                    // 重新组织class,也就是将分类中的实例方法 或协议 或属性合并到class中
+                    remethodizeClass(cls);
+                    classExists = YES;
+                }
+                ...
+            }
+            
+            // 如果分类中存在类方法 或协议 或_classProperties
+            if (cat->classMethods || cat->protocols || (hasClassProperties && cat->_classProperties))
+            {
+                addUnattachedCategoryForClass(cat, cls->ISA(), hi);
+                if (cls->ISA()->isRealized()) {
+                    // 重新组织meta-class,也就是将类方法合并到meta-class中
+                    remethodizeClass(cls->ISA());
+                }
+                ...
+            }
+        }
+    }
+    ......
 }
 ```
 
 ### 0x02 `remethodizeClass()`
 
-```
+```Objective-C++
 static void remethodizeClass(Class cls)
 {
     category_list *cats;
@@ -337,17 +338,17 @@ static void remethodizeClass(Class cls)
 ### 0x03 `attachCategories()`
 
 
-```
+```Objective-C++
 // 这个方法的作用是将所有分类的 实例方法列表(类方法列表,取决于cls是class还是meta-class)、协议列表、属性列表
-// 放在对应的大二维数组中(mlists、proplists、protolists)
+// 放在对应的二维数组中(mlists、proplists、protolists)
 // 然后调用attachLists()函数，将分类的信息合并到calss(meta-class)中
 static void attachCategories(Class cls, category_list *cats, bool flush_caches)
 {
     if (!cats) return;
     if (PrintReplacedMethods) printReplacements(cls, cats);
-	// class 还是 meta-class
+    // class 还是 meta-class
     bool isMeta = cls->isMetaClass();
-
+    
     // 创建二维方法数组 [[method_t, method_t, ...], [method_t, method_t, ...], ...]
     method_list_t **mlists = (method_list_t **)malloc(cats->count * sizeof(*mlists));
     
@@ -356,7 +357,7 @@ static void attachCategories(Class cls, category_list *cats, bool flush_caches)
     
     // 创建二维协议数组 [[protocol_t, protocol_t, ...], [protocol_t, protocol_t, ...], ...]
     protocol_list_t **protolists = (protocol_list_t **)malloc(cats->count * sizeof(*protolists));
-
+    
     // Count backwards through cats to get newest categories first
     int mcount = 0;
     int propcount = 0;
@@ -366,12 +367,12 @@ static void attachCategories(Class cls, category_list *cats, bool flush_caches)
     // 倒序遍历所有分类
     // 也就是说后编译的分类中的数据会放在mlist前面，将来调用方法时优先调用
     while (i--) {
-    	// 取出某个分类
+        // 取出某个分类
         auto& entry = cats->list[i];
         // 取出某个分类的方法列表
         method_list_t *mlist = entry.cat->methodsForMeta(isMeta);
         if (mlist) {
-        	// 将方法列表放在mlists中
+            // 将方法列表放在mlists中
             mlists[mcount++] = mlist;
             fromBundle |= entry.hi->isBundle();
         }
@@ -388,11 +389,11 @@ static void attachCategories(Class cls, category_list *cats, bool flush_caches)
             protolists[protocount++] = protolist;
         }
     }
-
-	// rw 就是结构体 struct objc_class 中的 class_rw_t
-	// class_rw_t 存放着类的方法信息、属性信息、协议信息
+    
+    // rw 就是结构体 struct objc_class 中的 class_rw_t
+    // class_rw_t 存放着类的方法信息、属性信息、协议信息
     auto rw = cls->data();
-
+    
     prepareMethodLists(cls, mlists, mcount, NO, fromBundle);
     // 将分类中的方法列表合并到对应的类中
     rw->methods.attachLists(mlists, mcount);
@@ -411,9 +412,8 @@ static void attachCategories(Class cls, category_list *cats, bool flush_caches)
 
 ### 0x04 attachLists()
 
-```
+```Objective-C++
 // 以实例方法为例 解释流程
-// 
 void attachLists(List* const * addedLists, uint32_t addedCount) 
 {
     if (addedCount == 0) return;

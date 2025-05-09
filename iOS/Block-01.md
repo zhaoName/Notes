@@ -15,7 +15,7 @@
 
 顾名思义就是不带有名称的函数，C 语言的标准不允许存在这样的函数。如下 C 语言中函数调用
 
-```
+```Objective-C
 // 声明一个名称为func的函数
 int func(int a);
 
@@ -25,13 +25,13 @@ int result = func(10);
 
 若使用函数指针来调用函数，似乎不知道函数名也能调用
 
-```
+```Objective-C
 int result = (*funcPtr)(10);
 ```
 
 但事实上使用函数指针时也要知道函数名是什么，否则`*funcPtr`从哪来呢！
 
-```
+```Objective-C
 int (*funcPtr)(int) = &func;
 
 int result = (*funcPtr)(10)
@@ -43,7 +43,7 @@ int result = (*funcPtr)(10)
 
 以 多按钮点击事件 为例
 
-```
+```Objective-C
 // 按钮的id
 int buttonId = 0;
 
@@ -70,7 +70,7 @@ void setButtonCallBacks()
 
 `C++`和`OC`使用类可保持变量值且能够多次持有该变量自身。它会声明一个持有成员变量的类，有类的实例对象持有该成员变量的值。
 
-```
+```Objective-C
 @interface ButtonCallBack : NSObject
 {
     int _buttonId;
@@ -105,7 +105,7 @@ void setButtonCallBacks()
 
 但声明并实现`C++`和`OC`的类增加了代码长度，可以使用`Block`,其代码量和 C 语言差不多。
 
-```
+```Objective-C
 void setButtonCallBacks()
 {
     for (int i=0; i<10; i++) {
@@ -124,7 +124,7 @@ void setButtonCallBacks()
 
 创建一个命令行工程，自己定义一个`ZNBlock`
 
-```
+```Objective-C
 // main.m
 
 int c = 3;
@@ -136,13 +136,13 @@ ZNBlock(1, 2);
 
 将其用命令转换成`C++`代码 -- `main.cpp`
 
-```
+```Objective-C
 $ xcrun -sdk iphoneos clang -arch arm64 -rewrite-objc -fobjc-arc -fobjc-runtime=ios-8.0.0 main.m
 ```
 
 转换后的格式大致如下
 
-```
+```Objective-C
 struct __block_impl {
     void *isa;
     int Flags;
@@ -195,7 +195,7 @@ int main(int argc, const char * argv[]) {
 
 可以看到`Block`的底层结构是个`struct __main_block_impl_0`结构体类型。转换后的源代码一并写入了构造函数，所以看起来有点复杂。简化后如下
 
-```
+```Objective-C
 struct __main_block_impl_0 {
     struct __block_impl impl;
     struct __main_block_desc_0* Desc;
@@ -208,13 +208,13 @@ struct __main_block_impl_0 {
 
 构造函数的调用也就是`Block`的定义
 
-```
+```Objective-C
 void(*ZNBlock)(int a, int b) = ((void (*)(int, int))&__main_block_impl_0((void *)__main_block_func_0, &__main_block_desc_0_DATA, c));
 ```
 
 里面有很多内容的强制装换，所以看起来很复杂。我们可以将强制转换去掉
 
-```
+```Objective-C
 // 构造函数返回的结构体对象
 struct __main_block_impl_0 tmp = __main_block_impl_0(__main_block_func_0, &__main_block_desc_0_DATA, c);
 
@@ -239,7 +239,7 @@ NSLog(@"imp->impl.FuncPtr: %p", imp->impl.FuncPtr);
 
 第二个参数是`Block`的描述信息，会将其指针赋值给`struct __main_block_desc_0* Desc`。那构造函数调用结果如下
 
-```
+```Objective-C
 isa = &_NSConcreteStackBlock;
 Flags = flags;
 Reserved = 0;
@@ -255,7 +255,7 @@ Desc = &__main_block_desc_0_DATA;
 
 去掉强制转换，简化如下
 
-```
+```Objective-C
 // 由Block 的定义(调用构造函数)可知，封装 Block 内部的函数的结构体会复制给 FuncPtr
 // 那去掉强制转换后 代码如下
 ZNBlock->impl.FuncPtr(ZNBlock, 1, 2);
@@ -265,7 +265,7 @@ ZNBlock->impl.FuncPtr(ZNBlock, 1, 2);
 
 `struct __main_block_impl_0 `结构体相当于基于`objc_object`结构体的`OC`类对象的结构体。在`__block_impl`结构体中也有`isa`指针，其初始化如下
 
-```
+```Objective-C
 isa = &_NSConcreteStackBlock
 ```
 
@@ -281,7 +281,7 @@ isa = &_NSConcreteStackBlock
 
 有一道很经典的面试题，问打印出来的局部变量`c`的值是多少？答案大家应该都知道是3，现在来解释下为啥是3。
 
-```
+```Objective-C
 int c = 3;
 void(^ZNBlock)(void) = ^(void){
     NSLog(@"Hello, World!===%d", c);
@@ -293,7 +293,7 @@ ZNBlock();
 
 在用命令把上面代码转成`C++`代码, 下面展示部分代码
 
-```
+```Objective-C
 struct __main_block_impl_0 {
     struct __block_impl impl;
     struct __main_block_desc_0* Desc;
@@ -340,7 +340,7 @@ int main(int argc, const char * argv[]) {
 
 如果你上面问题回答对了，面试官还可能会继续追问，在`Block`内部访问静态局部变量呢？
 
-```
+```Objective-C
 int c = 3;
 static int d = 5;
 void(^ZNBlock)(void) = ^(void){
@@ -354,7 +354,7 @@ ZNBlock();
 
 想看清楚原理还是要转成`C++`代码（只展示部分代码）
 
-```
+```Objective-C
 struct __main_block_impl_0 {
     struct __block_impl impl;
     struct __main_block_desc_0* Desc;
@@ -405,7 +405,7 @@ int main(int argc, const char * argv[]) {
 
 我们再来看看如果`Block`内部访问全局变量，会是什么样的呢
 
-```
+```Objective-C
 int zn_age = 10;
 
 int main(int argc, const char * argv[]) {
@@ -422,7 +422,7 @@ int main(int argc, const char * argv[]) {
 
 将其转成`C++`代码
 
-```
+```Objective-C
 int zn_age = 10;
 
 // 可以看到 block 内部并没有捕获全局变量
@@ -462,7 +462,7 @@ int main(int argc, const char * argv[]) {
 
 下面代码中`Block`会捕获`self`吗？
 
-```
+```Objective-C
 // ZNPerson.m
 
 - (void)test
@@ -476,7 +476,7 @@ int main(int argc, const char * argv[]) {
 
 答案是会，想看清楚为啥，还是要看底层实现
 
-```
+```Objective-C
 // block_instance 的底层实现
 struct __ZNPerson__test_block_impl_0 {
     struct __block_impl impl;
@@ -522,7 +522,7 @@ static void _I_ZNPerson_test(ZNPerson * self, SEL _cmd)
 
 没有访问`auto`变量的`Block`是`__NSGlobalBlock__`类型
 
-```
+```Objective-C
 void(^ZNBlock)(void) = ^(void){
     NSLog(@"Hello, World!===");
 };
@@ -537,7 +537,7 @@ NSLog(@"类型：%@ === %@ === %@", [ZNBlock class], [[ZNBlock class] superclass
 
 访问`auto`变量的`Block`是`__NSStackBlock__ `类型
 
-```
+```Objective-C
 int age = 10;
 void(^ZNBlock)(void) = ^(void){
 	NSLog(@"Hello, World!===%d", age);
@@ -552,7 +552,7 @@ NSLog(@"类型：%@ === %@ === %@", [ZNBlock class], [[ZNBlock class] superclass
 
 `__NSStackBlock__ `类型的`Block`调用`copy`就是`__NSMallocBlock__ `类型
 
-```
+```Objective-C
 int age = 10;
 void(^ZNBlock)(void) = [^(void){
     NSLog(@"Hello, World!===%d", age);
@@ -582,7 +582,7 @@ NSLog(@"类型：%@ === %@ === %@", [ZNBlock class], [[ZNBlock class] superclass
 
 - `__NSGlobalBlock__`
 
-```
+```Objective-C
 void (^ZNBlock)(void) = ^{
     NSLog(@"Hello, World!===");
 };
@@ -592,11 +592,11 @@ NSLog(@"类型：%@ === %@", [ZNBlock class], [ZNBlock copy]);
 2019-06-15 23:57:56.001434+0800 BlockNature[79338:6993891] 类型：__NSGlobalBlock__ === <__NSGlobalBlock__: 0x1000010a8>
 ```
 
-可以看出`__NSGlobalBlock__`类型的`Block``copy `后还是`__NSGlobalBlock__`类型
+可以看出`__NSGlobalBlock__`类型的`Block` copy 后还是`__NSGlobalBlock__`类型
 
 - `__NSMallocBlock__ `
 
-```
+```Objective-C
 int age = 10;
 void (^ZNBlock)(void) = [^{
     NSLog(@"Hello, World!===%d", age);
@@ -607,7 +607,7 @@ NSLog(@"类型：%@ === %@", [ZNBlock class], [ZNBlock copy]);
 2019-06-16 00:00:59.100039+0800 BlockNature[79384:7013195] 类型：__NSMallocBlock__ === <__NSMallocBlock__: 0x100564000>
 ```
 
-`__NSMallocBlock__ `类型`Block``copy`后还是`__NSMallocBlock__ `类型，但其引用计数会加1.
+`__NSMallocBlock__ `类型`Block` copy后还是`__NSMallocBlock__ `类型，但其引用计数会加1.
 
 **总结：**
 
@@ -623,7 +623,7 @@ NSLog(@"类型：%@ === %@", [ZNBlock class], [ZNBlock copy]);
 
 ### 0x01`block `作为函数返回值时
 
-```
+```Objective-C
 typedef void(^ZNBlock)(void);
 
 ZNBlock returnBlock ()
@@ -639,19 +639,19 @@ ZNBlock returnBlock ()
 
 - MRC 打印结果
 
-```
+```Objective-C
 2019-06-16 00:07:54.450740+0800 BlockNature[79451:7055940] 类型：<__NSStackBlock__: 0x7ffeefbff528>
 ```
 
 - ARC 打印结果
 
-```
+```Objective-C
 2019-06-16 00:09:58.738542+0800 BlockNature[79470:7068636] 类型：<__NSMallocBlock__: 0x10182e910>
 ```
 
 ### 0x02 将`Block`赋值给`__strong`指针时
 
-```
+```Objective-C
 typedef void(^ZNBlock)(void);
 
 int age = 10;
@@ -664,19 +664,19 @@ NSLog(@"类型：%@", block)
 
 - MRC 打印结果
 
-```
+```Objective-C
 2019-06-16 00:17:55.299014+0800 BlockNature[79562:7117302] 类型：<__NSStackBlock__: 0x7ffeefbff548>
 ```
 
 - ARC 打印结果
 
-```
+```Objective-C
 2019-06-16 00:17:37.311790+0800 BlockNature[79552:7115435] 类型：<__NSMallocBlock__: 0x100538ad0>
 ```
 
 ### 0x03 `Block `作为Cocoa API中方法名含有`usingBlock `的方法参数时
 
-```
+```Objective-C
 // 数组遍历
 [@[] enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
             
@@ -685,7 +685,7 @@ NSLog(@"类型：%@", block)
 
 ### 0x04 `Block `作为`GCD API`的方法参数时
 
-```
+```Objective-C
 // GCD 异步延时
 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 	
@@ -699,8 +699,6 @@ dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), 
 **参考文献：**
 
 - 《Objective-C高级编程iOS与OS+X多线程和内存管理》
-
-- 视频
 
 <br>
 
