@@ -51,17 +51,17 @@
 `_GSIMapBucket` 的定义如下：
 
 ```Objective-C
-struct	_GSIMapNode {
-    GSIMapNode nextInBucket;	/* Linked list of bucket.	*/
+struct _GSIMapNode {
+    GSIMapNode nextInBucket;    /* Linked list of bucket.    */
     GSIMapKey key;
-#if	GSI_MAP_HAS_VALUE
-    GSIMapVal	value;
+#if GSI_MAP_HAS_VALUE
+    GSIMapVal    value;
 #endif
 };
 
-struct	_GSIMapBucket {
-    uintptr_t nodeCount;	/* Number of nodes in bucket.	*/
-    GSIMapNode firstNode;	/* The linked list of nodes.	*/
+struct _GSIMapBucket {
+    uintptr_t nodeCount;    /* Number of nodes in bucket.    */
+    GSIMapNode firstNode;    /* The linked list of nodes.    */
 };
 ```
 

@@ -9,7 +9,7 @@
 
 ### 0x01 常用API
 
-```
+```Objective-C
 - (id)valueForKey:(NSString *)key;
 - (void)setValue:(id)value forKey:(NSString *)key;
 
@@ -19,7 +19,7 @@
 
 ### 0x02 key和keyPath区别
 
-```
+```Objective-C
 // Person.h
 
 @interface Student : NSObject
@@ -52,13 +52,13 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 
 > Search Pattern for the Basic Setter
 
->The default implementation of `setValue:forKey:`, given key and value parameters as input, attempts to set a property named key to value (or, for non-object properties, the unwrapped version of value, as described in Representing Non-Object Values) inside the object receiving the call, using the following procedure:
+>The default implementation of `setValue:forKey:`, given `key` and `value` parameters as input, attempts to set a property named `key` to `value` (or, for non-object properties, the unwrapped version of `value`, as described in Representing Non-Object Values) inside the object receiving the call, using the following procedure:
 
 > - Look for the first accessor named `set<Key>:` or `_set<Key>`, in that order. If found, invoke it with the input value (or unwrapped value, as needed) and finish.
 
 > - If no simple accessor is found, and if the class method `accessInstanceVariablesDirectly` returns YES, look for an instance variable with a name like `_<key>`, `_is<Key>`, `<key>`, or `is<Key>`, in that order. If found, set the variable directly with the input value (or unwrapped value) and finish.
 
-> - Upon finding no accessor or instance variable, invoke `setValue:forUndefinedKey:`. This raises an exception by default, but a subclass of NSObject may provide key-specific behavior.
+> - Upon finding no accessor or instance variable, invoke `setValue:forUndefinedKey:`. This raises an exception by default, but a subclass of `NSObject` may provide key-specific behavior.
 
 
 `setValue:forKey:`原理
@@ -113,31 +113,32 @@ NSLog(@"KVC改变属性值:%@ %@", [self.person1 valueForKey:@"age"], [self.pers
 官方文档中 [Search Pattern for the Basic Getter](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/KeyValueCoding/SearchImplementation.html) 中给出`valueForKey:`的方法查找顺序
 
 > Search Pattern for the Basic Getter
-The default implementation of valueForKey:, given a key parameter as input, carries out the following procedure, operating from within the class instance receiving the valueForKey: call.
 
-> - Search the instance for the first accessor method found with a name like get<Key>, <key>, is<Key>, or _<key>, in that order. If found, invoke it and proceed to step 5 with the result. Otherwise proceed to the next step.
+>The default implementation of `valueForKey:`, given a `key` parameter as input, carries out the following procedure, operating from within the class instance receiving the `valueForKey:` call.
 
-> - If no simple accessor method is found, search the instance for methods whose names match the patterns countOf<Key> and objectIn<Key>AtIndex: (corresponding to the primitive methods defined by the NSArray class) and <key>AtIndexes: (corresponding to the NSArray method objectsAtIndexes:).
+> - Search the instance for the first accessor method found with a name like `get<Key>`, `<key>`, `is<Key>`, or `_<key>`, in that order. If found, invoke it and proceed to step 5 with the result. Otherwise proceed to the next step.
 
->  If the first of these and at least one of the other two is found, create a collection proxy object that responds to all NSArray methods and return that. Otherwise, proceed to step 3.
+> - If no simple accessor method is found, search the instance for methods whose names match the patterns `countOf<Key>` and `objectIn<Key>AtIndex:` (corresponding to the primitive methods defined by the `NSArray` class) and `<key>AtIndexes:` (corresponding to the NSArray method `objectsAtIndexes:`).
 
->  The proxy object subsequently converts any NSArray messages it receives to some combination of countOf<Key>, objectIn<Key>AtIndex:, and <key>AtIndexes: messages to the key-value coding compliant object that created it. If the original object also implements an optional method with a name like get<Key>:range:, the proxy object uses that as well, when appropriate. In effect, the proxy object working together with the key-value coding compliant object allows the underlying property to behave as if it were an NSArray, even if it is not.
+>  If the first of these and at least one of the other two is found, create a collection proxy object that responds to all `NSArray` methods and return that. Otherwise, proceed to step 3.
 
-> - If no simple accessor method or group of array access methods is found, look for a triple of methods named countOf<Key>, enumeratorOf<Key>, and memberOf<Key>: (corresponding to the primitive methods defined by the NSSet class).
+>  The proxy object subsequently converts any NSArray messages it receives to some combination of `countOf<Key>`, `objectIn<Key>AtIndex:`, and `<key>AtIndexes:` messages to the key-value coding compliant object that created it. If the original object also implements an optional method with a name like `get<Key>:range:`, the proxy object uses that as well, when appropriate. In effect, the proxy object working together with the key-value coding compliant object allows the underlying property to behave as if it were an `NSArray`, even if it is not.
 
->   If all three methods are found, create a collection proxy object that responds to all NSSet methods and return that. Otherwise, proceed to step 4.
+> - If no simple accessor method or group of array access methods is found, look for a triple of methods named `countOf<Key>`, `enumeratorOf<Key>`, and `memberOf<Key>:` (corresponding to the primitive methods defined by the NSSet class).
 
->   This proxy object subsequently converts any NSSet message it receives into some combination of countOf<Key>, enumeratorOf<Key>, and memberOf<Key>: messages to the object that created it. In effect, the proxy object working together with the key-value coding compliant object allows the underlying property to behave as if it were an NSSet, even if it is not.
+>   If all three methods are found, create a collection proxy object that responds to all `NSSet` methods and return that. Otherwise, proceed to step 4.
 
-> - If no simple accessor method or group of collection access methods is found, and if the receiver's class method accessInstanceVariablesDirectly returns YES, search for an instance variable named _<key>, _is<Key>, <key>, or is<Key>, in that order. If found, directly obtain the value of the instance variable and proceed to step 5. Otherwise, proceed to step 6.
+>   This proxy object subsequently converts any `NSSet` message it receives into some combination of `countOf<Key>`, `enumeratorOf<Key>`, and `memberOf<Key>:` messages to the object that created it. In effect, the proxy object working together with the key-value coding compliant object allows the underlying property to behave as if it were an NSSet, even if it is not.
+
+> - If no simple accessor method or group of collection access methods is found, and if the receiver's class method `accessInstanceVariablesDirectly` returns `YES`, search for an instance variable named `_<key>`, `_is<Key>`, `<key>`, or `is<Key>`, in that order. If found, directly obtain the value of the instance variable and proceed to step 5. Otherwise, proceed to step 6.
 
 > - If the retrieved property value is an object pointer, simply return the result.
 
->  If the value is a scalar type supported by NSNumber, store it in an NSNumber instance and return that.
+>  If the value is a scalar type supported by `NSNumber`, store it in an NSNumber instance and return that.
 
->  If the result is a scalar type not supported by NSNumber, convert to an NSValue object and return that.
+>  If the result is a scalar type not supported by `NSNumber`, convert to an NSValue object and return that.
 
-> - If all else fails, invoke valueForUndefinedKey:. This raises an exception by default, but a subclass of NSObject may provide key-specific behavior.
+> - If all else fails, invoke `valueForUndefinedKey:`. This raises an exception by default, but a subclass of `NSObject` may provide key-specific behavior.
 
 
 `valueForKey:`原理

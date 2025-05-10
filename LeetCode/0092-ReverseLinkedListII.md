@@ -25,7 +25,7 @@ Follow up: Could you do it in one pass?
 
 ## 解法
 
-```pyhon3
+```python3
 def reverseBetween(self, head: ListNode, left: int, right: int) -> ListNode:
     dummyNode = ListNode(-1)
     dummyNode.next = head

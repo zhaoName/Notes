@@ -239,7 +239,7 @@ NSLog(@"imp->impl.FuncPtr: %p", imp->impl.FuncPtr);
 
 第二个参数是`Block`的描述信息，会将其指针赋值给`struct __main_block_desc_0* Desc`。那构造函数调用结果如下
 
-```Objective-C
+```C
 isa = &_NSConcreteStackBlock;
 Flags = flags;
 Reserved = 0;

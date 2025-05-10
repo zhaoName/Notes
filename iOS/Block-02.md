@@ -10,10 +10,10 @@
 创建`ZNPeron`类, 下面代码`per`对象什么时候被释放？
 
 ```Objective-C
-ZNPerson.h
+// ZNPerson.h
 @property (nonatomic, copy) NSString *name;
 
-ZNPeron.m
+// ZNPeron.m
 - (void)dealloc
 {
     NSLog(@"%s", __func__);

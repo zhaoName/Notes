@@ -8,8 +8,8 @@
 
 对于 NSNotificationQueue 总结如下
 
-依赖runloop，所以如果在其他子线程使用NSNotificationQueue，需要开启runloop
-最终还是通过NSNotificationCenter进行发送通知，所以这个角度讲它还是同步的
+依赖 runloop，所以如果在其他子线程使用 `NSNotificationQueue`，需要开启 runloop
+最终还是通过 `NSNotificationCenter` 进行发送通知，所以这个角度讲它还是同步的
 所谓异步，指的是非实时发送而是在合适的时机发送，并没有开启异步线程
 
 ### 0x01 `NSNotificationCoalescing`
@@ -126,6 +126,7 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(actionTestNotifition:) name:Test_Notification_Name_Queue object:nil];
     
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        NSLog(@"%@", NSThread.currentThread);
         [[NSNotificationCenter defaultCenter] postNotificationName:Test_Notification_Name_Queue object:nil];
     });
 }
@@ -144,6 +145,8 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
 // ZZParticularThreadNOtification.h
 
 @interface ZZParticularThreadNOtification : NSObject
+
+- (instancetype)initWithThread:(NSThread *)thread;
 
 - (void)setUpThreadingSupport;
 - (void)processNotification:(NSNotification *)notification;
@@ -165,6 +168,21 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
 
 @implementation ZZParticularThreadNOtification
 
+- (instancetype)initWithThread:(NSThread *)thread
+{
+    if ([super init]) {
+        self.notificationThread =  thread;
+        
+        self.notifications = [[NSMutableArray alloc] init];
+        self.notificationLock  = [[NSLock alloc] init];
+        
+        self.notificationPort = [[NSMachPort alloc] init];
+        [self.notificationPort setDelegate:self];
+        [[NSRunLoop currentRunLoop] addPort:self.notificationPort forMode:NSRunLoopCommonModes];
+    }
+    return self;
+}
+
 - (void)setUpThreadingSupport
 {
     if (self.notifications) { return; }
@@ -180,9 +198,8 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
 
 - (void)processNotification:(NSNotification *)notification
 {
-    NSLog(@"%s --- %@", __func__, [NSThread currentThread]);
-    
     if ([NSThread currentThread] != self.notificationThread) {
+        NSLog(@"%s ++++ %@", __func__, [NSThread currentThread]);
         // Forward the notification to the correct thread.
         [self.notificationLock lock];
         [self.notifications addObject:notification];
@@ -191,7 +208,7 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
     }
     else {
         // Process the notification here;
-        NSLog(@"current thread = %@", [NSThread currentThread]);
+        NSLog(@"%s --- %@", __func__, [NSThread currentThread]);
         NSLog(@"process notification");
     }
 }
@@ -199,6 +216,7 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
 // NSMachPortDelegate
 - (void)handleMachMessage:(void *)msg
 {
+    NSLog(@"%s --- %@", __func__, [NSThread currentThread]);
     [self.notificationLock lock];
  
     while ([self.notifications count]) {
@@ -225,6 +243,7 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
     [[NSNotificationCenter defaultCenter] addObserver:self.particular selector:@selector(actionAsyncNotifition:) name:Test_Notification_Name_Queue object:nil];
     
     dispatch_async(dispatch_get_global_queue(0, 0), ^{
+        NSLog(@"%s---%@", __func__, NSThread.currentThread);
         [[NSNotificationCenter defaultCenter] postNotificationName:Test_Notification_Name_Queue object:self];
     });
 }
@@ -232,7 +251,10 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
 打印结果如下：
 
 ```Objective-C
--[ZZParticularThreadNOtification processNotification:] --- <NSThread: 0x600002808140>{number = 1, name = main}
+-[ViewController deliveingNotificationInParcularThread]_block_invoke---<NSThread: 0x600002430d80>{number = 5, name = (null)}
+-[ZZParticularThreadNOtification processNotification:] ++++ <NSThread: 0x600002430d80>{number = 5, name = (null)}
+-[ZZParticularThreadNOtification handleMachMessage:] --- <NSThread: 0x600002478140>{number = 1, name = main}
+-[ZZParticularThreadNOtification processNotification:] --- <NSThread: 0x600002478140>{number = 1, name = main}
 process notification
 ```
 
