@@ -47,7 +47,7 @@
 
 - add 
 
-```
+```assembly
 ; 将 sp+0x20 的结果赋值给 x29
 add  x29, sp, #0x20  
 
@@ -57,23 +57,34 @@ adds  x1, x0, #0x14
 
 - sub
 
-```
+```assembly
 ; sp = sp - 0x30
 sub  sp, sp, #0x30
 ```
 
 - mov 
 
-```
-将 x9 赋值给x0
+```assembly
+; 将 x9 赋值给x0
 mov x0, x9
 
 mov w6, #0x5
 ```
 
+- orr
+
+```assembly
+; 按位或  x(w)zr: 64(32)位寄存器, 里面存的都是0
+; 将寄存器 xzr 的值与立即数 0xff 进行按位或操作，结果存储在 r9 中
+orr x9,xzr,#0xff
+
+; 和上面一个意思
+mov x9,0xff
+```
+
 - str (store register): 将数据从寄存器中读出来，存到内存中
 
-```
+```assembly
 ; 将 x1 存储到从 sp+0x20 开始的8个字节
 str  x1, [sp, #0x20]
 
@@ -87,7 +98,7 @@ stur x0, [x29, #-0x8]
 
 - ldr (load register): 将数据从内存中读出来，存到寄存器中
 
-```
+```assembly
 ; 从 sp + 0x4 开始往高地址读取4个字节的值存放到 w3
 ldr w3, [sp, #0x4]
 
@@ -154,7 +165,7 @@ ZZStackFrame`-[ViewController viewDidLoad]:
 
 然后一直执行 lldb 指令`ni`进入到`testA:b: `方法中，汇编代码如下
 
-```
+```assembly
 ZZStackFrame`-[ViewController testA:b:]:
 	; 拉伸栈空间
     0x102bc9e50 <+0>:  sub    sp, sp, #0x20             ; =0x20 
@@ -201,7 +212,7 @@ ZZStackFrame`-[ViewController testA:b:]:
 
 在`viewDidLoad `方法中下断点，进入汇编模式(Xcode -> Debug -> Debug Workflow -> Always Show Disassembly)，汇编代码如下
 
-```
+```assembly
 ZZStackFrame`-[ViewController viewDidLoad]:
 	; 拉伸栈空间
     0x100bb5d80 <+0>:   sub    sp, sp, #0x40             ; =0x40 
@@ -245,9 +256,9 @@ ZZStackFrame`-[ViewController viewDidLoad]:
 
 然后我们执行 lldb 指令 `ni` 跳转到`add:b:c:d:e:f:g:h:i:`方法，查看汇编代码
 
-```
+```assembly
 ZZStackFrame`-[ViewController add:b:c:d:e:f:g:h:i:]:
-    0x100bb5f0c <+0>:   sub    sp, sp, #0x40             ; =0x40 
+    0x100bb5f0c <+0>:   sub    sp, sp, #0x40             ; =0x40
     ; 将参数 7 8 9 从栈中读取出来 放到 w10 w9 w8中
     0x100bb5f10 <+4>:   ldr    w8, [sp, #0x48]
     0x100bb5f14 <+8>:   ldr    w9, [sp, #0x44]
@@ -264,11 +275,11 @@ ZZStackFrame`-[ViewController add:b:c:d:e:f:g:h:i:]:
     0x100bb5f38 <+44>:  str    w7, [sp, #0x18]
     ; 从栈中读取参数 做计算
 ->  0x100bb5f3c <+48>:  ldr    w2, [sp, #0x2c]
-	...
-	; 返回值存储的 w0 也就是 x0 中
-	0x100bb5f7c <+112>: add    w0, w2, w3
-    0x100bb5f8c <+128>: add    sp, sp, #0x40             ; =0x40 
-    0x100bb5f90 <+132>: ret  
+    ...
+    ; 返回值存储的 w0 也就是 x0 中
+    0x100bb5f7c <+112>: add    w0, w2, w3
+    0x100bb5f8c <+128>: add    sp, sp, #0x40             ; =0x40
+    0x100bb5f90 <+132>: ret 
 ```
 
 `add:b:c:d:e:f:g:h:i:`方法栈空间大致如下
@@ -364,7 +375,7 @@ ZZStackFrame`-[ViewController testA:b:]:
 
 `testA:b:`对应的汇编代码
 
-```
+```assembly
 ZZStackFrame`-[ViewController testA:b:]:
 	; 拉伸栈空间
     0x102c5de18 <+0>:   sub    sp, sp, #0x30             ; =0x30 
@@ -542,7 +553,7 @@ void test_c2(void)
 
 转化为汇编
 
-```
+```assembly
 ZZStackFrame`-[ViewController viewDidLoad]:
     0x104d7dcbc <+0>:  sub    sp, sp, #0x30             ; =0x30 
     0x104d7dcc0 <+4>:  stp    x29, x30, [sp, #0x20]

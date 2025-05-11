@@ -46,26 +46,26 @@ ASLR(Address Space Layout Randomization): 地址空间布局随机化。是一�
 
 `LC_SYMTAB `实质是`struct symtab_command`
 
-```
+```C
 /*
  * The symtab_command contains the offsets and sizes of the link-edit 4.3BSD
  * "stab" style symbol table information as described in the header files
  * <nlist.h> and <stab.h>.
  */
 struct symtab_command {
-	uint32_t	cmd;		/* LC_SYMTAB */
-	uint32_t	cmdsize;	/* sizeof(struct symtab_command) */
-	uint32_t	symoff;		/* symbol table offset */
-	uint32_t	nsyms;		/* number of symbol table entries */
-	uint32_t	stroff;		/* string table offset */
-	uint32_t	strsize;	/* string table size in bytes */
+    uint32_t    cmd;        /* LC_SYMTAB */
+    uint32_t    cmdsize;    /* sizeof(struct symtab_command) */
+    uint32_t    symoff;        /* symbol table offset */
+    uint32_t    nsyms;        /* number of symbol table entries */
+    uint32_t    stroff;        /* string table offset */
+    uint32_t    strsize;    /* string table size in bytes */
 };
 ```
 
 
 我们可以用 [jtool](http://www.newosxbook.com/tools/jtool.html) 查看各个段中的信息
 
-```
+```shell
 $ jtool2 --pages ~/Desktop/BSBacktraceLogger                                                                      
 0x0-0x8000 __TEXT	(32768 bytes)
 	0x4c34-0x6610 __TEXT.__text	(6620 bytes)
@@ -107,18 +107,18 @@ $ jtool2 --pages ~/Desktop/BSBacktraceLogger
 
 符号表的结构是一个`struct nlist`类型的数组
 
-```
+```C
 // 位于系统库 <macho-o/nlist.h> 头文件中
 struct nlist {
-	union {
-		// 符号名在字符串表中的偏移量
-		uint32_t n_strx;	
-	} n_un;
-	uint8_t n_type;
-	uint8_t n_sect;
-	int16_t n_desc;
-	// 符号 虚拟内存地址，类似于函数指针
-	uint32_t n_value;
+    union {
+        // 符号名在字符串表中的偏移量
+        uint32_t n_strx;
+    } n_un;
+    uint8_t n_type;
+    uint8_t n_sect;
+    int16_t n_desc;
+    // 符号 虚拟内存地址，类似于函数指针
+    uint32_t n_value;
 };
 ```
 
