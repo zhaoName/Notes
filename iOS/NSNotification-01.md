@@ -985,9 +985,7 @@ typedef struct NCTbl {
 
 ### 0x07 `GSNotificationObserver`
 
-`NSNotificationCenter` 还有个添加监听通知方法 `addObserverForName:object:queue:usingBlock:`。此方法可以实现**在收到通知后在指定线程中响应**。
-
-`addObserverForName:object:queue:usingBlock:` 的具体实现如下：
+`NSNotificationCenter` 还有个添加监听通知方法 `addObserverForName:object:queue:usingBlock:` 具体实现如下：
 
 ```Objective-C
 /**

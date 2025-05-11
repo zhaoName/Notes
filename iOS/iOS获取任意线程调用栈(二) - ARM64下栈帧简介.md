@@ -16,7 +16,7 @@
 
 ### 0x02 程序计数器
 
-- pc􏰍 (Program Counter􏰑): 程序计数器
+- pc􏰍(Program Counter􏰑): 程序计数器
 
 - 存储着当前 CPU 正在执行指令的地址 类似于 8086 的 ip 
 
@@ -48,7 +48,7 @@
 - add 
 
 ```
-; 将 x0+0x14 的结果赋值给 x1
+; 将 sp+0x20 的结果赋值给 x29
 add  x29, sp, #0x20  
 
 ; 将 x0+0x14的结果赋值给x1，并且影响CPSR的标记寄存器
@@ -109,7 +109,7 @@ OC 的方法调用在底层都会转成`objc_megSend(id receiver, SEL _cmd, ...)
 
 ### 0x01 参数不超过 8 个
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self testA:1 b:2];
@@ -123,7 +123,7 @@ OC 的方法调用在底层都会转成`objc_megSend(id receiver, SEL _cmd, ...)
 
 在`viewDidLoad `方法中下断点，进入汇编模式(Xcode -> Debug -> Debug Workflow -> Always Show Disassembly)，汇编代码如下
 
-```
+```assembly
 ZZStackFrame`-[ViewController viewDidLoad]:
     0x102bc9de0 <+0>:   sub    sp, sp, #0x40             ; =0x40 
     0x102bc9de4 <+4>:   stp    x29, x30, [sp, #0x30]
@@ -187,7 +187,7 @@ ZZStackFrame`-[ViewController testA:b:]:
 
 ### 0x02 参数超过 8 个
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self add:1 b:2 c:3 d:4 e:5 f:6 g:7 h:8 i:9];
@@ -291,7 +291,7 @@ ZZStackFrame`-[ViewController add:b:c:d:e:f:g:h:i:]:
 
 ### 0x01 叶子函数栈结构
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self testA:1 b:2];
@@ -307,7 +307,7 @@ ZZStackFrame`-[ViewController add:b:c:d:e:f:g:h:i:]:
 
 `testA:b:`对应的汇编代码
 
-```
+```Objective-C
 ZZStackFrame`-[ViewController testA:b:]:
 	; 拉伸栈空间
     0x102075e30 <+0>:  sub    sp, sp, #0x20             ; =0x20 
@@ -346,7 +346,7 @@ ZZStackFrame`-[ViewController testA:b:]:
 
 ### 0x02 非叶子函数栈结构
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self testA:1 b:2];
@@ -422,7 +422,7 @@ Xcode -> Debug -> Debug Workflow -> View Memory 查看栈空间内存(和上面�
 
 从 `viewDidLoad `方法开始一路跟踪下去，看看调用栈结构
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     [self testA];
@@ -522,7 +522,7 @@ Xcode -> Debug -> Debug Workflow -> View Memory 查看栈空间内存(和上面�
 对这样是快很多，但这只是 OC 方法会固定传两个参数`receiver`、`cmd`。若是 C 函数或 C++ 函数，是没有`cmd`的。
 
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     test_c1();

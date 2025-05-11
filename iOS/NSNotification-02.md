@@ -251,7 +251,7 @@ typedef NS_ENUM(NSUInteger, NSPostingStyle) {
 打印结果如下：
 
 ```Objective-C
--[ViewController deliveingNotificationInParcularThread]_block_invoke---<NSThread: 0x600002430d80>{number = 5, name = (null)}
+-[ViewController viewDidLoad]_block_invoke---<NSThread: 0x600002430d80>{number = 5, name = (null)}
 -[ZZParticularThreadNOtification processNotification:] ++++ <NSThread: 0x600002430d80>{number = 5, name = (null)}
 -[ZZParticularThreadNOtification handleMachMessage:] --- <NSThread: 0x600002478140>{number = 1, name = main}
 -[ZZParticularThreadNOtification processNotification:] --- <NSThread: 0x600002478140>{number = 1, name = main}
