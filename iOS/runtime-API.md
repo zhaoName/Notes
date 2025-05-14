@@ -7,7 +7,7 @@
 
 - `object_getClass`
 
-```Objctive-C
+```Objective-C
 ZNPerson *per = [[ZNPerson alloc] init];
 NSLog(@"类对象：%p==%p，元类对象：%p", [ZNPerson class], object_getClass(per), object_getClass([NSObject class]));
 
@@ -17,7 +17,7 @@ NSLog(@"类对象：%p==%p，元类对象：%p", [ZNPerson class], object_getCla
 
 - `object_isClass`、`class_isMetaClass`
 
-```Objctive-C
+```Objective-C
 NSLog(@"是否是类对象:%d==%d, 是否是元类对象：%d",
           object_isClass(per),
           object_isClass(object_getClass(per)),

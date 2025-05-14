@@ -276,10 +276,10 @@ pthread_mutexattr_settype(&_mutexattr, PTHREAD_MUTEX_RECURSIVE);
 
 <br>
 
-### 四、`NSLock`
+## 四、`NSLock`
 
 
-`NSLock`是对`PTHREAD_MUTEX_ERRORCHECK 类型的``pthread_mutex`的封装。遵守`NSLocking`协议。
+`NSLock`是对`PTHREAD_MUTEX_ERRORCHECK` 类型的 `pthread_mutex`的封装。遵守`NSLocking`协议。
 
 ```Objective-C
 // NSLock.m
@@ -710,6 +710,10 @@ static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t o
 
 <br>
 
+
+## 十一、`pthread_rwlock_t`
+
+
 线程安全不只是在访问同一变量上，还可能会多线程读写同一文件。有一种读写安全方案 - 多读单写。
 
 - 同一时间，只能有1个线程进行写的操作
@@ -719,11 +723,6 @@ static inline void reallySetProperty(id self, SEL _cmd, id newValue, ptrdiff_t o
 - 同一时间，不允许既有写的操作，又有读的操作
 
 下面介绍两种常用的读写安全锁。
-
-<br>
-
-## 十一、`pthread_rwlock_t`
-
 
 ```Objective-C
 - (void)viewDidLoad {

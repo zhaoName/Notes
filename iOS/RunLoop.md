@@ -11,7 +11,7 @@
 `OSX/iOS `系统中，提供了两个这样的对象：`NSRunLoop` 和 `CFRunLoopRef`。
 `CFRunLoopRef` 是在 `CoreFoundation` 框架内的，它提供了纯 C 函数的 API，所有这些 API 都是线程安全的。`NSRunLoop` 是基于 `CFRunLoopRef` 的封装，提供了面向对象的 API，但是这些 API 不是线程安全的。
 
-```
+```Objective-C
 NSLog(@"%p %p", [NSRunLoop currentRunLoop], [NSRunLoop mainRunLoop]);
 NSLog(@"%p %p", CFRunLoopGetCurrent(), CFRunLoopGetMain());
 
@@ -22,7 +22,7 @@ NSLog(@"%p %p", CFRunLoopGetCurrent(), CFRunLoopGetMain());
 
 从打印结果上看`NSRunLoop `和`CFRunLoopRef `获取的`RunLoop`不是一个。
 
-```
+```Objective-C
 NSLog(@"%@", [NSRunLoop mainRunLoop]);
 
 // 打印结果
@@ -49,7 +49,7 @@ iOS 开发中能遇到两个线程对象:`pthread_t ` 和`NSThread `，它俩是
 
 在`CF-1153.18`的`CFRunLoop.h`中可以看到并没有暴露创建`RunLoop` 的结构。只提供了两个获取`RunLoop` 的函数：`CFRunLoopGetCurrent()`和`CFRunLoopGetMain()`。它们俩的内部实现逻辑大致如下：
 
-```
+```Objective-C
 static CFMutableDictionaryRef __CFRunLoops = NULL;
 static CFLock_t loopsLock = CFLockInit;
 
@@ -165,7 +165,7 @@ CFRunLoopRef CFRunLoopGetCurrent(void) {
 
 `CFRunLoopMode`和`CFRunLoop`的底层结构大致如下
 
-```
+```Objective-C
 // CFRunLoop.c
 
 struct __CFRunLoopMode {
@@ -189,7 +189,7 @@ struct __CFRunLoop {
 
 - `RunLoop`只能选择一个`mode`作为`_currentMode`。而且源码中也提供接口获取`_currentMode `。
 
-```
+```Objective-C
 CF_EXPORT CFStringRef CFRunLoopCopyCurrentMode(CFRunLoopRef rl);
 
 CF_EXPORT CFArrayRef CFRunLoopCopyAllModes(CFRunLoopRef rl);
@@ -197,7 +197,7 @@ CF_EXPORT CFArrayRef CFRunLoopCopyAllModes(CFRunLoopRef rl);
 
 - `CommonModes `：一个`Mode `可以将自己标记为`Common `属性（通过将其`ModeName`添加到`RunLoop`的`commonModes`中）。每当`RunLoop `的内容发生变化时，`RunLoop `都会自动将 `_commonModeItems` 里的`Source/Observer/Timer`同步到具有`Common `标记的所有`Mode`里。
 
-```
+```Objective-C
 CFRunLoopAddCommonMode(CFRunLoopRef`RunLoop`, CFStringRef modeName);
 
 CFRunLoopRunInMode(CFStringRef mode, CFTimeInterval seconds, Boolean returnAfterSourceHandled)
@@ -218,7 +218,7 @@ CFRunLoopRunInMode(CFStringRef mode, CFTimeInterval seconds, Boolean returnAfter
 
 `CFRunLoopObserverRef`是观察者，每个`Observer ` 都包含了一个回调（函数指针），当`RunLoop `的状态发生变化时，观察者就能通过回调接受到这个变化。可以观测的时间点有以下几个
 
-```
+```Objective-C
 typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
     kCFRunLoopEntry         = (1UL << 0), // 即将进入 Loop
     kCFRunLoopBeforeTimers  = (1UL << 1), // 即将处理 Timer
@@ -232,7 +232,7 @@ typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
 
 - 监听定时器
 
-```
+```Objective-C
 void observerRunLoopActivity(CFRunLoopObserverRef observer, CFRunLoopActivity activity, void *info)
 {
     switch (activity) {
@@ -292,7 +292,7 @@ void observerRunLoopActivity(CFRunLoopObserverRef observer, CFRunLoopActivity ac
 
 屏幕上放个`UITextView`，滑动监听`Mode`切换
 
-```
+```Objective-C
 CFRunLoopObserverRef ob = CFRunLoopObserverCreateWithHandler(CFAllocatorGetDefault(), kCFRunLoopAllActivities, YES, 0, ^(CFRunLoopObserverRef observer, CFRunLoopActivity activity) {
     switch (activity) {
         case kCFRunLoopEntry:
@@ -336,7 +336,7 @@ CFRelease(ob);
 
 其内部代码整理如下(只保留了主要逻辑代码)
 
-```
+```Objective-C
 // CFRunLoop.c
 
 // 用 kCFRunLoopDefaultMode 启动 RunLoop
@@ -493,7 +493,7 @@ static int32_t __CFRunLoopRun(CFRunLoopRef rl, CFRunLoopModeRef rlm, CFTimeInter
 
 > If you want the run loop to terminate, you shouldn't use this method. Instead, use one of the other run methods and also check other arbitrary conditions of your own, in a loop. A simple example would be:
 
-```
+```Objective-C
 BOOL shouldKeepRunning = YES; // global
 NSRunLoop *theRL = [NSRunLoop currentRunLoop];
 while (shouldKeepRunning && [theRL runMode:NSDefaultRunLoopMode beforeDate:[NSDate distantFuture]]);
@@ -509,7 +509,7 @@ while (shouldKeepRunning && [theRL runMode:NSDefaultRunLoopMode beforeDate:[NSDa
 
 ### 0x02 具体实现
 
-```
+```Objective-C
 // ZNThread.m
 - (void)dealloc
 {
@@ -583,7 +583,7 @@ while (shouldKeepRunning && [theRL runMode:NSDefaultRunLoopMode beforeDate:[NSDa
 
 - 手动销毁`RunLoop`
 
-```
+```Objective-C
 2019-07-12 15:41:28.699297 RunLoopDemo[758:113100] -[ViewController startRunLoop]----<ZNThread: 0x170271ec0>{number = 3, name = (null)}
 
 2019-07-12 15:41:30.475383 RunLoopDemo[758:113100] -[ViewController threadKeepLive]---<ZNThread: 0x170271ec0>{number = 3, name = (null)}
@@ -600,7 +600,7 @@ while (shouldKeepRunning && [theRL runMode:NSDefaultRunLoopMode beforeDate:[NSDa
 
 - 销毁`ViewController`后，`RunLoop`也会自动销毁
 
-```
+```Objective-C
 2019-07-12 15:43:14.318075 RunLoopDemo[761:113546] -[ViewController startRunLoop]----<ZNThread: 0x17007fa40>{number = 3, name = (null)}
 
 2019-07-12 15:43:15.248557 RunLoopDemo[761:113546] -[ViewController threadKeepLive]---<ZNThread: 0x17007fa40>{number = 3, name = (null)}

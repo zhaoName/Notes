@@ -10,7 +10,7 @@
 
 在`arm64`架构中，方法调用的参数一般存储在`x0 ~ x7`寄存器中(参数多余8个，存在栈上)，`x0`还用于返回值传递。方法中的局部变量存在连续的栈空间上。
 
-```
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -37,7 +37,7 @@
 
 - 局部变量
 
-```Objctive-C
+```Objective-C
 // 打印结果
 2019-07-04 23:42:22.072280 runtime-super[1574:615708] 0x16fd49e90 0x16fd49e88 0x16fd49e80 0x16fd49e78
 ```
@@ -54,7 +54,7 @@
 
 在说明`super`调方法本质我们先来看到面试题
 
-```Objctive-C
+```Objective-C
 // ZNStudent : ZNPerson : NSObject
 
 // ZNStudent.m
@@ -83,7 +83,7 @@
 
 我们来运行程序看看最终打印结果
 
-```Objctive-C
+```Objective-C
 2019-07-04 10:44:42.543912 runtime-super[11689:1192675] [self class]===ZNStudent
 2019-07-04 10:44:42.544082 runtime-super[11689:1192675] [self superclass]===ZNPerson
 
@@ -93,13 +93,13 @@
 
 看到上述打印结果是不是感觉有点难以接受？想看清本质问题还是要看底层代码，用下面命令将代码转成`C/C++`代码
 
-```Objctive-C
+```Objective-C
 $ xcrun -sdk iphoneos clang -arch arm64 -rewrite-objc  ZNStudent.m
 ```
 
 可以看到`[super class]`和`[super superclass]`最终转成如下代码
 
-```Objctive-C
+```Objective-C
 objc_msgSendSuper((__rw_objc_super){(id)self, (id)class_getSuperclass(objc_getClass("ZNStudent"))}, sel_registerName("class"))
 
 objc_msgSendSuper((__rw_objc_super){(id)self, (id)class_getSuperclass(objc_getClass("ZNStudent"))}, sel_registerName("superclass"))
@@ -107,7 +107,7 @@ objc_msgSendSuper((__rw_objc_super){(id)self, (id)class_getSuperclass(objc_getCl
 
 结构有点复杂，简化下
 
-```Objctive-C
+```Objective-C
 struct __rw_objc_super sp1 = {self, class_getSuperclass(objc_getClass("ZNStudent"))};
 objc_msgSendSuper(sp1, sel_registerName("class"));
     
@@ -157,7 +157,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 实例方法`class`在`NSObject`中声明，在`objc4-750`中`NSObject.mm`查看其实现
 
-```Objctive-C
+```Objective-C
 // NSObject.mm
 
 - (Class)class {
@@ -180,7 +180,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 再来看个有意思的事，在`ZNPerson`中声明并实现`test`实例方法，在子类`ZNStudent`中重写`test`方法并调用`[super test]`，并下断点，`Xcode -> Debug -> Debug Workflow -> Always show Disassmebly`进入汇编模式。
 
-```Objctive-C
+```Objective-C
 // ZNStudent.m
 - (void)test
 {
@@ -198,7 +198,7 @@ objc_msgSendSuper(struct objc_super * _Nonnull super, SEL _Nonnull op, ...)
 
 ![](../Images/iOS/runtime/runtime_image0404.png)
 
-```Objctive-C
+```Objective-C
 ...
 Ltmp0:
     .loc    3 16 5 prologue_end     ; ~/Desktop/runtime-super/runtime-super/ZNStudent.m:16:5
@@ -219,7 +219,7 @@ Ltmp0:
 
 - 定义
 
-```Objctive-C
+```Objective-C
 struct objc_super2 {
     id receiver;
     Class current_class;
@@ -246,7 +246,7 @@ END_ENTRY _objc_msgSendSuper2
 
 - 证明`[super xxx]`底层调用的是`objc_msgSendSuper2`函数
 
-```Objctive-C
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -286,7 +286,7 @@ END_ENTRY _objc_msgSendSuper2
 
 先看面试题
 
-```Objctive-C
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -306,7 +306,7 @@ END_ENTRY _objc_msgSendSuper2
 
 - 实例方法
 
-```Objctive-C
+```Objective-C
 // NSObject.mm
 
 - (BOOL)isMemberOfClass:(Class)cls {
@@ -329,7 +329,7 @@ END_ENTRY _objc_msgSendSuper2
 
 - 类方法
 
-```Objctive-C
+```Objective-C
 // NSObject.mm
 
 + (BOOL)isMemberOfClass:(Class)cls {
@@ -354,7 +354,7 @@ END_ENTRY _objc_msgSendSuper2
 
 ## 四、面试题
 
-```Objctive-C
+```Objective-C
 // ZNPerson.h
 @property (nonatomic, copy) NSString *name;
 - (void)test;
@@ -388,7 +388,7 @@ END_ENTRY _objc_msgSendSuper2
 
 ### 0x01 正常方法调用
 
-```Objctive-C
+```Objective-C
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -422,7 +422,7 @@ struct ZNPerson_IMPL {
 
 将下面两句代码也用画图表示
 
-```Objctive-C
+```Objective-C
 id cls = [ZNPerson class];
 void *obj = &cls;
 ```

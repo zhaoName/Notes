@@ -4,7 +4,7 @@
 
 如果 RunLoop 的线程，进入睡眠前方法的执行时间过长而导致无法进入睡眠，或者线程唤醒后接收消息时间过长而无法进入下一步的话，就可以认为是线程受阻了。如果这个线程是主线程的话，表现出来的就是出现了卡顿。
 
-```
+```Objective-C
 #import "ZZMonitor.h"
 
 @implementation ZZMonitor
