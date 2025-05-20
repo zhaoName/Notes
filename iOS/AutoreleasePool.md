@@ -589,7 +589,7 @@ OC 对象调用`autorelease`方法，最终会调用`autoreleaseFast()`函数，
 可以看到加入到`@autoreleasepool`中的`autorelease`对象，会在调用`objc_autoreleasePoolPop `时调用`release`方法，释放对象。
 
 
-### 0x02 对象直接调用`autorelease `
+### 0x02 MRC 下对象直接调用`autorelease `
 
 ```Objective-C
 - (void)viewDidLoad {
@@ -668,6 +668,50 @@ typedef CF_OPTIONS(CFOptionFlags, CFRunLoopActivity) {
 
 
 这样`push`和`pop`一直都是成对出现，不会出现自动释放池中对象没有被释放的情况。
+
+### 0x03 ARC下实现 MRC 下调用 `autorelease` 达到延迟释放的目的
+
+若类方法名不以 `alloc/new/copy/mutableCopy` 开头，ARC 会自动将返回对象加入自动释放池。
+
+```Objective-C
+// ZNPerson.m
++ (instancetype)createObject
+{
+    // ARC 自动处理，等效于 MRC 的 [[[self alloc] init] autorelease]
+    return [[self alloc] init];
+}
+```
+
+```Objective-C
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    NSLog(@"1111");
+    ZNPerson *per1 = [ZNPerson createObject];
+    NSLog(@"22222");
+}
+
+- (void)viewWillAppear:(BOOL)animated
+{
+    [super viewWillAppear:animated];
+    
+    NSLog(@"%s", __func__);
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    
+    NSLog(@"%s", __func__);
+}
+
+// 打印结果
+2025-05-16 17:22:09.388266+0800 AutoreleasePool[71838:3547005] 1111
+2025-05-16 17:22:09.388457+0800 AutoreleasePool[71838:3547005] 22222
+2025-05-16 17:22:09.388578+0800 AutoreleasePool[71838:3547005] -[ZNPerson dealloc]
+2025-05-16 17:22:09.400488+0800 AutoreleasePool[71838:3547005] -[ViewController viewWillAppear:]
+2025-05-16 17:22:09.414395+0800 AutoreleasePool[71838:3547005] -[ViewController viewDidAppear:]
+```
 
 <br>
 

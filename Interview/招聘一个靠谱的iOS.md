@@ -93,7 +93,7 @@
 
 使用 @property 声明属性，编译器会自动帮我们干三件事：
 
-- 自动生成同名带下划钱的成员变量 _property
+- 自动生成同名带下划的成员变量 _property
 
 - 自动生成 setter getter 方法的声明
 
