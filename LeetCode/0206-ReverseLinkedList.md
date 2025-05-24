@@ -162,23 +162,23 @@ def reverseList_stack(self, head: ListNode) -> ListNode:
 ```python3
 ## 递归
 def reverseList(self, head: ListNode) -> ListNode:
-	if not head or not head.next: return head
+    if not head or not head.next: return head
 
-	newHead = self.reverseList(head.next)
-	head.next.next = head
-	head.next = None
-	return newHead
+    newHead = self.reverseList(head.next)
+    head.next.next = head
+    head.next = None
+    return newHead
 
 
 ## 迭代
 def reverseList(self, head: ListNode) -> ListNode:
-	if not head: return head
+    if not head: return head
 
-	res = ListNode()
-	while head:
-		temp = head.next
-		head.next = res.next
-		res.next = head
-		head = temp
-	return res.next	
+    res = ListNode()
+    while head:
+        temp = head.next
+        head.next = res.next
+        res.next = head
+        head = temp
+    return res.next
 ```

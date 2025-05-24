@@ -46,4 +46,52 @@ def reorderList(self, head: ListNode) -> None:
     stackHead.next = None
 ```
 
+- 二刷
+
+```python3
+## Timer Complexity: O(n), Space Complexity: O(n)
+def reorderList_02(self, head: ListNode) -> None:
+    if not head: return
+    stack, node = [], head
+    while node:
+        stack.append(node)
+        node = node.next
+    i, j = 0, len(stack) - 1
+    while i < j:
+        stack[i].next = stack[j]
+        i += 1
+        if i == j:
+            break
+        stack[j].next = stack[i]
+        j -= 1
+    stack[i].next = None
+
+
+## Timer Complexity: O(n), Space Complexity: O(1) 
+def reorderList(self, head: ListNode) -> None:
+    if not head or not head.next: return
+
+    slow = fast = head
+    while fast and fast.next:
+        slow = slow.next
+        fast = fast.next.next
+
+    dummyNode = ListNode()
+    while slow:
+        temp = slow.next
+        slow.next = dummyNode.next
+        dummyNode.next = slow
+        slow = temp
+
+    last, node = dummyNode.next, head
+    while node and last:
+        tempLast = last.next
+        last.next = node.next
+        node.next = last
+
+        node = last.next
+        last = tempLast
+    node.next = None
+```
+
 <br>
