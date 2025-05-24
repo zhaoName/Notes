@@ -12,6 +12,7 @@
 | 61 | Rotate List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0061-RotateList.md) | O(n) | O(1) |
 | 75 | Sort Colors | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0075-SortColors.md) | O(n) | O(1) |
 | 88 | Merge Sorted Array | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0088-MergeSortedArray.md) | O(m+n) | O(1) |
+| 160 | Intersection of Two Linked Lists | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0160-IntersectionOfTwoLinkedLists.md) | O(m+n) | O(1) |
 
 
 <br>
@@ -39,7 +40,6 @@
 | 20 | Valid Parentheses | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0020-ValidParentheses.md) | O(n) | O(n) |
 | 71 | Simplify Path | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0071-SimplifyPath.md) | O(n) | O(n) |
 | 94 | Binary Tree Inorder Traversal | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0094-BinaryTreeInorderTraversal.md) | O(n) | O(n) |
-| 114 | Flatten Binary Tree to Linked List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0114-FlattenBinaryTreeToLinkedList.md) | O(n) | O(1) |
 | 144 | Binary Tree Preorder Traversal | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0144-BinaryTreePreorderTraversal.md) | O(n) | O(n) |
 | 145 |  Binary Tree Postorder Traversal | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0145-BinaryTreePostorderTraversal.md) | O(n) | O(n) |
 
@@ -50,9 +50,26 @@
 
 | No. | Title | Difficulty | Solution | Time Complexity | Space Complexity | Remark |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 24 | Swap Nodes In Pairs |  Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0024-SwapNodesInPairs.md) | O(n) | O(1)| |
+| 86 | Partition List |  Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0086-PartitionList.md) | O(n) | O(1)| |
+| 92 | Reverse Linked List II |  Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0092-ReverseLinkedListII.md) | O(n) | O(1)| |
 | 143 | Reorder List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0143-ReorderList.md) | O(n) | O(1) | |
+| 148 | Sort List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0148-SortList.md) | O(nlogn) | O(1) | |
+| 206 | Reverse Linked List | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0206-ReverseLinkedList.md) | O(n) | O(1) | |
 
 
 <br>
+
+### Binary Tree
+
+| No. | Title | Difficulty | Solution | Time Complexity | Space Complexity | Remark |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 94 | Binary Tree Inorder Traversal | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0094-BinaryTreeInorderTraversal.md) | O(n) | O(n) |
+| 98 | Validate Binary Search Tree | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0098-ValidateBinarySearchTree.md) | O(n) | O(n) |
+| 114 | Flatten Binary Tree to Linked List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0114-FlattenBinaryTreeToLinkedList.md) | O(n) | O(1) |
+| 144 | Binary Tree Preorder Traversal |  Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0144-BinaryTreePreorderTraversal.md) | O(n) | O(n)| |
+| 145 | Binary Tree Postorder Traversal |  Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0145-BinaryTreePostorderTraversal.md) | O(n) | O(n)| |
+
+
 
 <br>
