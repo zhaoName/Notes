@@ -130,11 +130,52 @@ struct nlist {
 
 - 找到对应的 image 后，需要找到 __LINKEDIT 段的起始地址
 
-- __LINKEDIT 段的起始地址 + `symtab_command.symoff` 就是符号表的地址
+- __LINKEDIT 段的基地址 + `symtab_command->symoff` 就是符号表的地址
 
 - 然后遍历符号表,查找距离 lr - ASLR 最近的`n_value `。这里注意因为 lr 是函数某条指令的地址，而`n_value `是函数的起始地址。所以 lr - ASLR 一定要大于等 `n_value `。
 
 - 找到对应的`n_value `，那`n_strx `就是我们要找的符号(函数名)
+
+
+对于 __LINKEDIT 段的基地址 解释：
+
+Segment 的结构如下:
+
+```C
+/* for 64-bit architectures */
+struct segment_command_64 {
+    uint32_t    cmd;        /* LC_SEGMENT_64 */
+    uint32_t    cmdsize;    /* includes sizeof section_64 structs */
+    char        segname[16];    /* segment name */
+    uint64_t    vmaddr;        /* memory address of this segment */
+    uint64_t    vmsize;        /* memory size of this segment */
+    uint64_t    fileoff;    /* file offset of this segment */
+    uint64_t    filesize;    /* amount to map from the file */
+    vm_prot_t    maxprot;    /* maximum VM protection */
+    vm_prot_t    initprot;    /* initial VM protection */
+    uint32_t    nsects;        /* number of sections in segment */
+    uint32_t    flags;        /* flags */
+};
+```
+
+symtab_command 的结构如下
+
+```C
+struct symtab_command {
+	uint32_t	cmd;		/* LC_SYMTAB */
+	uint32_t	cmdsize;	/* sizeof(struct symtab_command) */
+	uint32_t	symoff;		/* symbol table offset */
+	uint32_t	nsyms;		/* number of symbol table entries */
+	uint32_t	stroff;		/* string table offset */
+	uint32_t	strsize;	/* string table size in bytes */
+};
+```
+
+- `segmentCmd->vmaddr` 是 segment 在虚拟内存中的开始位置，但它对应的是 fileoff 起始位置，不是文件偏移 0
+
+- `nlist->symoff` 是相对于整个文件的 offset（从文件 offset 0 开始）
+- 所以需要先计算 `segmentBase = segmentCmd->vmaddr - segmentCmd->fileoff + _dyld_get_image_vmaddr_slide()`
+- 再将 `segmentBase + symtab_command.symoff` 得到符号在内存中的位置
 
 <br>
 
