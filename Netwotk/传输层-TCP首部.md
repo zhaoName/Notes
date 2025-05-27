@@ -95,7 +95,7 @@ TCP 校验和计算方式和 UDP 一样。把 TCP 数据报看成是由许多 16
 
 TCP 校验和与 IP 校验和的区别是：TCP 和 UDP 检验和覆盖首部和数据，而 IP 首部中的检验和只覆盖 IP 的首部，不覆盖 IP 数据报中的任何数据。
 
-TCP 校验和和 UDP 校验和的区别是：TCP 的检验和是必需的，而 UDP 的检验和是可选的；TCP 伪首部中 Protocol 字段固定是 6， TCP 伪首部中 Protocol 字段固定是 17。 
+TCP 校验和和 UDP 校验和的区别是：TCP 的检验和是必需的，而 UDP 的检验和是可选的；TCP 伪首部中 Protocol 字段固定是 6， UDP 伪首部中 Protocol 字段固定是 17。 
 
 <br>
 
