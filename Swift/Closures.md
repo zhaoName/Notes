@@ -156,7 +156,7 @@ print(fn(3)) // 16
 
 分别在 `return plus` 和 `return num` 出打断点，进入汇编调试模式。可以看到断点到 `getFn` 函数中
 
-```
+```assembly
 swift-basic-macos`getFn():
     ...
     0x100005a8f <+15>: movl   $0x18, %esi
@@ -200,7 +200,7 @@ swift-basic-macos`getFn():
 
 在 `let fn = getFn()` 处下断点，运行程序，程序断在 `callq  0x100005a80`。从注释也可以看出就是在调用 `getFn()` 函数
 
-```
+```assembly
 swift-basic-macos`main:
     0x1000059d0 <+0>:   pushq  %rbp
     0x1000059d1 <+1>:   movq   %rsp, %rbp
@@ -249,7 +249,7 @@ swift-basic-macos`main:
 执行 `lldb` 执行 `si` 进入到 `getFn()` 函数。
 
 
-```
+```assembly
 swift-basic-macos`getFn():
 ->  0x100005a80 <+0>:  pushq  %rbp
     0x100005a81 <+1>:  movq   %rsp, %rbp
@@ -287,7 +287,7 @@ swift-basic-macos`getFn():
 
 执行完 `getFn` 函数之后，接下来执行 `main` 函数中的两句汇编代码如下
 
-```
+```assembly
 ; rip + 0x2834 = 0x100008220
 0x1000059e6 <+22>:  movq   %rax, 0x2833(%rip)        ; swift_basic_macos.fn : (Swift.Int) -> Swift.Int
 ; rip + 0x2834 = 0x100008228
@@ -303,7 +303,7 @@ swift-basic-macos`getFn():
 
 `main` 函数继续执行下去，在第一个 `callq  *%rdx` 出下断点
 
-```swift
+```assembly
 0x1000059e6 <+22>:  movq   %rax, 0x2833(%rip)        ; swift_basic_macos.fn : (Swift.Int) -> Swift.Int
     0x1000059ed <+29>:  movq   %rdx, 0x2834(%rip)    ; swift_basic_macos.fn : (Swift.Int) -> Swift.Int + 8
     0x1000059f4 <+36>:  movq   0x2825(%rip), %rax    ; swift_basic_macos.fn : (Swift.Int) -> Swift.Int
@@ -329,7 +329,7 @@ swift-basic-macos`getFn():
 
 那 `callq  *%rdx` 可能和调用 plus 函数有关系，执行 `lldb` 指令 `si`，进入到这个函数
 
-```
+```assembly
 swift-basic-macos`partial apply for plus #1 (_:) in getFn():
 ->  0x100005c10 <+0>: pushq  %rbp
     0x100005c11 <+1>: movq   %rsp, %rbp
@@ -341,7 +341,7 @@ swift-basic-macos`partial apply for plus #1 (_:) in getFn():
 
 在这里看到将堆空间的地址给了 `rsi`，且找到了 `plus` 函数的真正地址 `0x100005b10 `，跳转进去。
 
-```
+```assembly
 swift-basic-macos`plus #1 (_:) in getFn():
 ->  0x100005b10 <+0>:   pushq  %rbp
     0x100005b11 <+1>:   movq   %rsp, %rbp

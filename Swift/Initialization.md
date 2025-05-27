@@ -15,7 +15,7 @@
 
 类倾向于拥有极少的指定初始化器，普遍的是一个类只拥有一个指定初始化器(最少有一个)。
 
-```
+```swift
 init(parameters) {
     statements
 }
@@ -23,7 +23,7 @@ init(parameters) {
 
 便捷初始化器 (Convenience Initializer) 是类中比较次要的、辅助型的初始化器。你可以定义便利初始化器来调用同一个类中的指定初始化器，并为部分形参提供默认值。
 
-```
+```swift
 convenience init(parameters) {
     statements
 }
@@ -34,7 +34,7 @@ convenience init(parameters) {
 
 - 指定初始化器必须调用其直接父类的的指定初始化器
 
-```
+```swift
 class Person {
     let name: String
     // 父类的指定初始化器
@@ -60,7 +60,7 @@ class Student: Person {
 
 - 便捷初始化器最终必须调用一个指定初始化器
 
-```
+```swift
 class Person {
     let name: String
     // 父类的指定初始化器
@@ -149,7 +149,7 @@ Swift 编译器将执行 4 种有效的安全检查，以确保两段式初始�
 
 - 指定初始化器必须保证它所在类的所有属性都必须先初始化完成，之后才能将其它初始化任务向上代理给父类中的初始化器
 
-```
+```swift
 class Person {
     var name: String
     // 父类的指定初始化器
@@ -193,7 +193,7 @@ Swift 中的子类默认情况下不会继承父类的初始化器。Swift 的�
 
 - 当重写父类的指定初始化器时，必须加上 `override`，
 
-```
+```swift
 class Food {
     var name: String
     init(name: String) {
@@ -226,7 +226,7 @@ class RecipeIngredient: Food {
 
 - 若子类写了一个和父类便捷初始化器相匹配的初始化器（指定或便捷），由于子类不能直接调用父类的便捷初始化，所以不需要加 `override` 修饰符。(**严格来说子类无法重写父类的便捷初始化器**)
 
-```
+```swift
 class RecipeIngredient: Food {
     var quantity: Int
     
@@ -263,7 +263,7 @@ class RecipeIngredient: Food {
 
 - 如果子类没有定义任何指定初始化器，它将自动继承父类所有的指定初始化器。
 
-```
+```swift
 class ShoppingListItem: RecipeIngredient {
     var purchased = false
 }
@@ -274,7 +274,7 @@ ShoppingListItem(name: "apple", quantity: 10)
 
 - 如果子类提供了所有父类指定初始化器的实现——无论是通过规则 1 继承过来的，还是提供了自定义实现——它将自动继承父类所有的便利初始化器。
 
-```
+```swift
 class ShoppingListItem: RecipeIngredient {
     var purchased = false
     
@@ -292,7 +292,7 @@ ShoppingListItem(name: "apple")
 
 - 即使你在子类中添加了更多的便利初始化器，这两条规则仍然适用。
 
-```
+```swift
 class ShoppingListItem: RecipeIngredient {
     var purchased = false
     
@@ -315,7 +315,7 @@ ShoppingListItem(price: 6)
 
 - 子类可以将父类的指定初始化器实现为便利初始化器来满足规则 2。
 
-```
+```swift
 class RecipeIngredient: Food {
     var quantity: Int
     
@@ -347,7 +347,7 @@ let food = RecipeIngredient()
 
 必要初始化器是指用 `required` 修饰的指定初始化器。表明所有该类的子类都必须实现该初始化器 (通过继承或重写)
 
-```
+```swift
 class Food {
     let name: String
     
@@ -371,7 +371,7 @@ RecipeIngredient(name: "apple")
 
 在子类重写父类的必要初始化器时，必须在子类的初始化器前也添加 required 修饰符，表明该初始化器要求也应用于继承链后面的子类。
 
-```
+```swift
 class RecipeIngredient: Food {
     required init() {
         super.init()
@@ -386,7 +386,7 @@ RecipeIngredient()
 
 父类的属性在它自己的初始化器中赋值不会触发属性观察器，但在子类的初始化器中赋值会触发
 
-```
+```swift
 class Food {
     var name: String {
         willSet {
