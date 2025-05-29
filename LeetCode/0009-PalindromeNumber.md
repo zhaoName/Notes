@@ -20,11 +20,11 @@ Coud you solve it without converting the integer to a string?
 
 - 第一思路  数字转字符串 反转一半
 
-```
+```python3
 ## Time Complexity:O(n)  Space Complexity:O(n) n为x的长度
 def isPalindrome_str(self, x) -> bool:
 	if x < 0: return False
-	if x >=0 and x <10: return True
+	if x >= 0 and x < 10: return True
 
 	s = str(x)
 	mid = len(s) // 2
@@ -34,7 +34,7 @@ def isPalindrome_str(self, x) -> bool:
 		right = s[mid:]
 	else:
 		left = s[:mid]
-		right = s[mid+1:]
+		right = s[mid + 1:]
 
 	return left == right[::-1]
 ```
@@ -42,7 +42,7 @@ def isPalindrome_str(self, x) -> bool:
 
 - 优化 不转字符串 算后一半余数和前一半比较
 
-```
+```python3
 ## Time Complexity:O(n)  Space Complexity:O(1) n为x的长度
 def isPalindrome_half(self, x) -> bool:
 	if x < 0 or (x % 10 == 0 and x != 0): return False
@@ -58,8 +58,8 @@ def isPalindrome_half(self, x) -> bool:
 
 - 优化  拿整数两端的数字依次比较
 
-```
-Space Complexity:O(1) n为x的长度
+```python3
+# Space Complexity:O(1) n为x的长度
 def isPalindrom_max(self, x) -> bool:
 	if x < 0: return False
 	max = 1
@@ -70,7 +70,8 @@ def isPalindrom_max(self, x) -> bool:
 		left = x // max
 		right = x % 10
 		if left != right: return False
-		x = x - left*max - right
+		x = x - left * max - right
+		x //= 10
 		max //= 100
 	return True
 ```
