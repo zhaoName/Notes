@@ -12,7 +12,7 @@
 
 Swift 中枚举定义使用的是 `enum` 关键字
 
-```
+```swift
 enum CompassPoint {
     case north
     case south
@@ -37,7 +37,7 @@ enum CompassPoint {
 
 让枚举遵循 `CaseIterable` 协议。Swift 会生成一个 `allCases` 属性，用于表示一个包含枚举所有成员的集合。
 
-```
+```swift
 enum CompassPoint: CaseIterable {
     case north, case south, case east, case west
 }
@@ -51,7 +51,7 @@ print(allCases)
 
 `allCases` 的使用方法和其它一般集合一样——集合中的元素是枚举类型的实例。我们可以用 `for-in`来遍历枚举成员
 
-```
+```swift
 for ca in allCases {
     print(ca)
 }
@@ -70,7 +70,7 @@ west
 
 如日期可以用数字年月日来表示，也可用字符串来表示
 
-```
+```swift
 enum Date {
     case digit(year: Int, month: Int, day: Int)
     case dateString(str: String)
@@ -79,14 +79,14 @@ enum Date {
 
 定义两个 `Date` 类型的变量
 
-```
+```swift
 let dateDigit = Date.digit(year: 2021, month: 6, day: 28)
 let dateString = Date.dateString(str: "2021-06-18")
 ```
 
 使用 Switch 语句来匹配枚举值时，关联值可以被提取出来作为 switch 语句的一部分
 
-```
+```swift
 switch dateDigit {
 case .digit(let year, let month, var day):
     day = 29
@@ -100,7 +100,7 @@ case .dateString(let str):
 
 如果一个枚举成员的所有关联值都被提取为常量，或者都被提取为变量，你可以只在成员名称前标注一个 let 或者 var
 
-```
+```swift
 switch dateDigit {
 case let .digit(year, month, day):
     print("digit====year:\(year) month:\(month) day:\(day)")
@@ -121,7 +121,7 @@ case .dateString(let str):
 > 原始值和关联值是不同的。原始值是在定义枚举时被预先填充的值，且始终不变。关联值是创建一个基于枚举成员的常量或变量时才设置的值，枚举成员的关联值可以变化。
 
 
-```
+```swift
 enum CompassPoint: String {
     case north = "north"
     case south = "south"
@@ -141,7 +141,7 @@ print(south)
 
 若枚举的原始值类型为 `Int` 或 `String` 时，不需要显式地为每一个枚举成员设置原始值，Swift 将会自动为你赋值。
 
-```
+```swift
 enum CompassPoint: String {
     case north = "north"
     case south = "south"
@@ -178,7 +178,7 @@ print("implictSouth---", implictSouth?.rawValue)
 
 定义一个枚举 TestEnum，然后用 `MemoryLayout` 来查看其占用内存大小
 
-```
+```swift
 enum TestEnum {
     case test1, case test2, case test3
 }
@@ -193,7 +193,7 @@ print(MemoryLayout<TestEnum>.alignment) // 1
 
 可以看到没有原始值和关联值的枚举只占 1 个字节的内存，下面我们来看下这 1 个字节中存储的内容
 
-```
+```swift
 var t = TestEnum.test1
 
 // 获取枚举变量的内存地址
@@ -225,7 +225,7 @@ print("-----------")
 
 若此枚举有原始值，再用 `MemoryLayout` 来查看其占用内存大小
 
-```
+```swift
 enum TestEnum: Int {
     case test1 = 10
     case test2
@@ -250,7 +250,7 @@ print(MemoryLayout<TestEnum>.alignment) // 1
 
 这时可能有人会问：那枚举变量的原始值存在哪里了呢？通过前面的学习我们知道原始值是唯一且不变的，也就是说所有的枚举变量共用一份原始值。那这个原始值就没有必要存储在枚举的内存中，可以用计算属性的方式得到
 
-```
+```swift
 enum TestEnum: Int {
     case test1 = 10
     case test2
@@ -274,7 +274,7 @@ Optional(100)
 
 ### 0x03 有关联值的枚举内存布局
 
-```
+```swift
 enum TestEnum {
     case test1(Int, Int, Int)
     case test2(Int, Int)
@@ -308,7 +308,7 @@ print(MemoryLayout<TestEnum>.alignment) //8
 
 若枚举只有一个 `case`，则枚举不会使用这 1 个字节的内存来区分不同 `case`
 
-```
+```swift
 enum TestEnum {
     case test
 }
@@ -323,7 +323,7 @@ print(MemoryLayout<TestEnum>.alignment) // 1
 
 但不影响关联值所占内存大小
 
-```
+```swift
 enum TestEnum {
     case test(Int)
 }
@@ -336,16 +336,14 @@ print(MemoryLayout<TestEnum>.stride) // 8
 print(MemoryLayout<TestEnum>.alignment) // 8 
 ```
 
-<br>
-
-？？？？ [Swift enum size when associated value is a reference type](https://stackoverflow.com/questions/62062590/swift-enum-size-when-associated-value-is-a-reference-type)
 
 <br>
 
 参考：
 
-- [枚举](https://swiftgg.gitbook.io/swift/swift-jiao-cheng/08_enumerations)
+- [Swift enum size when associated value is a reference type](https://stackoverflow.com/questions/62062590/swift-enum-size-when-associated-value-is-a-reference-type)
 
+- [枚举](https://swiftgg.gitbook.io/swift/swift-jiao-cheng/08_enumerations)
 - [Enumerations](https://docs.swift.org/swift-book/LanguageGuide/Enumerations.html)
 
 <br>

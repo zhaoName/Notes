@@ -912,7 +912,7 @@ if (!aspect_isMsgForwardIMP(targetMethodIMP)) {
 
 ![](../../Images/SourceCodeAnalysis/Aspects/Aspects_image08.png)
 
-### 三、`aspect_remove`
+## 三、`aspect_remove`
 
 有两个地方会调用 `remove`。一个是内部调用，在 `__ASPECTS_ARE_BEING_CALLED__` 方法中，若 `options` 为 `AspectOptionAutomaticRemoval`，则会在最后调用 `AspectIdentifier` 的 `remove` 方法。
 
