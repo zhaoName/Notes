@@ -71,20 +71,20 @@ MachOView 是一个分析 Mach-O 文件的图形界面工具,你可以自己去`
 
 打开 Xcode 使用快捷键`command + shift + o`,搜索`loader.h`文件,可以看到`struct mach_header_64`. 这就是 Mach-O 文件的 Header 类型.
 
-```
+```C
 /*
  * The 64-bit mach header appears at the very beginning of object files for
  * 64-bit architectures.
  */
 struct mach_header_64 {
-	uint32_t	magic;		/* mach magic number identifier */
-	cpu_type_t	cputype;	/* cpu specifier */
-	cpu_subtype_t	cpusubtype;	/* machine specifier */
-	uint32_t	filetype;	/* type of file */
-	uint32_t	ncmds;		/* number of load commands */
-	uint32_t	sizeofcmds;	/* the size of all the load commands */
-	uint32_t	flags;		/* flags */
-	uint32_t	reserved;	/* reserved */
+    uint32_t    magic;        /* mach magic number identifier */
+    cpu_type_t    cputype;    /* cpu specifier */
+    cpu_subtype_t    cpusubtype;    /* machine specifier */
+    uint32_t    filetype;    /* type of file */
+    uint32_t    ncmds;        /* number of load commands */
+    uint32_t    sizeofcmds;    /* the size of all the load commands */
+    uint32_t    flags;        /* flags */
+    uint32_t    reserved;    /* reserved */
 };
 ```
 
@@ -154,11 +154,11 @@ Mach-O 文件包含非常详细的加载指令，这些指令非常清晰地指�
 
 `Load Commands` 的结构
 
-```
+```C
 // loader.h
 struct load_command {
-	uint32_t cmd;		/* type of load command */
-	uint32_t cmdsize;	/* total size of command in bytes */
+    uint32_t cmd;        /* type of load command */
+    uint32_t cmdsize;    /* total size of command in bytes */
 };
 ```
 
@@ -198,7 +198,7 @@ struct load_command {
 
 ### 0x01 `Segment `的数据结构
 
-```
+```C
 // loader.h
 /*
  * The 64-bit segment load command indicates that a part of this file is to be
@@ -207,17 +207,17 @@ struct load_command {
  * command and their size is reflected in cmdsize.
  */
 struct segment_command_64 { /* for 64-bit architectures */
-	uint32_t	cmd;		/* LC_SEGMENT_64 */
-	uint32_t	cmdsize;	/* includes sizeof section_64 structs */
-	char		segname[16];	/* segment name */
-	uint64_t	vmaddr;		/* memory address of this segment */
-	uint64_t	vmsize;		/* memory size of this segment */
-	uint64_t	fileoff;	/* file offset of this segment */
-	uint64_t	filesize;	/* amount to map from the file */
-	vm_prot_t	maxprot;	/* maximum VM protection */
-	vm_prot_t	initprot;	/* initial VM protection */
-	uint32_t	nsects;		/* number of sections in segment */
-	uint32_t	flags;		/* flags */
+    uint32_t    cmd;        /* LC_SEGMENT_64 */
+    uint32_t    cmdsize;    /* includes sizeof section_64 structs */
+    char        segname[16];    /* segment name */
+    uint64_t    vmaddr;        /* memory address of this segment */
+    uint64_t    vmsize;        /* memory size of this segment */
+    uint64_t    fileoff;    /* file offset of this segment */
+    uint64_t    filesize;    /* amount to map from the file */
+    vm_prot_t    maxprot;    /* maximum VM protection */
+    vm_prot_t    initprot;    /* initial VM protection */
+    uint32_t    nsects;        /* number of sections in segment */
+    uint32_t    flags;        /* flags */
 };
 ```
 
@@ -259,20 +259,20 @@ struct segment_command_64 { /* for 64-bit architectures */
 
 ### 0x03 `Section`的结构
 
-```
+```C
 struct section_64 { /* for 64-bit architectures */
-	char		sectname[16];	/* name of this section */
-	char		segname[16];	/* segment this section goes in */
-	uint64_t	addr;		/* memory address of this section */
-	uint64_t	size;		/* size in bytes of this section */
-	uint32_t	offset;		/* file offset of this section */
-	uint32_t	align;		/* section alignment (power of 2) */
-	uint32_t	reloff;		/* file offset of relocation entries */
-	uint32_t	nreloc;		/* number of relocation entries */
-	uint32_t	flags;		/* flags (section type and attributes)*/
-	uint32_t	reserved1;	/* reserved (for offset or index) */
-	uint32_t	reserved2;	/* reserved (for count or sizeof) */
-	uint32_t	reserved3;	/* reserved */
+    char        sectname[16];    /* name of this section */
+    char        segname[16];    /* segment this section goes in */
+    uint64_t    addr;        /* memory address of this section */
+    uint64_t    size;        /* size in bytes of this section */
+    uint32_t    offset;        /* file offset of this section */
+    uint32_t    align;        /* section alignment (power of 2) */
+    uint32_t    reloff;        /* file offset of relocation entries */
+    uint32_t    nreloc;        /* number of relocation entries */
+    uint32_t    flags;        /* flags (section type and attributes)*/
+    uint32_t    reserved1;    /* reserved (for offset or index) */
+    uint32_t    reserved2;    /* reserved (for count or sizeof) */
+    uint32_t    reserved3;    /* reserved */
 };
 ```
 - `sectname`: Section的名称 如`__text、__stubs`
@@ -347,20 +347,20 @@ struct section_64 { /* for 64-bit architectures */
 
 ### 0x01 `dyld_info_command `结构
 
-```
+```C
 struct dyld_info_command {
- uint32_t   cmd;        /* LC_DYLD_INFO or LC_DYLD_INFO_ONLY */
- uint32_t   cmdsize;        /* sizeof(struct dyld_info_command) */
- uint32_t   rebase_off;    /* file offset to rebase info  */
- uint32_t   rebase_size;    /* size of rebase info   */
- uint32_t   bind_off;    /* file offset to binding info   */
- uint32_t   bind_size;    /* size of binding info  */      
- uint32_t   weak_bind_off;    /* file offset to weak binding info   */
- uint32_t   weak_bind_size;  /* size of weak binding info  */
- uint32_t   lazy_bind_off;    /* file offset to lazy binding info */
- uint32_t   lazy_bind_size;  /* size of lazy binding infs */ 
- uint32_t   export_off;    /* file offset to lazy binding info */
- uint32_t   export_size;    /* size of lazy binding infs */
+    uint32_t   cmd;        /* LC_DYLD_INFO or LC_DYLD_INFO_ONLY */
+    uint32_t   cmdsize;        /* sizeof(struct dyld_info_command) */
+    uint32_t   rebase_off;    /* file offset to rebase info  */
+    uint32_t   rebase_size;    /* size of rebase info   */
+    uint32_t   bind_off;    /* file offset to binding info   */
+    uint32_t   bind_size;    /* size of binding info  */
+    uint32_t   weak_bind_off;    /* file offset to weak binding info   */
+    uint32_t   weak_bind_size;  /* size of weak binding info  */
+    uint32_t   lazy_bind_off;    /* file offset to lazy binding info */
+    uint32_t   lazy_bind_size;  /* size of lazy binding infs */
+    uint32_t   export_off;    /* file offset to lazy binding info */
+    uint32_t   export_size;    /* size of lazy binding infs */
 };
 ```
 
