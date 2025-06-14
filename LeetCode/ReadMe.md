@@ -9,10 +9,21 @@
 
 | No. | Title | Difficulty | Solution | Time Complexity | Space Complexity |
 | :---: | :---: | :---: | :---: | :---: | :---: |
+| 11 | Container With Most Water | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0011-ContainerWithMostWater.md) | O(n) | O(1) |
 | 61 | Rotate List | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0061-RotateList.md) | O(n) | O(1) |
 | 75 | Sort Colors | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0075-SortColors.md) | O(n) | O(1) |
 | 88 | Merge Sorted Array | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0088-MergeSortedArray.md) | O(m+n) | O(1) |
 | 160 | Intersection of Two Linked Lists | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0160-IntersectionOfTwoLinkedLists.md) | O(m+n) | O(1) |
+
+<br>
+
+### Binary Search
+
+| No. | Title | Difficulty | Solution | Time Complexity | Space Complexity |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| 108 | Convert Sorted Array to Binary Search Tree | Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0108-ConvertSortedArrayToBinarySearchTree.md) | O(n) | O(logn) |
+| 162 | Find Peak Element | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0162-FindPeakElement.md) | O(logn) | O(1) |
+| 209 | Minimum Size Subarray Sum | Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0209-MinimumSizeSubarraySum.md) | O(nlogn) | O(n) |
 
 
 <br>
@@ -70,6 +81,16 @@
 | 144 | Binary Tree Preorder Traversal |  Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0144-BinaryTreePreorderTraversal.md) | O(n) | O(n)| |
 | 145 | Binary Tree Postorder Traversal |  Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0145-BinaryTreePostorderTraversal.md) | O(n) | O(n)| |
 
+<br>
 
+### Dynamic Programming
+
+| No. | Title | Difficulty | Solution | Time Complexity | Space Complexity | Remark |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 120 | Triangle |  Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0120-Triangle.md) | O(n^2) | O(n)| |
+| 121 | Best Time to Buy and Sell Stock |  Easy | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0121-BestTimeToBuyAndSellStock.md) | O(n) | O(1)| |
+| 122 | Best Time to Buy and Sell Stock II |  Medium | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0122-BestTimeToBuyAndSellStockII.md) | O(n) | O(1)| |
+| 123 | Best Time to Buy and Sell Stock III | Difficult | [Python](https://github.com/zhaoName/Notes/blob/master/LeetCode/0123-BestTimeToBuyAndSellStockIII.md) | O(n) | O(1)| |
+| 95 | 最长公共子序 |  Medium | [Python](https://github.com/zhaoName/Notes/blob/master/Books/%E5%89%91%E6%8C%87Offer/095-LongestCommonSubsequence.md) | O(m*n) | O(1)| 剑指Offer |
 
 <br>
