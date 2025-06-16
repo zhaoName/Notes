@@ -462,12 +462,12 @@ object_setClass(self, subclass);
 static void aspect_hookedGetClass(Class class, Class statedClass) {
     NSCParameterAssert(class);
     NSCParameterAssert(statedClass);
-	Method method = class_getInstanceMethod(class, @selector(class));
-	IMP newIMP = imp_implementationWithBlock(^(id self) {
-		return statedClass;
+    Method method = class_getInstanceMethod(class, @selector(class));
+    IMP newIMP = imp_implementationWithBlock(^(id self) {
+        return statedClass;
     });
     // 替换 class 的 class 方法的方法实现(IMP)，使其返回 statedClass 类型
-	class_replaceMethod(class, @selector(class), newIMP, method_getTypeEncoding(method));
+    class_replaceMethod(class, @selector(class), newIMP, method_getTypeEncoding(method));
 }
 ```
 
@@ -788,7 +788,7 @@ aspect_invoke(objectContainer.afterAspects, info);
 
 这里要注意若没有 `insteadAspects`，我们就需要调用判断当前继承链是否能响应 `aliasSelector ` 方法，如果能则直接调用 `aliasSelector`，也就是**调用原方法。** 如下：
 
-```
+```Objective-C
 // Instead hooks.
 BOOL respondsToAlias = YES;
 if (objectContainer.insteadAspects.count || classContainer.insteadAspects.count) {

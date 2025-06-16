@@ -364,27 +364,27 @@
 // Block internals.
 typedef NS_OPTIONS(int, AspectBlockFlags) {
     // 是否需要 Copy 和 Dispose 的 Helpers
-	AspectBlockFlagsHasCopyDisposeHelpers = (1 << 25),
+    AspectBlockFlagsHasCopyDisposeHelpers = (1 << 25),
     // 是否需要方法签名 Signature
-	AspectBlockFlagsHasSignature          = (1 << 30)
+    AspectBlockFlagsHasSignature          = (1 << 30)
 };
 
 typedef struct _AspectBlock {
-	__unused Class isa;
-	AspectBlockFlags flags;
-	__unused int reserved;
-	void (__unused *invoke)(struct _AspectBlock *block, ...);
-	struct {
-		unsigned long int reserved;
-		unsigned long int size;
-		// requires AspectBlockFlagsHasCopyDisposeHelpers
-		void (*copy)(void *dst, const void *src);
-		void (*dispose)(const void *);
-		// requires AspectBlockFlagsHasSignature
-		const char *signature;
-		const char *layout;
-	} *descriptor;
-	// imported variables
+    __unused Class isa;
+    AspectBlockFlags flags;
+    __unused int reserved;
+    void (__unused *invoke)(struct _AspectBlock *block, ...);
+    struct {
+        unsigned long int reserved;
+        unsigned long int size;
+        // requires AspectBlockFlagsHasCopyDisposeHelpers
+        void (*copy)(void *dst, const void *src);
+        void (*dispose)(const void *);
+        // requires AspectBlockFlagsHasSignature
+        const char *signature;
+        const char *layout;
+    } *descriptor;
+    // imported variables
 } *AspectBlockRef;
 ```
 
@@ -400,27 +400,27 @@ typedef struct _AspectBlock {
 static NSMethodSignature *aspect_blockMethodSignature(id block, NSError **error) {
     AspectBlockRef layout = (__bridge void *)block;
     // 是否包含 AspectBlockFlagsHasSignature 标志，没有直接报错
-	if (!(layout->flags & AspectBlockFlagsHasSignature)) {
+    if (!(layout->flags & AspectBlockFlagsHasSignature)) {
         NSString *description = [NSString stringWithFormat:@"The block %@ doesn't contain a type signature.", block];
         AspectError(AspectErrorMissingBlockSignature, description);
         return nil;
     }
-	void *desc = layout->descriptor;
+    void *desc = layout->descriptor;
     // 指针指到 reserved 和 size 后
-	desc += 2 * sizeof(unsigned long int);
+    desc += 2 * sizeof(unsigned long int);
     // 若有 AspectBlockFlagsHasCopyDisposeHelpers 标志，也就是包含 copy 和dispose 函数，再往后指 2 个 Void* 大小
-	if (layout->flags & AspectBlockFlagsHasCopyDisposeHelpers) {
-		desc += 2 * sizeof(void *);
+    if (layout->flags & AspectBlockFlagsHasCopyDisposeHelpers) {
+        desc += 2 * sizeof(void *);
     }
     // 到这里 desc 就指向 signature，若为空则报错
-	if (!desc) {
+    if (!desc) {
         NSString *description = [NSString stringWithFormat:@"The block %@ doesn't has a type signature.", block];
         AspectError(AspectErrorMissingBlockSignature, description);
         return nil;
     }
     // 若不为空则 转化成 NSMethodSignature
-	const char *signature = (*(const char **)desc);
-	return [NSMethodSignature signatureWithObjCTypes:signature];
+    const char *signature = (*(const char **)desc);
+    return [NSMethodSignature signatureWithObjCTypes:signature];
 }
 ```
 
@@ -641,35 +641,35 @@ if (signaturesMatch) {
     NSInvocation *blockInvocation = [NSInvocation invocationWithMethodSignature:self.blockSignature];
     NSInvocation *originalInvocation = info.originalInvocation;
     NSUInteger numberOfArguments = self.blockSignature.numberOfArguments;
-
+    
     // Be extra paranoid. We already check that on hook registration.
     if (numberOfArguments > originalInvocation.methodSignature.numberOfArguments) {
         AspectLogError(@"Block has too many arguments. Not calling %@", info);
         return NO;
     }
-
+    
     // The `self` of the block will be the AspectInfo. Optional.
     // 首先把 id<AspectInfo> 放到第一个参数中
     if (numberOfArguments > 1) {
         [blockInvocation setArgument:&info atIndex:1];
     }
     
-	void *argBuf = NULL;
+    void *argBuf = NULL;
     for (NSUInteger idx = 2; idx < numberOfArguments; idx++) {
         // 从 idx = 2开始，取原方法的方法签名中参数的类型
         const char *type = [originalInvocation.methodSignature getArgumentTypeAtIndex:idx];
-		NSUInteger argSize;
+        NSUInteger argSize;
         // 占用大小
-		NSGetSizeAndAlignment(type, &argSize, NULL);
+        NSGetSizeAndAlignment(type, &argSize, NULL);
         
-		if (!(argBuf = reallocf(argBuf, argSize))) {
+        if (!(argBuf = reallocf(argBuf, argSize))) {
             AspectLogError(@"Failed to allocate memory for block invocation.");
-			return NO;
-		}
+            return NO;
+        }
         // 取原方法的参数的值
-		[originalInvocation getArgument:argBuf atIndex:idx];
+        [originalInvocation getArgument:argBuf atIndex:idx];
         // 将原方法的参数的值 放到block对应方法签名的参数中
-		[blockInvocation setArgument:argBuf atIndex:idx];
+        [blockInvocation setArgument:argBuf atIndex:idx];
     }
     
     // 执行 hook 的方法
